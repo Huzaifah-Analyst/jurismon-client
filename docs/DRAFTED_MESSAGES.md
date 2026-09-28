@@ -15,7 +15,7 @@ This file stores drafted messages for Huzaifah to review and send on Fiverr.
 >
 > The core engine is complete and the full pipeline runs end to end: modular ingestion (REST API connector, Playwright headless browser, and fast HTTP scraper) across all 51 sources plus the 18 structured portals you sent, PDF and HTML extraction with OCR fallback and boilerplate stripping, the section-aware diff engine, full-text search, the PayPal subscription layer, and both the search page and admin dashboard.
 >
-> I have just finished a full security and code audit pass before packaging for delivery. That caught and fixed several issues that would have caused problems in production — including a bug that would have made PayPal reject every live subscription webhook, and an authentication weakness in the admin panel. The automated test suite now covers those paths specifically and has grown from 30 to 42 tests, all passing. I would rather find these now than after you go live.
+> I have just finished a full security and code audit pass before packaging for delivery. That caught and fixed several issues that would have caused problems in production — including a bug that would have made PayPal reject every live subscription webhook, and an authentication weakness in the admin panel. The automated test suite now covers those paths specifically and has grown from 30 to 70 tests, all passing, taking measured code coverage to 77%. I have also added coverage for the crawler and database layers, which previously had none. I would rather find these now than after you go live.
 >
 > ---
 >
