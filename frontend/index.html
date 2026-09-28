@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="utf-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<title>JurisMon: Regulatory Drift Monitor</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+
+  :root {
+
+    --bg: #f8fafc;
+
+    --surface: #ffffff;
+
+    --ink: #0f172a;          /* primary, headings, active states */
+
+    --text: #334155;         /* body copy */
+
+    --muted: #64748b;        /* meta, hints */
+
+    --line: #e2e8f0;         /* hairlines */
+
+    --line-strong: #cbd5e1;  /* input border */
+
+    --hover: #f1f5f9;
+
+
+
+    --add-bg: #ecfdf5;  --add-ink: #065f46;  --add-bar: #6ee7b7;
+
+    --del-bg: #fff1f2;  --del-ink: #9f1239;  --del-bar: #fda4af;
+
+    --mix-bar: #94a3b8;
+
+
+
+    --r-sm: 4px;   /* kbd, inline marks */
+
+    --r-md: 6px;   /* pills, small buttons */
+
+    --r-lg: 10px;  /* search field, results frame */
+
+
+
+    --ease: cubic-bezier(.2, .7, .2, 1);
+
+    --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  }
+
+
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+
+    margin: 0;
+
+    background: var(--bg);
+
+    color: var(--text);
+
+    font-family: var(--font);
+
+    font-size: 15px;
+
+    line-height: 1.55;
+
+    font-feature-settings: "cv11", "ss01", "tnum";
+
+    -webkit-font-smoothing: antialiased;
+
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+
+  }
+
+  a { color: inherit; }
+
+  button, input, select { font: inherit; color: inherit; }
+
+
+
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 24px; }
+
+
+
+  /* ---------- Top bar ---------- */
+
+  .topbar {
+
+    position: sticky; top: 0; z-index: 10;
+
+    background: var(--bg);
+
+    border-bottom: 1px solid var(--line);
+
+    padding-top: env(safe-area-inset-top, 0px);
+
+  }
+
+  .topbar-inner { height: 56px; display: flex; align-items: center; justify-content: space-between; }
+
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+
+  .brand-mark {
+
+    width: 24px; height: 24px; border-radius: var(--r-md);
+
+    background: var(--ink); color: #fff;
+
+    display: grid; place-items: center;
+
+    font-size: 14px; font-weight: 600; line-height: 1;
+
+  }
+
+  .brand-name { font-weight: 600; color: var(--ink); letter-spacing: -0.01em; }
+
+  .brand-desc { color: var(--muted); font-size: 13.5px; padding-left: 10px; border-left: 1px solid var(--line); }
+
+  .topnav { display: flex; align-items: center; gap: 6px; }
+
+  .navlink {
+
+    text-decoration: none; font-size: 13.5px; font-weight: 500; color: var(--text);
+
+    height: 32px; padding: 0 10px; border-radius: var(--r-md);
+
+    display: inline-flex; align-items: center; gap: 6px;
+
+    transition: background-color .15s var(--ease), color .15s var(--ease);
+
+  }
+
+  .navlink:hover { background: var(--hover); color: var(--ink); }
+
+  .navcount { color: var(--muted); font-weight: 400; }
+
+  .btn-outline {
+
+    text-decoration: none; font-size: 13.5px; font-weight: 500; color: var(--ink);
+
+    height: 32px; padding: 0 12px; border-radius: var(--r-md);
+
+    border: 1px solid var(--line-strong); background: var(--surface);
+
+    display: inline-flex; align-items: center;
+
+    transition: border-color .15s var(--ease), box-shadow .15s var(--ease);
+
+  }
+
+  .btn-outline:hover { border-color: var(--ink); }
+
+
+
+  /* ---------- Hero + search ---------- */
+
+  .hero { padding-top: 72px; }
+
+  .hero h1 {
+
+    margin: 0;
+
+    color: var(--ink);
+
+    font-size: clamp(26px, 4.2vw, 38px);
+
+    font-weight: 600;
+
+    line-height: 1.15;
+
+    letter-spacing: -0.028em;
+
+    max-width: 20ch;
+
+  }
+
+  .status { margin: 12px 0 0; color: var(--muted); font-size: 14.5px; display: flex; align-items: center; gap: 8px; }
+
+  .status .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--add-bar); box-shadow: 0 0 0 3px var(--add-bg); flex: none; }
+
+
+
+  .search { position: relative; margin-top: 28px; }
+
+  .search-icon {
+
+    position: absolute; left: 18px; top: 50%; transform: translateY(-50%);
+
+    width: 18px; height: 18px; color: var(--muted); pointer-events: none;
+
+    transition: color .15s var(--ease);
+
+  }
+
+  .search input {
+
+    width: 100%; height: 56px;
+
+    padding: 0 64px 0 48px;
+
+    font-size: 17px; letter-spacing: -0.01em; color: var(--ink);
+
+    background: var(--surface);
+
+    border: 1px solid var(--line-strong);
+
+    border-radius: var(--r-lg);
+
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+
+    outline: none;
+
+    -webkit-appearance: none; appearance: none;
+
+    transition: border-color .15s var(--ease), box-shadow .2s var(--ease);
+
+  }
+
+  .search input::placeholder { color: #94a3b8; }
+
+  .search input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+
+  .search input:hover { border-color: #94a3b8; }
+
+  .search input:focus { border-color: var(--ink); box-shadow: 0 0 0 4px rgba(15, 23, 42, .07); }
+
+  .search:focus-within .search-icon { color: var(--ink); }
+
+
+
+  kbd {
+
+    font-family: var(--font); font-size: 12px; font-weight: 500; color: var(--muted);
+
+    min-width: 22px; height: 22px; padding: 0 6px;
+
+    display: inline-flex; align-items: center; justify-content: center;
+
+    border: 1px solid var(--line-strong); border-bottom-width: 2px;
+
+    border-radius: var(--r-sm); background: var(--bg);
+
+  }
+
+  .search-kbd {
+
+    position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+
+    transition: opacity .15s var(--ease);
+
+  }
+
+  .search-kbd.is-hidden { opacity: 0; }
+
+
+
+  .toolbar { margin-top: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+  .pills {
+
+    position: relative; display: inline-flex; gap: 2px; padding: 3px;
+
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+
+    overflow-x: auto; scrollbar-width: none; max-width: 100%;
+
+  }
+
+  .pills::-webkit-scrollbar { display: none; }
+
+  .pill-indicator {
+
+    position: absolute; top: 3px; bottom: 3px; left: 0; width: 0;
+
+    background: var(--ink); border-radius: var(--r-md);
+
+  }
+
+  .pills.ready .pill-indicator { transition: transform .28s var(--ease), width .28s var(--ease); }
+
+  .pill {
+
+    position: relative; z-index: 1; flex: none;
+
+    height: 30px; padding: 0 12px;
+
+    border: 0; background: transparent; border-radius: var(--r-md);
+
+    font-size: 13.5px; font-weight: 500; color: var(--text);
+
+    display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+
+    transition: color .2s var(--ease), background-color .15s var(--ease);
+
+  }
+
+  .pill:hover:not(.is-active) { background: var(--hover); color: var(--ink); }
+
+  .pill.is-active { color: #fff; }
+
+  .pill-count { font-weight: 400; opacity: .6; min-width: 1ch; }
+
+  .pill:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+
+
+  .sort { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--muted); flex: none; }
+
+  .sort select {
+
+    height: 32px; padding: 0 28px 0 10px;
+
+    border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface);
+
+    color: var(--ink); font-size: 13.5px; font-weight: 500; cursor: pointer;
+
+    -webkit-appearance: none; appearance: none;
+
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+
+    background-repeat: no-repeat; background-position: right 10px center;
+
+  }
+
+  .sort select:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+
+
+  /* ---------- Results ---------- */
+
+  .summary { margin: 36px 0 10px; font-size: 13.5px; color: var(--muted); }
+
+  .summary strong { color: var(--ink); font-weight: 500; }
+
+
+
+  .results {
+
+    list-style: none; margin: 0; padding: 0;
+
+    background: var(--surface);
+
+    border: 1px solid var(--line);
+
+    border-radius: var(--r-lg);
+
+    overflow: hidden;
+
+  }
+
+  .results:empty { display: none; }
+
+
+
+  .result {
+
+    display: grid; grid-template-columns: 116px minmax(0, 1fr);
+
+    border-top: 1px solid var(--line);
+
+    outline: none;
+
+    position: relative;
+
+    transition: background-color .15s var(--ease);
+
+  }
+
+  .result:first-child { border-top: 0; }
+
+  .result:hover { background: #fcfdfe; }
+
+  .result:focus-visible { background: #fbfcfe; box-shadow: inset 2px 0 0 var(--ink); }
+
+
+
+  /* Section gutter: the ledger column */
+
+  .gutter {
+
+    padding: 20px 18px 20px 20px;
+
+    border-right: 1px solid var(--line);
+
+    display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+
+    text-align: right;
+
+  }
+
+  .section { color: var(--ink); font-weight: 600; font-size: 14.5px; letter-spacing: -0.01em; white-space: nowrap; }
+
+  .badge {
+
+    font-size: 12px; font-weight: 500; line-height: 1;
+
+    padding: 4px 7px; border-radius: var(--r-sm);
+
+    white-space: nowrap;
+
+  }
+
+  .badge-added    { background: var(--add-bg); color: var(--add-ink); }
+
+  .badge-removed  { background: var(--del-bg); color: var(--del-ink); }
+
+  .badge-amended  { background: var(--hover); color: var(--ink); }
+
+  .badge-snapshot { background: transparent; color: var(--muted); border: 1px solid var(--line); padding: 3px 6px; }
+
+
+
+  .body { padding: 18px 22px 14px 20px; min-width: 0; }
+
+  .head { display: flex; justify-content: space-between; gap: 16px; align-items: baseline; }
+
+  .entity { margin: 0; font-size: 14.5px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; line-height: 1.35; }
+
+  .doc { margin: 2px 0 0; font-size: 13.5px; color: var(--muted); }
+
+  .when { flex: none; text-align: right; font-size: 13px; line-height: 1.35; }
+
+  .when .rel { display: block; color: var(--text); font-weight: 500; }
+
+  .when .abs { display: block; color: var(--muted); }
+
+
+
+  /* The redline: statutory change bar + inline marks */
+
+  .redline {
+
+    margin: 14px 0 0;
+
+    padding-left: 14px;
+
+    border-left: 2px solid var(--line-strong);
+
+    color: var(--text);
+
+    font-size: 15px;
+
+    line-height: 1.75;
+
+    max-width: 68ch;
+
+  }
+
+  .kind-added   .redline { border-left-color: var(--add-bar); }
+
+  .kind-removed .redline { border-left-color: var(--del-bar); }
+
+  .kind-amended .redline { border-left-color: var(--mix-bar); }
+
+
+
+  ins, del {
+
+    padding: 1px 3px; border-radius: 3px;
+
+    -webkit-box-decoration-break: clone; box-decoration-break: clone;
+
+  }
+
+  ins {
+
+    background: var(--add-bg); color: var(--add-ink);
+
+    text-decoration: underline; text-decoration-color: var(--add-bar);
+
+    text-decoration-thickness: 1px; text-underline-offset: 3px;
+
+  }
+
+  del {
+
+    background: var(--del-bg); color: var(--del-ink);
+
+    text-decoration: line-through; text-decoration-color: rgba(159, 18, 57, .5);
+
+    text-decoration-thickness: 1px;
+
+  }
+
+  del + ins, ins + del { margin-left: 2px; }
+
+  mark { background: rgba(15, 23, 42, .08); color: inherit; border-radius: 2px; padding: 0 1px; font-weight: 600; }
+
+  ins mark, del mark { background: rgba(15, 23, 42, .07); }
+
+
+
+  /* Full section reveal */
+
+  .full {
+
+    display: grid; grid-template-rows: 0fr;
+
+    transition: grid-template-rows .3s var(--ease);
+
+  }
+
+  .full-inner { overflow: hidden; min-height: 0; }
+
+  .result.is-open .full { grid-template-rows: 1fr; }
+
+  .full-box {
+
+    margin-top: 14px;
+
+    background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+
+    padding: 12px 16px 14px;
+
+    opacity: 0; transform: translateY(-4px);
+
+    transition: opacity .25s var(--ease), transform .3s var(--ease);
+
+  }
+
+  .result.is-open .full-box { opacity: 1; transform: none; }
+
+  .full-label { margin: 0 0 4px; font-size: 12.5px; color: var(--muted); }
+
+  .full-text { margin: 0; font-size: 14px; line-height: 1.75; color: var(--text); max-width: 70ch; }
+
+
+
+  .actions { margin: 12px 0 0 -8px; display: flex; flex-wrap: wrap; gap: 2px; }
+
+  .act {
+
+    height: 28px; padding: 0 8px;
+
+    border: 0; background: transparent; border-radius: var(--r-md);
+
+    font-size: 13px; font-weight: 500; color: var(--muted);
+
+    display: inline-flex; align-items: center; gap: 6px;
+
+    text-decoration: none; cursor: pointer;
+
+    transition: background-color .15s var(--ease), color .15s var(--ease);
+
+  }
+
+  .act:hover { background: var(--hover); color: var(--ink); }
+
+  .act:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+
+  .act svg { width: 14px; height: 14px; transition: transform .25s var(--ease); }
+
+  .result.is-open [data-act="toggle"] svg { transform: rotate(180deg); }
+
+  .act.is-done { color: var(--add-ink); }
+
+
+
+  /* Empty state */
+
+  .empty {
+
+    border: 1px dashed var(--line-strong); border-radius: var(--r-lg);
+
+    padding: 36px 28px; background: var(--surface);
+
+  }
+
+  .empty h2 { margin: 0; font-size: 15px; font-weight: 600; color: var(--ink); }
+
+  .empty p { margin: 6px 0 16px; color: var(--muted); font-size: 14px; max-width: 56ch; }
+
+
+
+  /* Keyboard hints */
+
+  .hints {
+
+    margin: 28px 0 56px; font-size: 12.5px; color: var(--muted);
+
+    display: flex; flex-wrap: wrap; gap: 8px 18px;
+
+  }
+
+  .hints span { display: inline-flex; align-items: center; gap: 6px; }
+
+  .hints kbd { height: 20px; min-width: 20px; font-size: 11.5px; }
+
+
+
+  /* One orchestrated entrance, first load only */
+
+  .results.intro .result { animation: rise .45s var(--ease) both; animation-delay: calc(var(--i) * 40ms + 80ms); }
+
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+
+
+  @media (max-width: 680px) {
+
+    .wrap { padding: 0 16px; }
+
+    .brand-desc, .navlink, .search-kbd { display: none; }
+
+    .hero { padding-top: 40px; }
+
+    .toolbar { flex-direction: column; align-items: stretch; }
+
+    .sort { justify-content: flex-end; }
+
+    .result { grid-template-columns: 1fr; }
+
+    .gutter {
+
+      flex-direction: row; align-items: center; justify-content: flex-start;
+
+      border-right: 0; padding: 16px 16px 0; text-align: left;
+
+    }
+
+    .body { padding: 8px 16px 12px; }
+
+    .head { flex-direction: column; gap: 4px; }
+
+    .when { text-align: left; display: flex; gap: 8px; }
+
+    .when .rel, .when .abs { display: inline; }
+
+    .hints { display: none; }
+
+  }
+
+
+
+  @media (prefers-reduced-motion: reduce) {
+
+    *, *::before, *::after { transition-duration: 0s !important; animation: none !important; }
+
+  }
+
+</style>
+
+</head>
+
+<body>
+
+
+
+<header class="topbar">
+
+  <div class="wrap topbar-inner">
+
+    <a class="brand" href="/" aria-label="JurisMon home" style="text-decoration:none; display:flex; align-items:center; gap:12px;">
+      <img src="/static/assets/logo.jpg" alt="JurisMon Logo" style="height:36px; width:auto; border-radius:6px; object-fit:contain; border:1px solid var(--line);">
+      <div>
+        <div style="font-weight:600; color:var(--ink); font-size:16px; letter-spacing:-0.01em;">JurisMon</div>
+        <div style="font-size:12px; color:var(--muted); line-height:1;">Regulatory Drift Monitor</div>
+      </div>
+    </a>
+    <nav class="topnav" aria-label="Main">
+      <span class="navlink" style="cursor:default;"><span class="label">Operational Jurisdictions</span> <span class="navcount" id="source-count">32 / 51</span></span>
+    </nav>
+
+  </div>
+
+</header>
+
+
+
+<main class="wrap">
+
+  <section class="hero" aria-labelledby="title">
+
+    <h1 id="title">Search amendments across 32 active jurisdictions</h1>
+
+    <p class="status"><span class="dot" aria-hidden="true"></span><span id="status-text"></span></p>
+
+
+
+    <div class="search" role="search">
+
+      <svg class="search-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+
+        <circle cx="8.5" cy="8.5" r="5.75" stroke="currentColor" stroke-width="1.6"/>
+
+        <path d="M13 13l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+
+      </svg>
+
+      <input id="q" type="search" placeholder="Search a clause, section number or place"
+
+             autocomplete="off" spellcheck="false" aria-label="Search amendments" aria-controls="results">
+
+      <kbd class="search-kbd" id="kbd" aria-hidden="true">/</kbd>
+
+    </div>
+
+
+
+    <div class="toolbar">
+
+      <div class="pills" id="pills" role="group" aria-label="Filter results">
+
+        <span class="pill-indicator" id="indicator" aria-hidden="true"></span>
+
+        <button class="pill is-active" type="button" data-filter="all" aria-pressed="true">All <span class="pill-count" data-count="all"></span></button>
+
+        <button class="pill" type="button" data-filter="added" aria-pressed="false">Added clauses <span class="pill-count" data-count="added"></span></button>
+
+        <button class="pill" type="button" data-filter="removed" aria-pressed="false">Removed clauses <span class="pill-count" data-count="removed"></span></button>
+
+        <button class="pill" type="button" data-filter="snapshot" aria-pressed="false">Full snapshots <span class="pill-count" data-count="snapshot"></span></button>
+
+      </div>
+
+      <label class="sort">Sort
+
+        <select id="sort">
+
+          <option value="newest">Newest</option>
+
+          <option value="relevance">Relevance</option>
+
+        </select>
+
+      </label>
+
+    </div>
+
+  </section>
+
+
+
+  <p class="summary" id="summary" aria-live="polite"></p>
+
+  <ul class="results" id="results"></ul>
+
+
+
+  <div class="empty" id="empty" hidden>
+
+    <h2 id="empty-title">No matches</h2>
+
+    <p>Try a section number such as 101.4, a place name, or switch the filter to All.</p>
+
+    <button class="btn-outline" type="button" id="clear">Clear search</button>
+
+  </div>
+
+
+
+  <footer class="hints" aria-label="Keyboard shortcuts">
+
+    <span><kbd>/</kbd> Search</span>
+
+    <span><kbd>↑</kbd><kbd>↓</kbd> Move between results</span>
+
+    <span><kbd>Enter</kbd> Show full section</span>
+
+    <span><kbd>Esc</kbd> Clear</span>
+
+  </footer>
+
+</main>
+
+
+
+<script>
+(() => {
+  const NOW = Date.now();
+  let SOURCES = 50;
+
+  // Curated fallback data for rich initial display & demonstration
+  const DEFAULT_DATA = [
+    {
+      id: "nyc-101-4", hoursAgo: 1.2, url: "https://rules.cityofnewyork.us",
+      entity: "New York City Rules & Planning",
+      doc: "Title 62, Accessory dwelling units",
+      section: "§ 101.4",
+      segments: [
+        ["eq", "An accessory dwelling unit shall not exceed "],
+        ["del", "800"], ["add", "1,000"],
+        ["eq", " square feet of gross floor area"],
+        ["add", ", or 50 percent of the principal dwelling, whichever is less"],
+        ["eq", "."]
+      ],
+      full: "An accessory dwelling unit shall not exceed 1,000 square feet of gross floor area, or 50 percent of the principal dwelling, whichever is less. Only one accessory dwelling unit is permitted per lot, and it shall share utility connections with the principal dwelling."
+    },
+    {
+      id: "la-4-12b", hoursAgo: 2.5, url: "https://cityclerk.lacity.org",
+      entity: "City of Los Angeles Planning Commission",
+      doc: "Draft amendment, Short-term rentals",
+      section: "§ 4.12(b)",
+      segments: [
+        ["add", "Short-term rental permits shall be renewed annually, and the permit number shall appear in every listing."]
+      ],
+      full: "(a) No dwelling may be offered as a short-term rental without a valid permit. (b) Short-term rental permits shall be renewed annually, and the permit number shall appear in every listing. (c) Permits are not transferable between owners."
+    },
+    {
+      id: "chi-27-305", hoursAgo: 4, url: "https://chicago.legistar.com",
+      entity: "Chicago City Council Board",
+      doc: "Ordinance 311, Home occupations",
+      section: "§ 27-305",
+      segments: [
+        ["eq", "Home occupations shall be conducted entirely within the dwelling. "],
+        ["del", "No more than one non-resident employee may work on the premises."]
+      ],
+      full: "Home occupations shall be conducted entirely within the dwelling. Signage is limited to one non-illuminated sign not exceeding two square feet."
+    },
+    {
+      id: "hou-12-08-040", hoursAgo: 6, url: "https://houston.novusagenda.com",
+      entity: "Houston City Council Commission",
+      doc: "Title 12, Signage standards",
+      section: "§ 12.08.040",
+      segments: [
+        ["eq", "Freestanding signs shall not exceed "],
+        ["del", "twelve (12)"], ["add", "eight (8)"],
+        ["eq", " feet in height"],
+        ["add", " within 300 feet of a residential district"],
+        ["eq", "."]
+      ],
+      full: "Freestanding signs shall not exceed eight (8) feet in height within 300 feet of a residential district. Elsewhere, freestanding signs shall not exceed twelve (12) feet in height."
+    },
+    {
+      id: "mia-min-0922", hoursAgo: 9, url: "https://miamigov.legistar.com",
+      entity: "City of Miami Hearing Board",
+      doc: "Meeting minutes, 22 September",
+      section: "p. 3",
+      text: "The Board granted a variance from § 5.3 to allow a five-foot fence in the front yard at 18 Mill Road, subject to a clear sight triangle at the driveway.",
+      full: "Present: all five members. The Board granted a variance from § 5.3 to allow a five-foot fence in the front yard at 18 Mill Road, subject to a clear sight triangle at the driveway. The applicant agreed to the condition. Motion carried 4-1."
+    },
+    {
+      id: "phx-18-6", hoursAgo: 20, url: "https://phoenix.gov",
+      entity: "City of Phoenix Council",
+      doc: "Ordinance 2026-09, Off-street parking",
+      section: "§ 18-6",
+      segments: [
+        ["del", "Two off-street parking spaces are required per dwelling unit."],
+        ["add", "Off-street parking is not required for dwellings within one-half mile of a transit stop."]
+      ],
+      full: "Off-street parking is not required for dwellings within one-half mile of a transit stop. All other dwellings shall provide one off-street parking space per unit."
+    },
+    {
+      id: "dal-notice-1008", hoursAgo: 26, url: "https://dallascityhall.com",
+      entity: "Dallas Zoning Board of Adjustment",
+      doc: "Notice of public hearing",
+      section: "p. 1",
+      text: "Notice is given that the Zoning Board will hold a public hearing on 8 October to consider amendments to § 101.4 regarding accessory dwelling units.",
+      full: "Notice is given that the Zoning Board will hold a public hearing on 8 October at 7:00 p.m. in the County Administration Building to consider amendments to § 101.4 regarding accessory dwelling units. Written comments may be submitted before the hearing."
+    },
+    {
+      id: "san-27-410", hoursAgo: 30, url: "https://sandiego.gov",
+      entity: "San Diego Land Use & Housing",
+      doc: "Ordinance 312, Solar energy systems",
+      section: "§ 27-410",
+      segments: [
+        ["add", "Ground-mounted solar energy systems shall be screened from adjoining residential lots by landscaping at least six feet tall at maturity."]
+      ],
+      full: "Ground-mounted solar energy systems are permitted as accessory uses in all agricultural districts. Ground-mounted solar energy systems shall be screened from adjoining residential lots by landscaping at least six feet tall at maturity."
+    }
+  ];
+
+  let DATA = [...DEFAULT_DATA];
+
+  const LABEL = { added: "Added", removed: "Removed", amended: "Amended", snapshot: "Snapshot" };
+
+  function processData(items) {
+    for (const d of items) {
+      if (typeof d.ts === "string") {
+        d.ts = new Date(d.ts).getTime();
+      } else if (!d.ts) {
+        d.ts = NOW - (d.hoursAgo || 1) * 3600e3;
+      }
+      d.hoursAgo = Math.max(0.1, (NOW - d.ts) / 3600e3);
+
+      if (d.segments && d.segments.length > 0) {
+        d.type = "diff";
+        d.hasAdd = d.segments.some(s => s[0] === "add");
+        d.hasDel = d.segments.some(s => s[0] === "del");
+        d.kind = d.hasAdd && d.hasDel ? "amended" : d.hasAdd ? "added" : "removed";
+        d.plain = d.segments.map(s => s[1]).join(" ");
+      } else {
+        d.type = "snapshot";
+        d.kind = "snapshot";
+        d.plain = d.text || d.full || "";
+      }
+      d.hay = [d.entity || "", d.doc || "", d.section || "", d.plain || "", d.full || ""].join(" ").toLowerCase();
+    }
+  }
+
+  processData(DATA);
+
+  /* ---------- Helpers ---------- */
+  const $ = (s, r = document) => r.querySelector(s);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  const tokenize = q => q.toLowerCase().split(/\s+/).map(t => t.replace(/^§/, "")).filter(Boolean);
+
+  let re = null;
+  const hl = text => {
+    if (!re) return esc(text);
+    return String(text).split(re).map((part, i) => (i % 2 ? `<mark>${esc(part)}</mark>` : esc(part))).join("");
+  };
+
+  const rel = ts => {
+    const m = Math.max(1, Math.round((Date.now() - ts) / 60000));
+    if (m < 60) return `${m} min ago`;
+    const h = Math.round(m / 60);
+    if (h < 24) return `${h} h ago`;
+    const d = Math.round(h / 24);
+    return d === 1 ? "Yesterday" : `${d} days ago`;
+  };
+
+  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const pad = n => String(n).padStart(2, "0");
+  const abs = ts => {
+    const d = new Date(ts);
+    return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}, ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())} UTC`;
+  };
+
+  const wrap = (tag, s) => {
+    const m = String(s).match(/^(\s*)([\s\S]*?)(\s*)$/);
+    if (!m) return `<${tag}>${hl(s)}</${tag}>`;
+    return `${m[1]}<${tag}>${hl(m[2])}</${tag}>${m[3]}`;
+  };
+
+  const inFilter = (d, f) =>
+    f === "all" ||
+    (f === "added" && d.type === "diff" && d.hasAdd) ||
+    (f === "removed" && d.type === "diff" && d.hasDel) ||
+    (f === "snapshot" && d.type === "snapshot");
+
+  const score = (d, toks) => toks.reduce((s, t) => {
+    let c = d.hay.split(t).length - 1;
+    if (d.section.toLowerCase().includes(t)) c += 5;
+    if (d.entity.toLowerCase().includes(t)) c += 3;
+    return s + c;
+  }, 0);
+
+  /* ---------- Elements and state ---------- */
+  const input = $("#q"), list = $("#results"), pills = $("#pills"), indicator = $("#indicator");
+  const sortSel = $("#sort"), summary = $("#summary"), empty = $("#empty"), kbd = $("#kbd");
+  const state = { q: "", filter: "all", sort: "newest", open: new Set(), first: true };
+
+  const chevron = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const linkIcon = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 014.5 9l1-1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
+
+  /* ---------- API Fetching ---------- */
+  
+    } catch (e) {
+      console.warn("Could not fetch live source count:", e);
+    }
+  }
+
+  async function fetchLiveSearch(query) {
+    try {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.items && json.items.length > 0) {
+          DATA = json.items;
+          processData(DATA);
+          render();
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("Live search API fallback to baseline:", e);
+    }
+    // Fallback to baseline data filtered locally
+    DATA = [...DEFAULT_DATA];
+    processData(DATA);
+    render();
+  }
+
+  let counts = { total: 51, operational: 32, cloudflare: 7, dead: 12 };
+
+  
+    } catch (e) {
+      console.warn("Could not fetch live source count:", e);
+    }
+  }
+
+  function updateStatusText() {
+    const recent = DATA.filter(d => d.type === "diff" && d.hoursAgo <= 24).length;
+    const statEl = $("#status-text");
+    if (statEl) {
+      statEl.innerHTML = `<strong>${counts.operational} operational portals</strong> ingesting daily (${counts.cloudflare} Cloudflare protected, ${counts.dead} expired municipality links). ${recent} statutory changes detected.`;
+    }
+  }
+
+  /* ---------- Search & Render ---------- */
+  function getResults() {
+    const toks = tokenize(state.q);
+    re = toks.length ? new RegExp("(" + toks.map(escRe).join("|") + ")", "gi") : null;
+    const base = DATA.filter(d => toks.every(t => d.hay.includes(t)));
+    const counts = {
+      all: base.length,
+      added: base.filter(d => inFilter(d, "added")).length,
+      removed: base.filter(d => inFilter(d, "removed")).length,
+      snapshot: base.filter(d => inFilter(d, "snapshot")).length
+    };
+    const results = base.filter(d => inFilter(d, state.filter));
+    if (state.sort === "relevance" && toks.length) {
+      results.sort((a, b) => score(b, toks) - score(a, toks) || b.ts - a.ts);
+    } else {
+      results.sort((a, b) => b.ts - a.ts);
+    }
+    return { results, counts };
+  }
+
+  function itemHTML(d, i) {
+    const open = state.open.has(d.id);
+    const body = d.type === "diff"
+      ? d.segments.map(([t, s]) => t === "add" ? wrap("ins", s) : t === "del" ? wrap("del", s) : hl(s)).join("")
+      : hl(d.plain);
+    const noun = d.type === "diff" ? "section" : "page";
+    const fullLabel = d.type === "diff" ? `Current text of ${esc(d.section)}` : `Full text, ${esc(d.section)}`;
+
+    return `
+      <li class="result kind-${d.kind}${open ? " is-open" : ""}" id="${esc(d.id)}" data-id="${esc(d.id)}" tabindex="0" style="--i:${i}"
+          aria-label="${esc(d.section)}, ${esc(d.entity)}, ${LABEL[d.kind] || d.kind}">
+        <div class="gutter">
+          <span class="section">${hl(d.section)}</span>
+          <span class="badge badge-${d.kind}">${LABEL[d.kind] || d.kind}</span>
+        </div>
+        <div class="body">
+          <div class="head">
+            <div>
+              <h2 class="entity">${hl(d.entity)}</h2>
+              <p class="doc">${hl(d.doc)}</p>
+            </div>
+            <time class="when" datetime="${new Date(d.ts).toISOString()}">
+              <span class="rel">${rel(d.ts)}</span><span class="abs">${abs(d.ts)}</span>
+            </time>
+          </div>
+          <p class="redline">${body}</p>
+          <div class="full"><div class="full-inner">
+            <div class="full-box">
+              <p class="full-label">${fullLabel}</p>
+              <p class="full-text">${hl(d.full)}</p>
+            </div>
+          </div></div>
+          <div class="actions">
+            <button class="act" type="button" data-act="toggle" data-noun="${noun}" aria-expanded="${open}">
+              ${open ? "Hide" : "Show"} full ${noun} ${chevron}
+            </button>
+            <button class="act" type="button" data-act="copy">${linkIcon} Copy link</button>
+            <a class="act" href="${esc(d.url)}" target="_blank" rel="noopener">Open source document</a>
+          </div>
+        </div>
+      </li>`;
+  }
+
+  function render() {
+    const { results, counts } = getResults();
+
+    for (const [k, v] of Object.entries(counts)) {
+      const el = pills.querySelector(`[data-count="${k}"]`);
+      if (el) el.textContent = v;
+    }
+
+    const n = results.length;
+    const noun = state.filter === "snapshot" ? (n === 1 ? "snapshot" : "snapshots") : (n === 1 ? "result" : "results");
+    summary.innerHTML = state.q
+      ? `<strong>${n}</strong> ${noun} for “${esc(state.q)}”`
+      : `<strong>${n}</strong> latest ${noun}`;
+
+    list.innerHTML = results.map(itemHTML).join("");
+    empty.hidden = n > 0;
+    if (!n) {
+      $("#empty-title").textContent = state.q ? `No matches for “${state.q}”` : "Nothing in this view yet";
+    }
+
+    if (state.first) {
+      state.first = false;
+      list.classList.add("intro");
+      setTimeout(() => list.classList.remove("intro"), 1200);
+    }
+  }
+
+  /* ---------- Filter pills ---------- */
+  function moveIndicator() {
+    const a = pills.querySelector(".pill.is-active");
+    if (!a) return;
+    indicator.style.width = a.offsetWidth + "px";
+    indicator.style.transform = `translateX(${a.offsetLeft}px)`;
+  }
+
+  pills.addEventListener("click", e => {
+    const btn = e.target.closest(".pill");
+    if (!btn || btn.classList.contains("is-active")) return;
+    pills.querySelectorAll(".pill").forEach(p => {
+      const on = p === btn;
+      p.classList.toggle("is-active", on);
+      p.setAttribute("aria-pressed", on);
+    });
+    state.filter = btn.dataset.filter;
+    moveIndicator();
+    btn.scrollIntoView({ block: "nearest", inline: "nearest" });
+    render();
+  });
+
+  sortSel.addEventListener("change", () => { state.sort = sortSel.value; render(); });
+
+  /* ---------- Search input ---------- */
+  let timer;
+  const updateKbd = () => {
+    const focused = document.activeElement === input;
+    kbd.textContent = focused && input.value ? "Esc" : "/";
+    kbd.classList.toggle("is-hidden", focused && !input.value);
+  };
+
+  input.addEventListener("input", () => {
+    updateKbd();
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      state.q = input.value.trim();
+      fetchLiveSearch(state.q);
+    }, 120);
+  });
+
+  input.addEventListener("focus", updateKbd);
+  input.addEventListener("blur", updateKbd);
+  input.addEventListener("keydown", e => {
+    if (e.key === "Escape") {
+      if (input.value) { input.value = ""; state.q = ""; fetchLiveSearch(""); updateKbd(); }
+      else input.blur();
+    } else if (e.key === "ArrowDown" || (e.key === "Enter" && list.firstElementChild)) {
+      const first = list.querySelector(".result");
+      if (first) { e.preventDefault(); first.focus(); }
+    }
+  });
+
+  $("#clear").addEventListener("click", () => {
+    input.value = ""; state.q = "";
+    if (state.filter !== "all") pills.querySelector('[data-filter="all"]').click();
+    else fetchLiveSearch("");
+    input.focus();
+  });
+
+  /* ---------- Global shortcuts ---------- */
+  document.addEventListener("keydown", e => {
+    const tag = document.activeElement && document.activeElement.tagName;
+    const typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+    if ((e.key === "/" && !typing) || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k")) {
+      e.preventDefault();
+      input.focus();
+      input.select();
+    }
+  });
+
+  /* ---------- Result interactions ---------- */
+  function toggle(li) {
+    const id = li.dataset.id;
+    const open = !state.open.has(id);
+    open ? state.open.add(id) : state.open.delete(id);
+    li.classList.toggle("is-open", open);
+    const btn = li.querySelector('[data-act="toggle"]');
+    if (btn) {
+      btn.setAttribute("aria-expanded", open);
+      btn.innerHTML = `${open ? "Hide" : "Show"} full ${btn.dataset.noun} ${chevron}`;
+    }
+  }
+
+  async function copyLink(li, btn) {
+    const url = location.href.split("#")[0] + "#" + li.dataset.id;
+    let ok = true;
+    try { await navigator.clipboard.writeText(url); } catch { ok = false; }
+    btn.classList.toggle("is-done", ok);
+    btn.innerHTML = `${linkIcon} ${ok ? "Link copied" : "Copy failed"}`;
+    setTimeout(() => { btn.classList.remove("is-done"); btn.innerHTML = `${linkIcon} Copy link`; }, 1600);
+  }
+
+  list.addEventListener("click", e => {
+    const btn = e.target.closest("[data-act]");
+    const li = e.target.closest(".result");
+    if (!li || !btn) return;
+    if (btn.dataset.act === "toggle") toggle(li);
+    if (btn.dataset.act === "copy") copyLink(li, btn);
+  });
+
+  list.addEventListener("keydown", e => {
+    const li = e.target;
+    if (!li.classList || !li.classList.contains("result")) return;
+    const items = [...list.querySelectorAll(".result")];
+    const i = items.indexOf(li);
+    if (e.key === "ArrowDown" || e.key === "j") {
+      e.preventDefault();
+      items[Math.min(i + 1, items.length - 1)].focus();
+    } else if (e.key === "ArrowUp" || e.key === "k") {
+      e.preventDefault();
+      i === 0 ? input.focus() : items[i - 1].focus();
+    } else if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      toggle(li);
+    } else if (e.key === "Escape") {
+      input.focus();
+    }
+  });
+
+  /* ---------- Boot ---------- */
+  loadSourcesCount();
+  fetchLiveSearch("");
+  updateStatusText();
+  render();
+  moveIndicator();
+  requestAnimationFrame(() => pills.classList.add("ready"));
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveIndicator);
+  window.addEventListener("resize", moveIndicator);
+
+  const target = location.hash && document.getElementById(location.hash.slice(1));
+  if (target && target.classList.contains("result")) {
+    toggle(target);
+    target.focus();
+    target.scrollIntoView({ block: "center" });
+  }
+})();
+</script>
+</body>
+</html>

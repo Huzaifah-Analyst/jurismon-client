@@ -1,0 +1,149 @@
+JURISMON — 18 ADDITIONAL SOURCES
+
+1. AUSTRALIA — FEDERAL REGISTER OF LEGISLATION
+URL: https://api.prod.legislation.gov.au/v1/
+Architecture: REST/OpenAPI
+Format: JSON + documents
+Adapter: RestAdapter
+Purpose: Commonwealth Acts, legislative instruments, notifiable instruments, gazettes, lifecycle/relationships
+Auth: No API key
+Notes: Official API. Swagger: https://api.prod.legislation.gov.au/swagger/index.html
+
+2. AUSTRALIA — FEDERAL REGISTER WEBSITE
+URL: https://www.legislation.gov.au/
+Architecture: HTML + legal-document system
+Format: HTML + downloadable documents
+Adapter: HtmlAdapter / PdfAdapter
+Purpose: Full text and lifecycle of Commonwealth legislation
+Notes: Use this as a separate source from the API to test website/document ingestion.
+
+3. AUSTRALIA — QUEENSLAND LEGISLATION
+URL: https://www.legislation.qld.gov.au/
+Architecture: HTML/XML/PDF legislation portal
+Format: HTML, XML, PDF
+Adapter: HtmlAdapter / XmlAdapter / PdfAdapter
+Purpose: Queensland Acts, regulations and legislative instruments
+Notes: Strong multi-format Australian state test.
+
+4. AUSTRALIA — VICTORIA PLANNING SCHEMES
+URL: https://planning-schemes.app.planning.vic.gov.au/
+Architecture: Dynamic web application
+Format: HTML/data + planning documents
+Adapter: BrowserAdapter
+Purpose: Planning schemes, clauses, amendments and planning controls
+Notes: Tests dynamic planning/regulatory content rather than a conventional legislation website.
+
+5. UNITED KINGDOM — LEGISLATION API
+URL: https://www.legislation.gov.uk/
+Architecture: RESTful API / XML
+Format: XML, RDF, HTML fragments
+Adapter: RestAdapter / XmlAdapter
+Purpose: UK Acts, statutory instruments and devolved legislation
+Example: Append /data.xml to legislation pages.
+Notes: Official National Archives system.
+
+6. UNITED KINGDOM — LEGISLATION ATOM FEEDS
+URL: https://www.legislation.gov.uk/new/uksi
+Architecture: Atom/feed
+Format: Atom XML
+Adapter: FeedAdapter
+Purpose: Newly published UK statutory instruments
+Notes: Tests event/feed-driven ingestion instead of polling pages.
+
+7. UNITED KINGDOM — PLANNING DATA API
+URL: https://www.planning.data.gov.uk/entity.json
+Architecture: REST/JSON
+Format: JSON
+Adapter: RestAdapter
+Purpose: Planning datasets including planning applications, conservation areas, listed buildings, green belt, Article 4 directions and other planning data
+Notes: A separate UK planning-data architecture.
+
+8. UNITED KINGDOM — DATA.GOV.UK API
+URL: https://data.gov.uk/api/action/
+Architecture: REST/JSON catalogue API
+Format: JSON
+Adapter: RestAdapter
+Purpose: Discover government datasets/resources and metadata
+Notes: Tests a government data catalogue as a discovery layer.
+
+9. CANADA — JUSTICE LAWS XML INDEX
+URL: https://laws-lois.justice.gc.ca/eng/XML/Legis.xml
+Architecture: XML index
+Format: XML + linked legislation
+Adapter: XmlAdapter
+Purpose: Consolidated federal Acts and regulations, consolidation dates and links to full text
+Notes: Official Department of Justice Canada source.
+
+10. CANADA — JUSTICE LAWS WEBSITE
+URL: https://laws-lois.justice.gc.ca/eng/
+Architecture: HTML legal-code portal
+Format: HTML, XML and PDF representations
+Adapter: HtmlAdapter / XmlAdapter / PdfAdapter
+Purpose: Federal Acts and regulations
+Notes: Use separately from the XML index to test legal-code page ingestion.
+
+11. CANADA — POINT-IN-TIME BULK XML
+URL: https://open.canada.ca/data/en/dataset/4d277b82-c4af-4431-b31d-48fcece6dd8a
+Architecture: Bulk XML / FTP
+Format: XML
+Adapter: BulkXmlAdapter / FtpAdapter
+Purpose: Historical point-in-time versions of consolidated federal Acts and regulations
+FTP: ftp://205.193.86.89/PITXML/
+Notes: Excellent test of historical/version ingestion and diffing.
+
+12. CANADA — ONTARIO GAZETTE
+URL: https://www.ontario.ca/search/ontario-gazette
+Architecture: HTML + publication/PDF
+Format: HTML/PDF
+Adapter: HtmlAdapter / PdfAdapter
+Purpose: Ontario Gazette regulatory/publication material
+Notes: Tests a provincial gazette rather than federal legislation.
+
+13. NEW ZEALAND — LEGISLATION API
+URL: https://api.legislation.govt.nz/v0/works/
+Architecture: REST/JSON
+Format: JSON with links to HTML/PDF/XML versions
+Adapter: RestAdapter
+Purpose: Works, versions and legislation records
+Auth: API key required
+Notes: API hierarchy is Work → Version → Format, which is highly useful for JurisMon versioning.
+
+14. NEW ZEALAND — LEGISLATION XML
+URL: https://www.legislation.govt.nz/act/public/1990/109/en/latest.xml
+Architecture: Structured XML
+Format: XML
+Adapter: XmlAdapter
+Purpose: Machine-readable legislation text
+Notes: NZ legislation is authored/published using structured XML.
+
+15. NEW ZEALAND — LEGISLATION PDF
+URL: https://www.legislation.govt.nz/act/public/1990/109/en/latest.pdf
+Architecture: Direct legal-document file
+Format: PDF
+Adapter: PdfAdapter
+Purpose: Same legislative object as XML/HTML, delivered as PDF
+Notes: Useful for testing whether the same legal version can be normalized from different representations.
+
+16. EU — CELLAR
+URL: https://publications.europa.eu/resource/cellar/
+Architecture: REST/document repository
+Format: XML, HTML, PDF and other structured representations
+Adapter: RestAdapter / XmlAdapter / PdfAdapter
+Purpose: EU legal/publication documents and metadata
+Notes: Tests a large supranational legal repository architecture.
+
+17. GERMANY — GESETZE IM INTERNET
+URL: https://www.gesetze-im-internet.de/
+Architecture: HTML legal-code portal
+Format: HTML/XML
+Adapter: HtmlAdapter / XmlAdapter
+Purpose: German federal legislation
+Notes: Official German federal legal publication portal.
+
+18. GERMANY — XML TABLE OF CONTENTS
+URL: https://www.gesetze-im-internet.de/gii-toc.xml
+Architecture: XML catalogue/index
+Format: XML
+Adapter: XmlAdapter
+Purpose: Machine-readable catalogue of German federal legislation
+Notes: Tests structured discovery/index ingestion separately from legal-text ingestion.

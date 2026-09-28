@@ -1,0 +1,13 @@
+# Normalize line endings so files checked out on the Linux VPS use LF.
+* text=auto eol=lf
+
+# Shell scripts must be LF - CRLF breaks the shebang on Linux
+# ("bad interpreter: /bin/bash^M").
+*.sh text eol=lf
+
+# Binary files must never be normalized
+*.jpeg binary
+*.jpg binary
+*.png binary
+*.pdf binary
+*.db binary

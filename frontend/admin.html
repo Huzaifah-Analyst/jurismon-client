@@ -1,0 +1,2103 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="utf-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<title>JurisMon Admin</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+
+  :root {
+
+    --bg: #f8fafc;
+
+    --surface: #ffffff;
+
+    --ink: #0f172a;
+
+    --text: #334155;
+
+    --muted: #64748b;
+
+    --faint: #94a3b8;
+
+    --line: #e2e8f0;
+
+    --line-strong: #cbd5e1;
+
+    --hover: #f1f5f9;
+
+
+
+    --ok-bg: #ecfdf5;   --ok-ink: #065f46;   --ok-dot: #34d399;  --ok-cell: #6ee7b7;
+
+    --warn-bg: #fffbeb; --warn-ink: #92400e; --warn-dot: #f59e0b; --warn-cell: #fcd34d;
+
+    --bad-bg: #fff1f2;  --bad-ink: #9f1239;  --bad-dot: #f43f5e;  --bad-cell: #fda4af;
+
+
+
+    --r-sm: 4px; --r-md: 6px; --r-lg: 10px;
+
+    --ease: cubic-bezier(.2, .7, .2, 1);
+
+    --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+
+    margin: 0; background: var(--bg); color: var(--text);
+
+    font-family: var(--font); font-size: 14px; line-height: 1.5;
+
+    font-feature-settings: "cv11", "ss01", "tnum";
+
+    -webkit-font-smoothing: antialiased;
+
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+
+  }
+
+  button, input, select { font: inherit; color: inherit; }
+
+  a { color: inherit; }
+
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 0 28px; }
+
+
+
+  /* ---------- Header ---------- */
+
+  .topbar {
+
+    position: sticky; top: 0; z-index: 20; background: var(--surface);
+
+    border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px);
+
+  }
+
+  .topbar-inner { height: 60px; display: flex; align-items: center; gap: 16px; }
+
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; margin-right: auto; }
+
+  .brand-mark {
+
+    width: 26px; height: 26px; border-radius: var(--r-md); background: var(--ink); color: #fff;
+
+    display: grid; place-items: center; font-weight: 600; font-size: 15px; line-height: 1;
+
+  }
+
+  .brand-name { font-weight: 600; color: var(--ink); letter-spacing: -0.01em; font-size: 15px; }
+
+  .brand-area { color: var(--muted); padding-left: 10px; border-left: 1px solid var(--line); }
+
+
+
+  .chip {
+
+    height: 30px; padding: 0 11px; border-radius: 999px;
+
+    border: 1px solid var(--line); background: var(--surface);
+
+    display: inline-flex; align-items: center; gap: 8px;
+
+    font-size: 13px; font-weight: 500; color: var(--ink); white-space: nowrap;
+
+    text-decoration: none; cursor: pointer;
+
+    transition: border-color .15s var(--ease);
+
+  }
+
+  .chip:hover { border-color: var(--line-strong); }
+
+  .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--ok-dot); }
+
+  .dot.warn { background: var(--warn-dot); }
+
+  .dot.bad { background: var(--bad-dot); }
+
+  .chip .live { position: relative; }
+
+  .chip .live::after {
+
+    content: ""; position: absolute; inset: -3px; border-radius: 50%;
+
+    border: 1px solid currentColor; color: var(--ok-dot); opacity: 0;
+
+    animation: ping 2.4s var(--ease) infinite;
+
+  }
+
+  .chip .live.warn::after { color: var(--warn-dot); }
+
+  @keyframes ping { 0% { transform: scale(.6); opacity: .9; } 70%, 100% { transform: scale(1.6); opacity: 0; } }
+
+  .chip .sub { color: var(--muted); font-weight: 400; }
+
+  .tag {
+
+    font-size: 11.5px; font-weight: 500; padding: 2px 6px; border-radius: var(--r-sm);
+
+    background: var(--warn-bg); color: var(--warn-ink);
+
+  }
+
+  .paypal-word { font-weight: 600; letter-spacing: -0.01em; }
+
+  .avatar {
+
+    width: 30px; height: 30px; border-radius: 50%; background: var(--hover); border: 1px solid var(--line);
+
+    display: grid; place-items: center; font-size: 12px; font-weight: 600; color: var(--ink);
+
+  }
+
+
+
+  /* ---------- Page head ---------- */
+
+  .page-head { padding: 36px 0 20px; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+
+  h1 { margin: 0; color: var(--ink); font-size: 26px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.2; }
+
+  .page-meta { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+
+  .jump { display: flex; gap: 4px; }
+
+  .jump a {
+
+    text-decoration: none; font-size: 13.5px; font-weight: 500; color: var(--text);
+
+    height: 32px; padding: 0 10px; border-radius: var(--r-md); display: inline-flex; align-items: center;
+
+    transition: background-color .15s var(--ease);
+
+  }
+
+  .jump a:hover { background: var(--hover); color: var(--ink); }
+
+
+
+  /* ---------- KPIs ---------- */
+
+  .kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+
+  .kpi {
+
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+
+    padding: 18px 20px 16px; display: flex; flex-direction: column; min-height: 148px;
+
+  }
+
+  .kpi-label { font-size: 13.5px; color: var(--muted); font-weight: 500; }
+
+  .kpi-value {
+
+    margin-top: 8px; color: var(--ink); font-size: 32px; font-weight: 600;
+
+    letter-spacing: -0.03em; line-height: 1.1;
+
+  }
+
+  .kpi-value small { font-size: 15px; font-weight: 500; color: var(--muted); letter-spacing: -0.01em; margin-left: 2px; }
+
+  .kpi-foot { margin-top: auto; padding-top: 14px; font-size: 13px; color: var(--muted); display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+
+  .kpi-foot strong { color: var(--text); font-weight: 500; }
+
+  .bars { display: flex; align-items: flex-end; gap: 3px; height: 28px; }
+
+  .bars span { width: 6px; border-radius: 2px 2px 0 0; background: var(--line-strong); display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; }
+
+  .bars span i { display: block; background: var(--bad-cell); }
+
+  .bars span:last-child { background: var(--ink); }
+
+
+
+  /* ---------- Sections ---------- */
+
+  section.block { margin-top: 44px; scroll-margin-top: 80px; }
+
+  .block-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 14px; flex-wrap: wrap; }
+
+  h2 { margin: 0; color: var(--ink); font-size: 18px; font-weight: 600; letter-spacing: -0.015em; }
+
+  .block-sub { margin: 4px 0 0; color: var(--muted); font-size: 13.5px; }
+
+
+
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; }
+
+
+
+  /* Health strip: one cell per source */
+
+  .strip-wrap { padding: 16px 18px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+
+  .strip { display: grid; grid-template-columns: repeat(25, 14px); gap: 4px; }
+
+  .cell {
+
+    width: 14px; height: 14px; border-radius: 3px; border: 0; padding: 0; cursor: pointer;
+
+    background: var(--ok-cell);
+
+    transition: transform .15s var(--ease), box-shadow .15s var(--ease);
+
+  }
+
+  .cell.degraded { background: var(--warn-cell); }
+
+  .cell.failing { background: var(--bad-cell); }
+
+  .cell.running { background: var(--line-strong); animation: pulse 1s ease-in-out infinite; }
+
+  @keyframes pulse { 50% { opacity: .4; } }
+
+  .cell:hover, .cell:focus-visible { transform: scale(1.25); box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--ink); outline: none; }
+
+  .legend { display: flex; gap: 14px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+  .legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+
+
+  /* Controls */
+
+  .controls { display: flex; gap: 10px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+
+  .field { position: relative; flex: 1 1 240px; max-width: 340px; }
+
+  .field svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--faint); pointer-events: none; }
+
+  .field input {
+
+    width: 100%; height: 34px; padding: 0 10px 0 32px;
+
+    border: 1px solid var(--line-strong); border-radius: var(--r-md); background: var(--surface);
+
+    outline: none; transition: border-color .15s var(--ease), box-shadow .15s var(--ease);
+
+  }
+
+  .field input:focus { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(15, 23, 42, .07); }
+
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r-md); padding: 2px; gap: 2px; background: var(--bg); }
+
+  .seg button {
+
+    height: 28px; padding: 0 10px; border: 0; border-radius: var(--r-sm); background: transparent;
+
+    font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer;
+
+    display: inline-flex; align-items: center; gap: 6px;
+
+    transition: background-color .15s var(--ease), color .15s var(--ease), box-shadow .15s var(--ease);
+
+  }
+
+  .seg button:hover { color: var(--ink); }
+
+  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgba(15, 23, 42, .06); }
+
+  .seg .n { color: var(--faint); font-weight: 400; }
+
+  .controls .spacer { flex: 1; }
+
+
+
+  /* Tables */
+
+  .table-scroll { overflow-x: auto; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+
+  th {
+
+    text-align: left; font-weight: 500; color: var(--muted); font-size: 12.5px;
+
+    padding: 0 14px; height: 38px; background: var(--bg); border-bottom: 1px solid var(--line);
+
+    white-space: nowrap; position: sticky; top: 0;
+
+  }
+
+  th .sortbtn {
+
+    border: 0; background: transparent; padding: 0; cursor: pointer; color: inherit; font-weight: inherit;
+
+    display: inline-flex; align-items: center; gap: 4px;
+
+  }
+
+  th .sortbtn:hover { color: var(--ink); }
+
+  th .sortbtn svg { width: 10px; height: 10px; opacity: 0; transition: opacity .15s, transform .2s var(--ease); }
+
+  th[aria-sort] .sortbtn { color: var(--ink); }
+
+  th[aria-sort] .sortbtn svg { opacity: 1; }
+
+  th[aria-sort="ascending"] .sortbtn svg { transform: rotate(180deg); }
+
+  td { padding: 0 14px; height: 52px; border-bottom: 1px solid var(--line); color: var(--text); white-space: nowrap; }
+
+  tbody tr:last-child td { border-bottom: 0; }
+
+  tbody tr { transition: background-color .12s var(--ease); }
+
+  tbody tr:hover { background: #fbfcfe; }
+
+  td.primary { color: var(--ink); font-weight: 500; }
+
+  td .second { display: block; color: var(--muted); font-weight: 400; font-size: 12.5px; }
+
+  td.num { text-align: right; }
+
+  th.num { text-align: right; }
+
+  .adapter { display: inline-flex; align-items: center; gap: 6px; color: var(--text); }
+
+  .adapter::before { content: ""; width: 6px; height: 6px; border-radius: 1px; background: var(--line-strong); }
+
+  .adapter.custom::before { background: var(--ink); }
+
+  .id { color: var(--muted); font-size: 12.5px; letter-spacing: .01em; }
+
+
+
+  .badge {
+
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 500;
+
+    padding: 3px 8px 3px 7px; border-radius: var(--r-sm); line-height: 1.3;
+
+  }
+
+  .badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .75; }
+
+  .b-ok { background: var(--ok-bg); color: var(--ok-ink); }
+
+  .b-warn { background: var(--warn-bg); color: var(--warn-ink); }
+
+  .b-bad { background: var(--bad-bg); color: var(--bad-ink); }
+
+  .b-idle { background: var(--hover); color: var(--muted); }
+
+  .b-run { background: var(--hover); color: var(--ink); }
+
+  .b-run::before { opacity: 1; animation: pulse 1s ease-in-out infinite; }
+
+  .note { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+
+
+  .btn {
+
+    height: 30px; padding: 0 10px; border-radius: var(--r-md);
+
+    border: 1px solid var(--line-strong); background: var(--surface);
+
+    font-size: 13px; font-weight: 500; color: var(--ink); cursor: pointer;
+
+    display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+
+    transition: border-color .15s var(--ease), background-color .15s var(--ease), color .15s var(--ease);
+
+  }
+
+  .btn:hover { border-color: var(--ink); }
+
+  .btn:disabled { opacity: .45; cursor: not-allowed; border-color: var(--line); }
+
+  .btn.ghost { border-color: transparent; background: transparent; color: var(--muted); }
+
+  .btn.ghost:hover:not(:disabled) { background: var(--hover); color: var(--ink); }
+
+  .btn.danger-ghost { border-color: transparent; background: transparent; color: var(--bad-ink); }
+
+  .btn.danger-ghost:hover:not(:disabled) { background: var(--bad-bg); }
+
+  .btn.primary { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+  .btn.danger { background: var(--bad-ink); border-color: var(--bad-ink); color: #fff; }
+
+  .btn.danger:hover { background: #881337; }
+
+  .btn:focus-visible, .cell:focus-visible, .seg button:focus-visible, .tabs button:focus-visible, .sortbtn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .spin { width: 12px; height: 12px; border: 1.5px solid var(--line-strong); border-top-color: var(--ink); border-radius: 50%; animation: rot .7s linear infinite; }
+
+  @keyframes rot { to { transform: rotate(360deg); } }
+
+
+
+  .pager { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+
+  .pager .btns { display: flex; gap: 6px; }
+
+
+
+  .empty-row td { height: 88px; text-align: center; color: var(--muted); white-space: normal; }
+
+
+
+  /* Tabs */
+
+  .tabs { display: flex; gap: 22px; border-bottom: 1px solid var(--line); margin-bottom: 16px; position: relative; }
+
+  .tabs button {
+
+    border: 0; background: transparent; padding: 0 0 12px; cursor: pointer;
+
+    font-size: 14px; font-weight: 500; color: var(--muted);
+
+    display: inline-flex; align-items: center; gap: 7px;
+
+    transition: color .15s var(--ease);
+
+  }
+
+  .tabs button:hover { color: var(--ink); }
+
+  .tabs button[aria-selected="true"] { color: var(--ink); }
+
+  .tabs .n { font-weight: 400; color: var(--faint); }
+
+  .tab-line { position: absolute; bottom: -1px; left: 0; height: 2px; background: var(--ink); transition: transform .28s var(--ease), width .28s var(--ease); }
+
+  [role="tabpanel"][hidden] { display: none; }
+
+
+
+  /* Plans */
+
+  .plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+
+  .plan { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 18px 20px; }
+
+  .plan-top { display: flex; justify-content: space-between; align-items: center; }
+
+  .plan-name { color: var(--ink); font-weight: 600; font-size: 14.5px; }
+
+  .plan-price { margin: 10px 0 2px; color: var(--ink); font-size: 26px; font-weight: 600; letter-spacing: -0.025em; }
+
+  .plan-price small { font-size: 14px; font-weight: 400; color: var(--muted); letter-spacing: 0; }
+
+  .plan dl { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--line); display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; font-size: 13px; }
+
+  .plan dt { color: var(--muted); }
+
+  .plan dd { margin: 0; text-align: right; color: var(--text); }
+
+
+
+  /* Webhook payload */
+
+  tr.clickable { cursor: pointer; }
+
+  tr.clickable td:first-child { position: relative; }
+
+  .caret { width: 12px; height: 12px; color: var(--faint); margin-right: 8px; vertical-align: -1px; transition: transform .2s var(--ease); }
+
+  tr.is-open .caret { transform: rotate(90deg); color: var(--ink); }
+
+  tr.payload-row td { height: auto; padding: 0; background: var(--bg); white-space: normal; border-bottom: 0; }
+
+  tr.payload-row.open td { border-bottom: 1px solid var(--line); }
+
+  .payload { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .28s var(--ease); }
+
+  .payload > div { overflow: hidden; min-height: 0; }
+
+  tr.payload-row.open .payload { grid-template-rows: 1fr; }
+
+  .payload pre {
+
+    margin: 0; padding: 14px 18px 16px 34px; font-family: var(--mono); font-size: 12.5px; line-height: 1.6;
+
+    color: var(--text); overflow-x: auto;
+
+  }
+
+  .event { color: var(--ink); font-weight: 500; }
+
+
+
+  /* Dialog */
+
+  dialog {
+
+    border: 1px solid var(--line); border-radius: 12px; padding: 0; width: min(440px, calc(100vw - 32px));
+
+    box-shadow: 0 20px 50px -12px rgba(15, 23, 42, .25); color: var(--text);
+
+  }
+
+  dialog::backdrop { background: rgba(15, 23, 42, .28); }
+
+  dialog[open] { animation: pop .22s var(--ease); }
+
+  @keyframes pop { from { opacity: 0; transform: translateY(6px) scale(.985); } }
+
+  .dlg-body { padding: 22px 22px 8px; }
+
+  .dlg-body h3 { margin: 0; color: var(--ink); font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+
+  .dlg-body p { margin: 8px 0 0; font-size: 14px; line-height: 1.6; }
+
+  .dlg-meta { margin-top: 14px; padding: 10px 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; font-size: 13px; display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; }
+
+  .dlg-meta dt { color: var(--muted); }
+
+  .dlg-meta dd { margin: 0; text-align: right; color: var(--ink); }
+
+  .dlg-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 16px 22px 20px; }
+
+
+
+  /* Toast */
+
+  .toast {
+
+    position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 50;
+
+    transform: translate(-50%, 16px); opacity: 0; pointer-events: none;
+
+    background: var(--ink); color: #fff; font-size: 13.5px; font-weight: 500;
+
+    padding: 10px 14px; border-radius: 8px; display: flex; align-items: center; gap: 8px;
+
+    transition: opacity .2s var(--ease), transform .25s var(--ease);
+
+  }
+
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  .toast .dot { background: var(--ok-cell); }
+
+
+
+  .foot { margin: 48px 0 40px; font-size: 12.5px; color: var(--faint); }
+
+
+
+  @media (max-width: 960px) {
+
+    .kpis, .plans { grid-template-columns: 1fr; }
+
+    .kpi { min-height: 0; }
+
+  }
+
+  @media (max-width: 720px) {
+
+    .wrap { padding: 0 16px; }
+
+    .brand-area, .brand-name, .chip .sub, .chip .tag, .jump, .avatar { display: none; }
+
+    .seg { max-width: 100%; overflow-x: auto; }
+
+    .seg button { flex: none; }
+
+    .topbar-inner { gap: 8px; }
+
+    .chip { padding: 0 9px; font-size: 12.5px; }
+
+    .strip { grid-template-columns: repeat(10, 14px); }
+
+    .field { max-width: none; }
+
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+
+    *, *::before, *::after { transition-duration: 0s !important; animation: none !important; }
+
+  }
+
+</style>
+
+</head>
+
+<body>
+
+
+
+<header class="topbar">
+
+  <div class="wrap topbar-inner">
+
+    <a class="brand" href="#" aria-label="JurisMon admin home">
+
+      <img src="/static/assets/logo.jpg" alt="JurisMon Logo" style="height:28px; width:auto; border-radius:4px; object-fit:contain; border:1px solid var(--line);">
+
+      <span class="brand-name">JurisMon</span>
+
+      <span class="brand-area">Admin</span>
+
+    </a>
+
+    <a class="chip" href="#sources" id="sys-chip" aria-live="polite">
+
+      <span class="dot live" id="sys-dot"></span>
+
+      <span id="sys-text"></span>
+
+    </a>
+
+    <a class="chip" href="#subscriptions" title="Webhook signature verified on the last event">
+
+      <span class="dot"></span>
+
+      <span class="paypal-word">PayPal</span>
+
+      <span class="sub">connected</span>
+
+      <span class="tag">Sandbox</span>
+
+    </a>
+
+    <span class="avatar" aria-label="Signed in as admin">MM</span>
+
+    <button id="btn-logout" class="chip" style="cursor:pointer; background:#fff; color:var(--bad-ink); font-weight:500; border-color:var(--line);" title="Sign out of Admin Session">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+      Log out
+    </button>
+    <button id="btn-logout" class="chip" style="cursor:pointer; background:#fff; color:var(--bad-ink); font-weight:500; border-color:var(--line);" title="Sign out of Admin Session">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+      Log out
+    </button>
+  </div>
+</header>
+
+
+
+<main class="wrap">
+
+  <div class="page-head">
+
+    <div>
+
+      <h1>Overview</h1>
+
+      <p class="page-meta" id="run-meta"></p>
+
+    </div>
+
+    <nav class="jump" aria-label="Sections">
+
+      <a href="#sources">Sources</a>
+
+      <a href="#subscriptions">Subscriptions</a>
+
+    </nav>
+
+  </div>
+
+
+
+  <!-- KPIs -->
+
+  <div class="kpis">
+
+    <article class="kpi">
+
+      <span class="kpi-label">Active subscribers</span>
+
+      <span class="kpi-value" id="k-subs"></span>
+
+      <div class="kpi-foot"><span id="k-subs-foot"></span></div>
+
+    </article>
+
+    <article class="kpi">
+
+      <span class="kpi-label">Monthly recurring revenue</span>
+
+      <span class="kpi-value" id="k-mrr"></span>
+
+      <div class="kpi-foot"><span>Annual plans counted as monthly</span></div>
+
+    </article>
+
+    <article class="kpi">
+
+      <span class="kpi-label">Ingestion runs today</span>
+
+      <span class="kpi-value" id="k-runs"></span>
+
+      <div class="kpi-foot">
+
+        <span id="k-runs-foot"></span>
+
+        <div class="bars" id="k-bars" aria-label="Failed runs over the last 14 days"></div>
+
+      </div>
+
+    </article>
+
+  </div>
+
+
+
+  <!-- Sources -->
+
+  <section class="block" id="sources" aria-labelledby="sources-h">
+
+    <div class="block-head">
+
+      <div>
+
+        <h2 id="sources-h">Sources</h2>
+
+        <p class="block-sub">Municipal portals crawled every day. Select a square to find that source in the table.</p>
+
+      </div>
+
+    </div>
+
+
+
+    <div class="panel">
+
+      <div class="strip-wrap">
+
+        <div class="strip" id="strip" role="list" aria-label="Health of each source"></div>
+
+        <div class="legend">
+
+          <span><i style="background:var(--ok-cell)"></i>Healthy</span>
+
+          <span><i style="background:var(--warn-cell)"></i>Degraded</span>
+
+          <span><i style="background:var(--bad-cell)"></i>Failing</span>
+
+        </div>
+
+      </div>
+
+
+
+      <div class="controls">
+
+        <label class="field">
+
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.75" stroke="currentColor" stroke-width="1.6"/><path d="M13 13l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+
+          <input id="src-q" type="search" placeholder="Filter by name, jurisdiction or adapter" aria-label="Filter sources" autocomplete="off">
+
+        </label>
+
+        <div class="seg" id="src-seg" role="group" aria-label="Filter by health">
+
+          <button type="button" data-h="all" aria-pressed="true">All <span class="n" data-n="all"></span></button>
+
+          <button type="button" data-h="healthy" aria-pressed="false">Healthy <span class="n" data-n="healthy"></span></button>
+
+          <button type="button" data-h="degraded" aria-pressed="false">Degraded <span class="n" data-n="degraded"></span></button>
+
+          <button type="button" data-h="failing" aria-pressed="false">Failing <span class="n" data-n="failing"></span></button>
+
+        </div>
+
+      </div>
+
+
+
+      <div class="table-scroll">
+
+        <table>
+
+          <thead>
+
+            <tr id="src-headrow">
+
+              <th data-key="name"><button class="sortbtn" type="button">Name <svg viewBox="0 0 10 10"><path d="M5 2v6M2.5 5.5L5 8l2.5-2.5" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg></button></th>
+
+              <th data-key="jurisdiction"><button class="sortbtn" type="button">Jurisdiction <svg viewBox="0 0 10 10"><path d="M5 2v6M2.5 5.5L5 8l2.5-2.5" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg></button></th>
+
+              <th data-key="adapter"><button class="sortbtn" type="button">Platform adapter <svg viewBox="0 0 10 10"><path d="M5 2v6M2.5 5.5L5 8l2.5-2.5" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg></button></th>
+
+              <th data-key="ts"><button class="sortbtn" type="button">Last crawled <svg viewBox="0 0 10 10"><path d="M5 2v6M2.5 5.5L5 8l2.5-2.5" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg></button></th>
+
+              <th data-key="health"><button class="sortbtn" type="button">Health <svg viewBox="0 0 10 10"><path d="M5 2v6M2.5 5.5L5 8l2.5-2.5" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg></button></th>
+
+              <th class="num"><span class="sr">Actions</span></th>
+
+            </tr>
+
+          </thead>
+
+          <tbody id="src-body"></tbody>
+
+        </table>
+
+      </div>
+
+      <div class="pager">
+
+        <span id="src-range"></span>
+
+        <div class="btns">
+
+          <button class="btn" type="button" id="prev">Previous</button>
+
+          <button class="btn" type="button" id="next">Next</button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+
+  <!-- Subscriptions -->
+
+  <section class="block" id="subscriptions" aria-labelledby="subs-h">
+
+    <div class="block-head">
+
+      <div>
+
+        <h2 id="subs-h">Subscriptions</h2>
+
+        <p class="block-sub">Billing runs through PayPal. Changes here are sent to PayPal and confirmed by webhook.</p>
+
+      </div>
+
+    </div>
+
+
+
+    <div class="tabs" role="tablist" id="tabs">
+
+      <button role="tab" type="button" id="t-subs" aria-controls="p-subs" aria-selected="true">Subscribers <span class="n" id="n-subs"></span></button>
+
+      <button role="tab" type="button" id="t-plans" aria-controls="p-plans" aria-selected="false" tabindex="-1">Plans <span class="n" id="n-plans"></span></button>
+
+      <button role="tab" type="button" id="t-hooks" aria-controls="p-hooks" aria-selected="false" tabindex="-1">Webhook log <span class="n" id="n-hooks"></span></button>
+
+      <span class="tab-line" id="tab-line"></span>
+
+    </div>
+
+
+
+    <div role="tabpanel" id="p-subs" aria-labelledby="t-subs">
+
+      <div class="panel">
+
+        <div class="controls">
+
+          <label class="field">
+
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.75" stroke="currentColor" stroke-width="1.6"/><path d="M13 13l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+
+            <input id="sub-q" type="search" placeholder="Filter by name or email" aria-label="Filter subscribers" autocomplete="off">
+
+          </label>
+
+          <div class="seg" id="sub-seg" role="group" aria-label="Filter by status">
+
+            <button type="button" data-s="all" aria-pressed="true">All</button>
+
+            <button type="button" data-s="active" aria-pressed="false">Active</button>
+
+            <button type="button" data-s="past_due" aria-pressed="false">Past due</button>
+
+            <button type="button" data-s="cancelled" aria-pressed="false">Cancelled</button>
+
+          </div>
+
+        </div>
+
+        <div class="table-scroll">
+
+          <table>
+
+            <thead><tr>
+
+              <th>Subscriber</th><th>Plan</th><th>Status</th><th>Next billing</th><th class="num">Amount</th><th>PayPal subscription</th><th class="num"><span class="sr">Actions</span></th>
+
+            </tr></thead>
+
+            <tbody id="sub-body"></tbody>
+
+          </table>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+
+    <div role="tabpanel" id="p-plans" aria-labelledby="t-plans" hidden>
+
+      <div class="plans" id="plans"></div>
+
+    </div>
+
+
+
+    <div role="tabpanel" id="p-hooks" aria-labelledby="t-hooks" hidden>
+
+      <div class="panel">
+
+        <div class="controls">
+
+          <div class="seg" id="hook-seg" role="group" aria-label="Filter webhook events">
+
+            <button type="button" data-r="all" aria-pressed="true">All events</button>
+
+            <button type="button" data-r="failed" aria-pressed="false">Failed only <span class="n" id="n-failed"></span></button>
+
+          </div>
+
+          <span class="spacer"></span>
+
+          <span class="block-sub" style="margin:0">Select an event to view its payload</span>
+
+        </div>
+
+        <div class="table-scroll">
+
+          <table>
+
+            <thead><tr><th>Event</th><th>Subscriber</th><th class="num">Amount</th><th>Result</th><th>Received</th></tr></thead>
+
+            <tbody id="hook-body"></tbody>
+
+          </table>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+
+  <p class="foot">Showing sample data. Connect Supabase and PayPal to load live records.</p>
+
+</main>
+
+
+
+<dialog id="dlg" aria-labelledby="dlg-title">
+
+  <form method="dialog">
+
+    <div class="dlg-body">
+
+      <h3 id="dlg-title"></h3>
+
+      <p id="dlg-text"></p>
+
+      <dl class="dlg-meta" id="dlg-meta"></dl>
+
+    </div>
+
+    <div class="dlg-actions">
+
+      <button class="btn" value="keep" type="submit">Keep subscription</button>
+
+      <button class="btn danger" value="cancel" type="submit" id="dlg-confirm">Cancel subscription</button>
+
+    </div>
+
+  </form>
+
+</dialog>
+
+
+
+<div class="toast" id="toast" role="status" aria-live="polite"><span class="dot"></span><span id="toast-text"></span></div>
+
+
+
+<style>.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}</style>
+
+
+
+<script>
+
+(() => {
+
+  /* ------------------------------------------------------------------
+
+     SAMPLE DATA ONLY (fictional jurisdictions, firms and IDs).
+
+     Replace the three arrays below with Supabase queries:
+
+       sources      -> table `sources` joined with latest `crawl_runs`
+
+       subscribers  -> table `subscriptions`
+
+       webhooks     -> table `paypal_webhook_events`
+
+     Cancelling should call your backend, which calls the PayPal
+
+     Subscriptions API; access is removed when the CANCELLED webhook
+
+     is confirmed.
+
+  ------------------------------------------------------------------ */
+
+  const NOW = Date.now();
+
+  const H = 3600e3, D = 24 * H;
+
+
+
+  const PLACES = [
+
+    "Harlow County","Brookhaven","Marlow Township","Redwater County","Easton Falls","Kinsley","Ashford","Bellmont",
+
+    "Cedar Hollow","Dunmore Township","Elmstead","Fairbrook County","Glenvale","Hartwell","Ironbridge","Juniper Falls",
+
+    "Kestrel County","Lakemont","Millbrook Township","Northgate","Oakridge County","Pinecrest","Quarry Hill","Ravensworth",
+
+    "Stonebridge","Thornbury Township","Upton County","Valewood","Westbury","Yarrow County","Alder Springs","Birchfield",
+
+    "Clearwater Township","Deerfield County","Eagle Rock","Foxhall","Greystone","Highmoor County","Ivy Glen","Jasper Township",
+
+    "Kingsford","Linden County","Maple Grove","Newhaven Township","Orchard Park","Prescott County","Riverton","Silverlake",
+
+    "Timberline Township","Willow Creek"
+
+  ];
+
+  const ADAPTERS = ["Municode", "Granicus", "CivicPlus", "Municode", "Custom"];
+
+  const PROBLEMS = {
+
+    7:  ["degraded", "3 of 5 PDFs extracted, 2 timed out"],
+
+    23: ["failing",  "HTTP 503 from portal since yesterday"],
+
+    41: ["degraded", "Layout changed, adapter using fallback selectors"]
+
+  };
+
+
+
+  const sources = PLACES.map((place, i) => {
+
+    const kind = /County$/.test(place) ? "county" : /Township$/.test(place) ? "township" : "city";
+
+    const name = kind === "county" ? (i % 2 ? "Planning Commission" : "Zoning Board")
+
+               : kind === "township" ? "Board of Supervisors"
+
+               : (i % 2 ? "City Council" : "Planning Commission");
+
+    const p = PROBLEMS[i];
+
+    return {
+
+      id: "src-" + i,
+
+      name,
+
+      jurisdiction: kind === "city" ? "City of " + place : place,
+
+      adapter: ADAPTERS[i % ADAPTERS.length],
+
+      health: p ? p[0] : "healthy",
+
+      note: p ? p[1] : "",
+
+      ts: p && p[0] === "failing" ? NOW - 26 * H : NOW - (1.5 * H + i * 17 * 1000 * 6)
+
+    };
+
+  });
+
+
+
+  const PLANS = [
+
+    { id: "pro",  name: "Professional", price: 49,   interval: "month", paypal: "P-2JM48012PX3317405" },
+
+    { id: "team", name: "Team",         price: 149,  interval: "month", paypal: "P-7TR20456KL9951822" },
+
+    { id: "firm", name: "Firm",         price: 1490, interval: "year",  paypal: "P-5WD88213QA0472639" }
+
+  ];
+
+  const planById = Object.fromEntries(PLANS.map(p => [p.id, p]));
+
+
+
+  const subscribers = [
+
+    ["Alder & Finch LLP",           "ops@alderfinch.example",     "firm", "active",    142],
+
+    ["Northline Land Use Partners", "billing@northline.example",  "pro",  "active",     9],
+
+    ["Mara Ellison",                "mara@ellison.example",       "pro",  "active",    21],
+
+    ["Brightwater Development",     "finance@brightwater.example","team", "active",     4],
+
+    ["Cobalt Title Co.",            "ap@cobalttitle.example",     "pro",  "past_due",  -2],
+
+    ["Hollis Planning Group",       "admin@hollis.example",       "firm", "active",   288],
+
+    ["Juno Real Estate Advisors",   "team@junore.example",        "pro",  "active",    17],
+
+    ["Keel & Harbor Law",           "office@keelharbor.example",  "team", "active",    12],
+
+    ["Linwood Surveyors",           "info@linwood.example",       "pro",  "cancelled", -1],
+
+    ["Meridian Zoning Consultants", "billing@meridianzc.example", "firm", "active",   331],
+
+    ["Orrin Park Capital",          "ops@orrinpark.example",      "pro",  "active",    29],
+
+    ["Pell Street Architects",      "studio@pellstreet.example",  "team", "past_due",  -3]
+
+  ].map(([name, email, plan, status, days], i) => ({
+
+    id: "sub-" + i, name, email, plan, status,
+
+    next: NOW + days * D,
+
+    paypal: "I-" + (["8KX","3LM","9QP","2ZT","6HV","4NB","7RC","1YD","5GF","0WJ","3SE","8UA"][i]) + (10427 + i * 7391).toString(36).toUpperCase() + "SW"
+
+  }));
+
+  const subByName = n => subscribers.find(s => s.name === n);
+
+
+
+  let hookSeq = 0;
+
+  const makeHook = (type, subName, amount, result, ago, error) => ({
+
+    id: "WH-" + (48213 + (hookSeq++) * 977).toString(36).toUpperCase() + "V" + (hookSeq * 31) + "PX",
+
+    type, sub: subName, amount, result, ts: NOW - ago, error
+
+  });
+
+  const webhooks = [
+
+    makeHook("PAYMENT.SALE.COMPLETED",              "Northline Land Use Partners", 49,   "processed", 4 * 60e3),
+
+    makeHook("BILLING.SUBSCRIPTION.PAYMENT.FAILED", "Cobalt Title Co.",            49,   "processed", 2 * H),
+
+    makeHook("BILLING.SUBSCRIPTION.ACTIVATED",      "Orrin Park Capital",          49,   "processed", 5 * H),
+
+    makeHook("PAYMENT.SALE.COMPLETED",              "Keel & Harbor Law",           149,  "processed", 9 * H),
+
+    makeHook("PAYMENT.SALE.COMPLETED",              "Juno Real Estate Advisors",   49,   "failed",    20 * H, "Signature verification failed. PayPal will retry delivery."),
+
+    makeHook("BILLING.SUBSCRIPTION.CANCELLED",      "Linwood Surveyors",           null, "processed", 26 * H),
+
+    makeHook("BILLING.SUBSCRIPTION.PAYMENT.FAILED", "Pell Street Architects",      149,  "processed", 3 * D),
+
+    makeHook("PAYMENT.SALE.COMPLETED",              "Meridian Zoning Consultants", 1490, "processed", 4 * D)
+
+  ];
+
+
+
+  // 14 days of run history: [total, failed]; today computed live
+
+  const history = [0,1,0,0,2,1,0,0,1,0,0,3,1];
+
+
+
+  /* ---------- Helpers ---------- */
+
+  const $ = (s, r = document) => r.querySelector(s);
+
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  const pad = n => String(n).padStart(2, "0");
+
+  const dateShort = ts => { const d = new Date(ts); const y = d.getUTCFullYear() !== new Date().getUTCFullYear() ? ` ${d.getUTCFullYear()}` : ""; return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}${y}`; };
+
+  const clock = ts => { const d = new Date(ts); return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())} UTC`; };
+
+  const rel = ts => {
+
+    const m = Math.round((Date.now() - ts) / 60000);
+
+    if (m < 1) return "Just now";
+
+    if (m < 60) return `${m} min ago`;
+
+    const h = Math.round(m / 60);
+
+    if (h < 24) return `${h} h ago`;
+
+    const d = Math.round(h / 24);
+
+    return d === 1 ? "Yesterday" : `${d} days ago`;
+
+  };
+
+  const money = n => "$" + n.toLocaleString("en-US", { maximumFractionDigits: 0 });
+
+  const money2 = n => n == null ? "" : "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+
+
+  let toastTimer;
+
+  function toast(msg) {
+
+    $("#toast-text").textContent = msg;
+
+    const t = $("#toast");
+
+    t.classList.add("show");
+
+    clearTimeout(toastTimer);
+
+    toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
+
+  }
+
+
+
+  function pressGroup(group, btn) {
+
+    group.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b === btn));
+
+  }
+
+
+
+  /* ---------- Header + KPIs ---------- */
+
+  function renderSystem() {
+
+    const total = sources.length;
+
+    const ok = sources.filter(s => s.health === "healthy").length;
+
+    const running = sources.filter(s => s.health === "running").length;
+
+    const all = ok === total;
+
+    $("#sys-text").textContent = running
+
+      ? `${ok}/${total} sources operational, ${running} running`
+
+      : `${ok}/${total} sources operational (7 Cloudflare protected, 12 dead links)`;
+
+    $("#sys-dot").className = "dot live" + (all ? "" : " warn");
+
+
+
+    const failedToday = sources.filter(s => s.health !== "healthy" && s.health !== "running").length;
+
+    $("#k-runs").innerHTML = `${total - failedToday}<small>/${total}</small>`;
+
+    $("#k-runs-foot").innerHTML = failedToday
+
+      ? `<strong>${failedToday}</strong> need attention`
+
+      : "All sources ran cleanly";
+
+
+
+    const bars = [...history, failedToday];
+
+    const max = Math.max(...bars, 3);
+
+    $("#k-bars").innerHTML = bars.map(f => {
+
+      const hPct = 100;
+
+      const failPct = Math.round((f / max) * 100);
+
+      return `<span style="height:${hPct}%" title="${f} failed"><i style="height:${failPct}%"></i></span>`;
+
+    }).join("");
+
+
+
+    const lastRun = Math.max(...sources.filter(s => s.health !== "failing").map(s => s.ts));
+
+    $("#run-meta").textContent = `Last daily run finished at ${clock(lastRun)}, ${rel(lastRun).toLowerCase()}.`;
+
+  }
+
+
+
+  function renderKpis() {
+
+    const active = subscribers.filter(s => s.status === "active");
+
+    const pastDue = subscribers.filter(s => s.status === "past_due").length;
+
+    const cancelled = subscribers.filter(s => s.status === "cancelled").length;
+
+    $("#k-subs").textContent = active.length;
+
+    $("#k-subs-foot").innerHTML = `<strong>${pastDue}</strong> past due, <strong>${cancelled}</strong> cancelled`;
+
+    const mrr = active.reduce((sum, s) => {
+
+      const p = planById[s.plan];
+
+      return sum + (p.interval === "year" ? p.price / 12 : p.price);
+
+    }, 0);
+
+    $("#k-mrr").textContent = money(Math.round(mrr));
+
+  }
+
+
+
+  /* ---------- Sources ---------- */
+
+  const srcState = { q: "", health: "all", key: "health", dir: -1, page: 0, per: 10 };
+
+  const healthRank = { dead_link: 3, cloudflare_blocked: 2, degraded: 2, failing: 3, running: 1, healthy: 0, operational: 0 };
+
+  const HEALTH_BADGE = {
+    healthy:            ["b-ok",   "Operational"],
+    operational:        ["b-ok",   "Operational"],
+    cloudflare_blocked: ["b-warn", "Cloudflare CAPTCHA"],
+    degraded:           ["b-warn", "Cloudflare CAPTCHA"],
+    dead_link:          ["b-bad",  "Dead Link (404/DNS)"],
+    failing:            ["b-bad",  "Dead Link (404/DNS)"],
+    running:            ["b-run",  "Ingesting"]
+  };
+
+
+
+  function renderStrip() {
+
+    $("#strip").innerHTML = sources.map(s =>
+
+      `<button class="cell ${s.health === "healthy" ? "" : s.health}" type="button" role="listitem"
+
+         data-id="${s.id}" title="${esc(s.jurisdiction)}: ${HEALTH_BADGE[s.health][1]}"
+
+         aria-label="${esc(s.jurisdiction)}, ${HEALTH_BADGE[s.health][1]}"></button>`).join("");
+
+  }
+
+
+
+  function renderSources() {
+
+    const q = srcState.q.toLowerCase();
+
+    const matchQ = sources.filter(s => !q || `${s.name} ${s.jurisdiction} ${s.adapter}`.toLowerCase().includes(q));
+
+    const counts = { all: matchQ.length, healthy: 0, degraded: 0, failing: 0 };
+
+    matchQ.forEach(s => { if (counts[s.health] != null) counts[s.health]++; });
+
+    document.querySelectorAll("#src-seg [data-n]").forEach(el => el.textContent = counts[el.dataset.n]);
+
+
+
+    let rows = matchQ.filter(s => srcState.health === "all" || s.health === srcState.health);
+
+    const { key, dir } = srcState;
+
+    rows.sort((a, b) => {
+
+      let va = a[key], vb = b[key];
+
+      if (key === "health") { va = healthRank[va]; vb = healthRank[vb]; }
+
+      if (typeof va === "string") return va.localeCompare(vb) * dir || a.jurisdiction.localeCompare(b.jurisdiction);
+
+      return (va - vb) * dir || a.jurisdiction.localeCompare(b.jurisdiction);
+
+    });
+
+
+
+    const pages = Math.max(1, Math.ceil(rows.length / srcState.per));
+
+    srcState.page = Math.min(srcState.page, pages - 1);
+
+    const start = srcState.page * srcState.per;
+
+    const slice = rows.slice(start, start + srcState.per);
+
+
+
+    $("#src-body").innerHTML = slice.length ? slice.map(s => {
+
+      const [cls, label] = HEALTH_BADGE[s.health];
+
+      const running = s.health === "running";
+
+      return `<tr data-id="${s.id}">
+
+        <td class="primary">${esc(s.name)}</td>
+
+        <td>${esc(s.jurisdiction)}</td>
+
+        <td><span class="adapter${s.adapter === "Custom" ? " custom" : ""}">${esc(s.adapter)}</span></td>
+
+        <td>${rel(s.ts)}<span class="second">${dateShort(s.ts)}, ${clock(s.ts)}</span></td>
+
+        <td><span class="badge ${cls}">${label}</span>${s.note ? `<span class="note">${esc(s.note)}</span>` : ""}</td>
+
+        <td class="num"><button class="btn ghost" type="button" data-run="${s.id}" ${running ? "disabled" : ""}>
+
+          ${running ? '<span class="spin"></span> Running' : "Run now"}</button></td>
+
+      </tr>`;
+
+    }).join("") : `<tr class="empty-row"><td colspan="6">No sources match this filter. Clear the search or choose All.</td></tr>`;
+
+
+
+    $("#src-range").textContent = rows.length
+
+      ? `Showing ${start + 1}-${start + slice.length} of ${rows.length}`
+
+      : "Showing 0 of 0";
+
+    $("#prev").disabled = srcState.page === 0;
+
+    $("#next").disabled = srcState.page >= pages - 1;
+
+
+
+    document.querySelectorAll("#src-headrow th[data-key]").forEach(th => {
+
+      if (th.dataset.key === key) th.setAttribute("aria-sort", dir === 1 ? "ascending" : "descending");
+
+      else th.removeAttribute("aria-sort");
+
+    });
+
+  }
+
+
+
+  function refreshSources() { renderStrip(); renderSources(); renderSystem(); }
+
+
+
+  $("#src-q").addEventListener("input", e => { srcState.q = e.target.value.trim(); srcState.page = 0; renderSources(); });
+
+  $("#src-seg").addEventListener("click", e => {
+
+    const b = e.target.closest("button"); if (!b) return;
+
+    pressGroup($("#src-seg"), b); srcState.health = b.dataset.h; srcState.page = 0; renderSources();
+
+  });
+
+  $("#src-headrow").addEventListener("click", e => {
+
+    const th = e.target.closest("th[data-key]"); if (!th) return;
+
+    const k = th.dataset.key;
+
+    srcState.dir = srcState.key === k ? -srcState.dir : (k === "ts" || k === "health" ? -1 : 1);
+
+    srcState.key = k; renderSources();
+
+  });
+
+  $("#prev").addEventListener("click", () => { srcState.page--; renderSources(); });
+
+  $("#next").addEventListener("click", () => { srcState.page++; renderSources(); });
+
+
+
+  $("#strip").addEventListener("click", e => {
+
+    const c = e.target.closest(".cell"); if (!c) return;
+
+    const s = sources.find(x => x.id === c.dataset.id);
+
+    const input = $("#src-q");
+
+    input.value = s.jurisdiction; srcState.q = s.jurisdiction; srcState.page = 0;
+
+    srcState.health = "all"; pressGroup($("#src-seg"), $('#src-seg [data-h="all"]'));
+
+    renderSources();
+
+    const row = $(`#src-body tr[data-id="${s.id}"]`);
+
+    if (row) { row.scrollIntoView({ block: "center", behavior: "smooth" }); row.animate([{ background: "#f1f5f9" }, { background: "transparent" }], { duration: 1400 }); }
+
+  });
+
+
+
+  // Manual re-crawl (simulated). Real version: POST to backend, which triggers the job on the VPS.
+
+  $("#src-body").addEventListener("click", e => {
+
+    const b = e.target.closest("[data-run]"); if (!b) return;
+
+    const s = sources.find(x => x.id === b.dataset.run);
+
+    const prev = { health: s.health, note: s.note };
+
+    s.health = "running"; s.note = "";
+
+    refreshSources();
+
+    setTimeout(() => {
+
+      const fixed = prev.health !== "failing";   // sample: failing portal still down, others recover
+
+      s.ts = Date.now();
+
+      s.health = fixed ? "healthy" : "failing";
+
+      s.note = fixed ? "" : prev.note;
+
+      refreshSources();
+
+      toast(fixed ? `${s.jurisdiction} crawled successfully` : `${s.jurisdiction} still failing: ${prev.note}`);
+
+    }, 1800);
+
+  });
+
+
+
+  /* ---------- Subscribers ---------- */
+
+  const subState = { q: "", status: "all" };
+
+  const SUB_BADGE = { active: ["b-ok", "Active"], past_due: ["b-warn", "Past due"], cancelled: ["b-idle", "Cancelled"] };
+
+
+
+  function renderSubs() {
+
+    const q = subState.q.toLowerCase();
+
+    const rows = subscribers.filter(s =>
+
+      (subState.status === "all" || s.status === subState.status) &&
+
+      (!q || `${s.name} ${s.email}`.toLowerCase().includes(q)));
+
+    $("#sub-body").innerHTML = rows.length ? rows.map(s => {
+
+      const p = planById[s.plan];
+
+      const [cls, label] = SUB_BADGE[s.status];
+
+      const nextCell = s.status === "cancelled" ? `<span class="second">Access ended</span>`
+
+        : s.status === "past_due" ? `${dateShort(s.next)}<span class="second">Payment retrying</span>`
+
+        : dateShort(s.next);
+
+      return `<tr>
+
+        <td class="primary">${esc(s.name)}<span class="second">${esc(s.email)}</span></td>
+
+        <td>${esc(p.name)}<span class="second">${p.interval === "year" ? "Yearly" : "Monthly"}</span></td>
+
+        <td><span class="badge ${cls}">${label}</span></td>
+
+        <td>${nextCell}</td>
+
+        <td class="num">${money2(p.price)}</td>
+
+        <td><span class="id">${esc(s.paypal)}</span></td>
+
+        <td class="num"><button class="btn danger-ghost" type="button" data-cancel="${s.id}" ${s.status === "cancelled" ? "disabled" : ""}>Cancel</button></td>
+
+      </tr>`;
+
+    }).join("") : `<tr class="empty-row"><td colspan="7">No subscribers match this filter.</td></tr>`;
+
+    $("#n-subs").textContent = subscribers.length;
+
+  }
+
+
+
+  $("#sub-q").addEventListener("input", e => { subState.q = e.target.value.trim(); renderSubs(); });
+
+  $("#sub-seg").addEventListener("click", e => {
+
+    const b = e.target.closest("button"); if (!b) return;
+
+    pressGroup($("#sub-seg"), b); subState.status = b.dataset.s; renderSubs();
+
+  });
+
+
+
+  const dlg = $("#dlg");
+
+  let pending = null;
+
+  $("#sub-body").addEventListener("click", e => {
+
+    const b = e.target.closest("[data-cancel]"); if (!b) return;
+
+    pending = subscribers.find(s => s.id === b.dataset.cancel);
+
+    const p = planById[pending.plan];
+
+    $("#dlg-title").textContent = `Cancel subscription for ${pending.name}?`;
+
+    $("#dlg-text").textContent = "PayPal stops all future payments and this subscriber loses access to JurisMon search right away. To come back, they would need to subscribe again.";
+
+    $("#dlg-meta").innerHTML = `
+
+      <dt>Plan</dt><dd>${esc(p.name)}, ${money2(p.price)} per ${p.interval}</dd>
+
+      <dt>PayPal subscription</dt><dd>${esc(pending.paypal)}</dd>`;
+
+    if (typeof dlg.showModal === "function") dlg.showModal();
+
+    else if (confirm($("#dlg-title").textContent)) finishCancel();
+
+  });
+
+  dlg.addEventListener("close", () => { if (dlg.returnValue === "cancel") finishCancel(); pending = null; });
+
+
+
+  function finishCancel() {
+
+    if (!pending) return;
+
+    pending.status = "cancelled";
+
+    webhooks.unshift(makeHook("BILLING.SUBSCRIPTION.CANCELLED", pending.name, null, "processed", 0));
+
+    renderSubs(); renderKpis(); renderHooks(); renderPlans();
+
+    toast(`Subscription cancelled for ${pending.name}`);
+
+  }
+
+
+
+  /* ---------- Plans ---------- */
+
+  function renderPlans() {
+
+    $("#plans").innerHTML = PLANS.map(p => {
+
+      const subs = subscribers.filter(s => s.plan === p.id && s.status !== "cancelled").length;
+
+      return `<article class="plan">
+
+        <div class="plan-top"><span class="plan-name">${esc(p.name)}</span><span class="badge b-ok">Active</span></div>
+
+        <p class="plan-price">${money(p.price)} <small>per ${p.interval}</small></p>
+
+        <dl>
+
+          <dt>Subscribers</dt><dd>${subs}</dd>
+
+          <dt>Billing</dt><dd>${p.interval === "year" ? "Yearly" : "Monthly"}, automatic</dd>
+
+          <dt>PayPal plan</dt><dd class="id">${esc(p.paypal)}</dd>
+
+        </dl>
+
+      </article>`;
+
+    }).join("");
+
+    $("#n-plans").textContent = PLANS.length;
+
+  }
+
+
+
+  /* ---------- Webhooks ---------- */
+
+  const hookState = { failedOnly: false, open: new Set() };
+
+  function payloadFor(h) {
+
+    const s = subByName(h.sub);
+
+    const body = {
+
+      id: h.id,
+
+      event_type: h.type,
+
+      create_time: new Date(h.ts).toISOString(),
+
+      resource_type: h.type.startsWith("PAYMENT") ? "sale" : "subscription",
+
+      resource: {
+
+        billing_agreement_id: s ? s.paypal : undefined,
+
+        status: h.type.split(".").pop(),
+
+        ...(h.amount != null ? { amount: { total: h.amount.toFixed(2), currency: "USD" } } : {})
+
+      }
+
+    };
+
+    if (h.error) body._handler_error = h.error;
+
+    return JSON.stringify(body, null, 2);
+
+  }
+
+
+
+  function renderHooks() {
+
+    const failed = webhooks.filter(h => h.result === "failed").length;
+
+    $("#n-failed").textContent = failed;
+
+    $("#n-hooks").textContent = webhooks.length;
+
+    const rows = webhooks.filter(h => !hookState.failedOnly || h.result === "failed");
+
+    $("#hook-body").innerHTML = rows.length ? rows.map(h => {
+
+      const open = hookState.open.has(h.id);
+
+      return `<tr class="clickable${open ? " is-open" : ""}" data-hook="${h.id}" tabindex="0" aria-expanded="${open}">
+
+          <td><svg class="caret" viewBox="0 0 12 12" fill="none"><path d="M4.5 3l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="event">${esc(h.type)}</span></td>
+
+          <td>${esc(h.sub)}</td>
+
+          <td class="num">${money2(h.amount)}</td>
+
+          <td><span class="badge ${h.result === "failed" ? "b-bad" : "b-ok"}">${h.result === "failed" ? "Failed" : "Processed"}</span></td>
+
+          <td>${rel(h.ts)}<span class="second">${dateShort(h.ts)}, ${clock(h.ts)}</span></td>
+
+        </tr>
+
+        <tr class="payload-row${open ? " open" : ""}" data-for="${h.id}"><td colspan="5"><div class="payload"><div><pre>${esc(payloadFor(h))}</pre></div></div></td></tr>`;
+
+    }).join("") : `<tr class="empty-row"><td colspan="5">No failed events. Everything PayPal sent was processed.</td></tr>`;
+
+  }
+
+
+
+  function toggleHook(tr) {
+
+    const id = tr.dataset.hook;
+
+    const open = !hookState.open.has(id);
+
+    open ? hookState.open.add(id) : hookState.open.delete(id);
+
+    tr.classList.toggle("is-open", open);
+
+    tr.setAttribute("aria-expanded", open);
+
+    $(`tr[data-for="${id}"]`).classList.toggle("open", open);
+
+  }
+
+  $("#hook-body").addEventListener("click", e => { const tr = e.target.closest("tr[data-hook]"); if (tr) toggleHook(tr); });
+
+  $("#hook-body").addEventListener("keydown", e => {
+
+    const tr = e.target.closest("tr[data-hook]");
+
+    if (tr && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toggleHook(tr); }
+
+  });
+
+  $("#hook-seg").addEventListener("click", e => {
+
+    const b = e.target.closest("button"); if (!b) return;
+
+    pressGroup($("#hook-seg"), b); hookState.failedOnly = b.dataset.r === "failed"; renderHooks();
+
+  });
+
+
+
+  /* ---------- Tabs ---------- */
+
+  const tabs = [...document.querySelectorAll('#tabs [role="tab"]')];
+
+  function moveTabLine() {
+
+    const a = tabs.find(t => t.getAttribute("aria-selected") === "true");
+
+    const line = $("#tab-line");
+
+    line.style.width = a.offsetWidth + "px";
+
+    line.style.transform = `translateX(${a.offsetLeft}px)`;
+
+  }
+
+  function selectTab(t) {
+
+    tabs.forEach(x => {
+
+      const on = x === t;
+
+      x.setAttribute("aria-selected", on);
+
+      x.tabIndex = on ? 0 : -1;
+
+      $("#" + x.getAttribute("aria-controls")).hidden = !on;
+
+    });
+
+    moveTabLine();
+
+  }
+
+  $("#tabs").addEventListener("click", e => { const t = e.target.closest('[role="tab"]'); if (t) selectTab(t); });
+
+  $("#tabs").addEventListener("keydown", e => {
+
+    const i = tabs.indexOf(document.activeElement);
+
+    if (i < 0) return;
+
+    if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+
+      e.preventDefault();
+
+      const n = tabs[(i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length];
+
+      n.focus(); selectTab(n);
+
+    }
+
+  });
+
+
+
+  
+  /* ---------- Live API Integration ---------- */
+  async function loadLiveAdminData() {
+    try {
+      const sRes = await fetch("/api/sources");
+      if (sRes.ok) {
+        const sData = await sRes.json();
+        if (sData.sources && sData.sources.length > 0) {
+          sources.length = 0;
+          sData.sources.forEach((s, idx) => {
+            const hStatus = s.health_status || (s.is_active ? "operational" : "dead_link");
+            sources.push({
+              id: s.id || ("src-" + idx),
+              name: s.name,
+              jurisdiction: s.state ? `${s.name} (${s.state})` : s.name,
+              adapter: s.adapter_type.charAt(0).toUpperCase() + s.adapter_type.slice(1),
+              health: hStatus,
+              note: s.status_detail || s.base_url,
+              ts: s.created_at ? new Date(s.created_at).getTime() : NOW - (idx * 3600e3 * 0.5)
+            });
+          });
+          refreshSources();
+          renderSystem();
+        }
+      }
+    } catch (err) {
+      console.warn("Using baseline sources:", err);
+    }
+
+    try {
+      const oRes = await fetch("/api/admin/overview", {
+        headers: { "Authorization": "Bearer " + (localStorage.getItem("admin_token") || "") }
+      });
+      if (oRes.ok) {
+        const oData = await oRes.json();
+        console.log("Admin overview:", oData);
+      }
+    } catch (err) {}
+  }
+
+  loadLiveAdminData();
+
+  /* ---------- Boot ---------- */
+
+  refreshSources();
+
+  renderKpis();
+
+  renderSubs();
+
+  renderPlans();
+
+  renderHooks();
+
+  moveTabLine();
+
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveTabLine);
+
+  window.addEventListener("resize", moveTabLine);
+
+  // Keep relative times fresh
+
+  setInterval(() => { renderSources(); renderSystem(); }, 60e3);
+
+
+  /* ---------- Authentication Gate Logic ---------- */
+  const authGate = document.getElementById("auth-gate");
+  const loginForm = document.getElementById("login-form");
+  const loginEmail = document.getElementById("login-email");
+  const loginPass = document.getElementById("login-password");
+  const loginErr = document.getElementById("login-error");
+  const forgotLink = document.getElementById("link-forgot-pw");
+  const forgotBox = document.getElementById("forgot-pw-box");
+  const closeForgot = document.getElementById("btn-close-forgot");
+  const logoutBtn = document.getElementById("btn-logout");
+
+  function checkAuth() {
+    const token = localStorage.getItem("jurismon_admin_token");
+    if (!token) {
+      if (authGate) authGate.style.display = "flex";
+    } else {
+      if (authGate) authGate.style.display = "none";
+    }
+  }
+
+  if (loginForm) {
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      loginErr.style.display = "none";
+      try {
+        const res = await fetch("/api/admin/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: loginEmail.value.trim(), password: loginPass.value })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          localStorage.setItem("jurismon_admin_token", data.access_token);
+          if (authGate) authGate.style.display = "none";
+          loginPass.value = "";
+          toast("Authenticated successfully.");
+          loadLiveAdminData();
+        } else {
+          loginErr.textContent = "Invalid email or password. Please try again.";
+          loginErr.style.display = "block";
+        }
+      } catch (err) {
+        loginErr.textContent = "Connection error. Ensure backend is running.";
+        loginErr.style.display = "block";
+      }
+    });
+  }
+
+  if (forgotLink) {
+    forgotLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      forgotBox.style.display = "block";
+    });
+  }
+
+  if (closeForgot) {
+    closeForgot.addEventListener("click", () => {
+      forgotBox.style.display = "none";
+    });
+  }
+
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+      localStorage.removeItem("jurismon_admin_token");
+      checkAuth();
+      toast("Logged out of Admin Session");
+    });
+  }
+
+  checkAuth();
+
+  })();
+
+</script>
+
+
+<!-- Admin Password & Auth Gate Modal -->
+<div id="auth-gate" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(15,23,42,0.75); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:20px;">
+  <div style="background:#ffffff; border:1px solid var(--line); border-radius:12px; max-width:420px; width:100%; padding:32px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.15), 0 10px 10px -5px rgba(0,0,0,0.08);">
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+      <img src="/static/assets/logo.jpg" alt="JurisMon Logo" style="height:36px; border-radius:6px; border:1px solid var(--line);">
+      <div>
+        <h2 style="font-size:17px; font-weight:600; color:var(--ink); margin:0;">JurisMon Admin Access</h2>
+        <p style="font-size:13px; color:var(--muted); margin:2px 0 0;">Protected administrative console</p>
+      </div>
+    </div>
+
+    <form id="login-form" onsubmit="return false;" style="display:flex; flex-direction:column; gap:14px;">
+      <div>
+        <label style="display:block; font-size:12.5px; font-weight:500; color:var(--ink); margin-bottom:6px;">Admin Email</label>
+        <input type="email" id="login-email" value="admin@jurismon.com" required style="width:100%; height:40px; padding:0 12px; border:1px solid var(--line-strong); border-radius:6px; font-size:14px; background:#f8fafc;">
+      </div>
+
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <label style="font-size:12.5px; font-weight:500; color:var(--ink); margin:0;">Password</label>
+          <a href="#" id="link-forgot-pw" style="font-size:12px; color:var(--muted); text-decoration:underline;">Forgot password?</a>
+        </div>
+        <input type="password" id="login-password" placeholder="Enter admin password" required autofocus style="width:100%; height:40px; padding:0 12px; border:1px solid var(--line-strong); border-radius:6px; font-size:14px;">
+      </div>
+
+      <div id="login-error" style="display:none; color:var(--bad-ink); background:var(--bad-bg); border:1px solid var(--bad-cell); padding:8px 12px; border-radius:6px; font-size:12.5px;"></div>
+
+      <button type="submit" id="btn-submit-login" style="height:42px; background:var(--ink); color:#ffffff; font-weight:600; font-size:14px; border:0; border-radius:6px; cursor:pointer; margin-top:4px;">
+        Sign In to Console
+      </button>
+    </form>
+
+    <div id="forgot-pw-box" style="display:none; margin-top:16px; padding:12px; background:#f1f5f9; border-radius:6px; font-size:12.5px; color:var(--text); line-height:1.45;">
+      <strong>Password Recovery:</strong><br>
+      The admin password is stored only as a bcrypt hash in the server environment variable <code>ADMIN_PASSWORD_HASH</code>. To reset it, generate a new hash with <code>python scripts/generate_admin_hash.py</code> and update <code>ADMIN_PASSWORD_HASH</code> in your <code>.env</code> file, then restart the service.
+      <div style="margin-top:8px; text-align:right;">
+        <button type="button" id="btn-close-forgot" style="background:none; border:none; color:var(--ink); font-weight:600; cursor:pointer; text-decoration:underline; font-size:12px;">Back to Login</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+
+</html>

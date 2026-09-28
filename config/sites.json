@@ -1,0 +1,614 @@
+[
+  {
+    "id": "site-01-cityofnewyork",
+    "name": "New York City Rules",
+    "base_url": "https://rules.cityofnewyork.us",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf'], a[href*='rules'], a[href*='notice']"
+    },
+    "is_active": false,
+    "health_status": "cloudflare_blocked",
+    "status_detail": "Protected by Cloudflare Turnstile / CAPTCHA (Out of Scope)"
+  },
+  {
+    "id": "site-02-nyc",
+    "name": "NYC Planning Commission",
+    "base_url": "https://www.nyc.gov/planning",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf'], a[href*='planning'], a[href*='zoning']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-03-lacounty",
+    "name": "LA County Regional Planning",
+    "base_url": "https://planning.lacounty.gov",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf'], a[href*='ordinance'], a[href*='agenda']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-04-cookcountyil",
+    "name": "Cook County Government",
+    "base_url": "https://www.cookcountyil.gov",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf'], a[href*='ordinance']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-05-hctx",
+    "name": "Harris County Engineering & Permits",
+    "base_url": "https://www.eng.hctx.net",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf'], a[href*='permits'], a[href*='regulations']"
+    },
+    "is_active": false,
+    "health_status": "cloudflare_blocked",
+    "status_detail": "Protected by Cloudflare Turnstile / CAPTCHA (Out of Scope)"
+  },
+  {
+    "id": "site-06-maricopa",
+    "name": "Maricopa County Planning & Development",
+    "base_url": "https://www.maricopa.gov",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf'], a[href*='ordinance']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-07-sandiegocounty",
+    "name": "San Diego County Planning",
+    "base_url": "https://www.sandiegocounty.gov",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf'], a[href*='zoning']"
+    },
+    "is_active": false,
+    "health_status": "dead_link",
+    "status_detail": "HTTP 404 / Broken DNS link on municipality server"
+  },
+  {
+    "id": "site-08-ocfl",
+    "name": "Orange County Florida Zoning",
+    "base_url": "https://www.ocfl.net",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf'], a[href*='ordinance']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-09-miamidade",
+    "name": "Miami-Dade County Regulatory",
+    "base_url": "https://www.miamidade.gov",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf'], a[href*='ordinance']"
+    },
+    "is_active": false,
+    "health_status": "dead_link",
+    "status_detail": "HTTP 404 / Broken DNS link on municipality server"
+  },
+  {
+    "id": "site-10-kingcounty",
+    "name": "King County Permitting",
+    "base_url": "https://www.kingcounty.gov",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf'], a[href*='code']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-11-clarkcountynv",
+    "name": "Clark County Nevada Comprehensive Planning",
+    "base_url": "https://www.clarkcountynv.gov",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf'], a[href*='zoning']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-12-traviscountytx",
+    "name": "Travis County Permitting Center",
+    "base_url": "https://www.traviscountytx.gov/tnr/development-services/permitting-center",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf'], a[href*='ordinance']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-13-austintexas",
+    "name": "City of Austin Code & Ordinances",
+    "base_url": "https://www.austintexas.gov/page/code-ordinances",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf'], a[href*='ordinance']"
+    },
+    "is_active": false,
+    "health_status": "dead_link",
+    "status_detail": "HTTP 404 / Broken DNS link on municipality server"
+  },
+  {
+    "id": "site-14-fultoncountyga",
+    "name": "Fulton County Government",
+    "base_url": "https://www.fultoncountyga.gov",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-15-dallascounty",
+    "name": "Dallas County Planning",
+    "base_url": "https://www.dallascounty.org",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": false,
+    "health_status": "dead_link",
+    "status_detail": "HTTP 404 / Broken DNS link on municipality server"
+  },
+  {
+    "id": "site-16-rctlma",
+    "name": "Riverside County Transportation & Land Management",
+    "base_url": "https://rctlma.org",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf'], a[href*='ordinance']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-17-sbcounty",
+    "name": "San Bernardino County Land Use",
+    "base_url": "https://lu.sbcounty.gov",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": false,
+    "health_status": "dead_link",
+    "status_detail": "HTTP 404 / Broken DNS link on municipality server"
+  },
+  {
+    "id": "site-18-waynecounty",
+    "name": "Wayne County Michigan",
+    "base_url": "https://www.waynecounty.com",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-19-tarrantcounty",
+    "name": "Tarrant County Administrator",
+    "base_url": "https://www.tarrantcounty.com",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": false,
+    "health_status": "dead_link",
+    "status_detail": "HTTP 404 / Broken DNS link on municipality server"
+  },
+  {
+    "id": "site-20-bexar",
+    "name": "Bexar County Texas",
+    "base_url": "https://www.bexar.org",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": false,
+    "health_status": "cloudflare_blocked",
+    "status_detail": "Protected by Cloudflare Turnstile / CAPTCHA (Out of Scope)"
+  },
+  {
+    "id": "site-21-sccgov",
+    "name": "Santa Clara County Planning & Development",
+    "base_url": "https://www.sccgov.org/sites/dpd",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": false,
+    "health_status": "cloudflare_blocked",
+    "status_detail": "Protected by Cloudflare Turnstile / CAPTCHA (Out of Scope)"
+  },
+  {
+    "id": "site-22-ontario",
+    "name": "Ontario Gazette",
+    "base_url": "https://www.ontario.ca/page/ontario-gazette",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": false,
+    "health_status": "dead_link",
+    "status_detail": "HTTP 404 / Broken DNS link on municipality server"
+  },
+  {
+    "id": "site-23-toronto",
+    "name": "City of Toronto Municipal Code",
+    "base_url": "https://www.toronto.ca/legdocs/municode/index.htm",
+    "adapter_type": "municode",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf'], a[href*='municode']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-24-bclaws",
+    "name": "British Columbia Laws Gazette",
+    "base_url": "https://www.bclaws.gov.bc.ca/bcgc/rc.html",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-25-vancouver",
+    "name": "City of Vancouver Bylaws",
+    "base_url": "https://vancouver.ca/your-government/vancouver-bylaws.aspx",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf'], a[href*='bylaw']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-26-alberta",
+    "name": "Alberta Gazette",
+    "base_url": "https://open.alberta.ca/publications/alberta-gazette",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": false,
+    "health_status": "cloudflare_blocked",
+    "status_detail": "Protected by Cloudflare Turnstile / CAPTCHA (Out of Scope)"
+  },
+  {
+    "id": "site-27-calgary",
+    "name": "Calgary Land Use Bylaw",
+    "base_url": "https://www.calgary.ca/pda/pd/calgary-land-use-bylaw.html",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": false,
+    "health_status": "dead_link",
+    "status_detail": "HTTP 404 / Broken DNS link on municipality server"
+  },
+  {
+    "id": "site-28-quebec",
+    "name": "Publications du Qu\u00e9bec",
+    "base_url": "https://www.publicationsquebec.gouv.qc.ca",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": false,
+    "health_status": "dead_link",
+    "status_detail": "HTTP 404 / Broken DNS link on municipality server"
+  },
+  {
+    "id": "site-29-montreal",
+    "name": "City of Montreal Regulations",
+    "base_url": "https://montreal.ca/en/regulations",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf'], a[href*='regulation']"
+    },
+    "is_active": false,
+    "health_status": "dead_link",
+    "status_detail": "HTTP 404 / Broken DNS link on municipality server"
+  },
+  {
+    "id": "site-30-ottawa",
+    "name": "City of Ottawa Bylaws",
+    "base_url": "https://ottawa.ca/en/living-ottawa/laws-licences-and-permits/laws",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-31-manitoba",
+    "name": "Manitoba Gazette",
+    "base_url": "https://www.manitoba.ca/gazette",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-32-uklegislation",
+    "name": "UK Legislation Statutory Instruments",
+    "base_url": "https://www.legislation.gov.uk",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf'], a[href*='/uksi/']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-33-london",
+    "name": "Greater London Authority Planning",
+    "base_url": "https://www.london.gov.uk/what-we-do/planning",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": false,
+    "health_status": "cloudflare_blocked",
+    "status_detail": "Protected by Cloudflare Turnstile / CAPTCHA (Out of Scope)"
+  },
+  {
+    "id": "site-34-birmingham",
+    "name": "Birmingham City Council Planning",
+    "base_url": "https://www.birmingham.gov.uk/planning",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-35-manchester",
+    "name": "Manchester City Council Local Plan",
+    "base_url": "https://www.manchester.gov.uk/info/200074/local_plan",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-36-leeds",
+    "name": "Leeds City Council Planning",
+    "base_url": "https://www.leeds.gov.uk/planning",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-37-glasgow",
+    "name": "Glasgow City Council Planning",
+    "base_url": "https://www.glasgow.gov.uk/planning",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": false,
+    "health_status": "cloudflare_blocked",
+    "status_detail": "Protected by Cloudflare Turnstile / CAPTCHA (Out of Scope)"
+  },
+  {
+    "id": "site-38-bristol",
+    "name": "Bristol City Council Planning Regulations",
+    "base_url": "https://www.bristol.gov.uk/planning-and-building-regulations",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-39-edinburgh",
+    "name": "City of Edinburgh Planning",
+    "base_url": "https://www.edinburgh.gov.uk/planning",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-40-edinburghgazette",
+    "name": "The Edinburgh Gazette",
+    "base_url": "https://www.theedinburghgazette.co.uk",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf'], a[href*='notice']"
+    },
+    "is_active": false,
+    "health_status": "dead_link",
+    "status_detail": "HTTP 404 / Broken DNS link on municipality server"
+  },
+  {
+    "id": "site-41-thegazette",
+    "name": "The London Gazette Official Public Record",
+    "base_url": "https://www.thegazette.co.uk",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf'], a[href*='notice']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-42-legislationau",
+    "name": "Federal Register of Legislation Australia",
+    "base_url": "https://www.legislation.gov.au",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-43-legislationnsw",
+    "name": "NSW Legislation",
+    "base_url": "https://www.legislation.nsw.gov.au",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-44-cityofsydney",
+    "name": "City of Sydney Council",
+    "base_url": "https://www.cityofsydney.nsw.gov.au",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-45-legislationvic",
+    "name": "Victorian Legislation",
+    "base_url": "https://www.legislation.vic.gov.au",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-46-melbourne",
+    "name": "City of Melbourne Planning",
+    "base_url": "https://www.melbourne.vic.gov.au",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": false,
+    "health_status": "dead_link",
+    "status_detail": "HTTP 404 / Broken DNS link on municipality server"
+  },
+  {
+    "id": "site-47-legislationqld",
+    "name": "Queensland Legislation",
+    "base_url": "https://www.legislation.qld.gov.au",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-48-brisbane",
+    "name": "Brisbane City Council Planning",
+    "base_url": "https://www.brisbane.qld.gov.au",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-49-legislationwa",
+    "name": "Western Australian Legislation",
+    "base_url": "https://www.legislation.wa.gov.au",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-50-perth",
+    "name": "City of Perth Planning & Development",
+    "base_url": "https://www.perth.wa.gov.au",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-51-legislationsa",
+    "name": "South Australian Legislation",
+    "base_url": "https://www.legislation.sa.gov.au",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "100% Operational & Ingested"
+  }
+]

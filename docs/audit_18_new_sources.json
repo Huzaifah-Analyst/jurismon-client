@@ -1,0 +1,146 @@
+[
+  {
+    "name": "Australia Federal Register API",
+    "url": "https://api.prod.legislation.gov.au/v1/",
+    "status_code": 200,
+    "content_type": "application/json; odata.metadata=minimal; odata.streaming=true; charset=utf-8",
+    "size": 1349,
+    "verdict": "PASS"
+  },
+  {
+    "name": "Australia Federal Register Website",
+    "url": "https://www.legislation.gov.au/",
+    "status_code": 200,
+    "content_type": "text/html; charset=utf-8",
+    "size": 60705,
+    "verdict": "PASS"
+  },
+  {
+    "name": "Queensland Legislation",
+    "url": "https://www.legislation.qld.gov.au/",
+    "status_code": 200,
+    "content_type": "text/html",
+    "size": 24713,
+    "verdict": "PASS"
+  },
+  {
+    "name": "Victoria Planning Schemes",
+    "url": "https://planning-schemes.app.planning.vic.gov.au/",
+    "status_code": 200,
+    "content_type": "text/html",
+    "size": 1551,
+    "verdict": "PASS"
+  },
+  {
+    "name": "UK Legislation API",
+    "url": "https://www.legislation.gov.uk/",
+    "status_code": 200,
+    "content_type": "application/xhtml+xml;charset=utf-8",
+    "size": 18344,
+    "verdict": "PASS"
+  },
+  {
+    "name": "UK Legislation Atom Feeds",
+    "url": "https://www.legislation.gov.uk/new/uksi",
+    "status_code": 200,
+    "content_type": "application/xhtml+xml;charset=utf-8",
+    "size": 18958,
+    "verdict": "PASS"
+  },
+  {
+    "name": "UK Planning Data API",
+    "url": "https://www.planning.data.gov.uk/entity.json",
+    "status_code": 200,
+    "content_type": "application/json",
+    "size": 5695,
+    "verdict": "PASS"
+  },
+  {
+    "name": "UK Data.gov.uk API",
+    "url": "https://data.gov.uk/api/action/",
+    "status_code": 403,
+    "content_type": "text/html",
+    "size": 548,
+    "verdict": "FAIL (HTTP 403)"
+  },
+  {
+    "name": "Canada Justice Laws XML",
+    "url": "https://laws-lois.justice.gc.ca/eng/XML/Legis.xml",
+    "status_code": null,
+    "content_type": "",
+    "size": 0,
+    "verdict": "ERROR (ConnectTimeout)"
+  },
+  {
+    "name": "Canada Justice Laws Web",
+    "url": "https://laws-lois.justice.gc.ca/eng/",
+    "status_code": null,
+    "content_type": "",
+    "size": 0,
+    "verdict": "ERROR (ConnectTimeout)"
+  },
+  {
+    "name": "Canada Point-in-Time Bulk XML",
+    "url": "https://open.canada.ca/data/en/dataset/4d277b82-c4af-4431-b31d-48fcece6dd8a",
+    "status_code": 200,
+    "content_type": "text/html; charset=utf-8",
+    "size": 35140,
+    "verdict": "PASS"
+  },
+  {
+    "name": "Canada Ontario Gazette Search",
+    "url": "https://www.ontario.ca/search/ontario-gazette",
+    "status_code": 200,
+    "content_type": "text/html; charset=UTF-8",
+    "size": 108443,
+    "verdict": "PASS"
+  },
+  {
+    "name": "New Zealand Legislation API",
+    "url": "https://api.legislation.govt.nz/v0/works/",
+    "status_code": 401,
+    "content_type": "application/json; charset=utf-8",
+    "size": 31,
+    "verdict": "FAIL (HTTP 401)"
+  },
+  {
+    "name": "New Zealand Legislation XML",
+    "url": "https://www.legislation.govt.nz/act/public/1990/109/en/latest.xml",
+    "status_code": 202,
+    "content_type": "text/html; charset=UTF-8",
+    "size": 2252,
+    "verdict": "PASS"
+  },
+  {
+    "name": "New Zealand Legislation PDF",
+    "url": "https://www.legislation.govt.nz/act/public/1990/109/en/latest.pdf",
+    "status_code": 202,
+    "content_type": "text/html; charset=UTF-8",
+    "size": 2252,
+    "verdict": "PASS"
+  },
+  {
+    "name": "EU Cellar Legal Repository",
+    "url": "https://publications.europa.eu/resource/cellar/",
+    "status_code": 404,
+    "content_type": "text/html;charset=ISO-8859-1",
+    "size": 37,
+    "verdict": "FAIL (HTTP 404)"
+  },
+  {
+    "name": "Germany Gesetze im Internet",
+    "url": "https://www.gesetze-im-internet.de/",
+    "status_code": 200,
+    "content_type": "text/html",
+    "size": 9439,
+    "verdict": "PASS"
+  },
+  {
+    "name": "Germany XML Table of Contents",
+    "url": "https://www.gesetze-im-internet.de/gii-toc.xml",
+    "status_code": null,
+    "content_type": "",
+    "size": 0,
+    "verdict": "ERROR (ConnectionError)"
+  }
+]

@@ -1,0 +1,192 @@
+[
+  {
+    "name": "New York City Rules",
+    "url": "https://rules.cityofnewyork.us",
+    "requests_status": 403,
+    "requests_err": null,
+    "pw_status": 403,
+    "pw_title": "Just a moment...",
+    "pw_err": null,
+    "verdict": "CONFIRMED_CLOUDFLARE_CAPTCHA"
+  },
+  {
+    "name": "Harris County Engineering",
+    "url": "https://www.eng.hctx.net",
+    "requests_status": 403,
+    "requests_err": null,
+    "pw_status": 403,
+    "pw_title": "Attention Required! | Cloudflare",
+    "pw_err": null,
+    "verdict": "CONFIRMED_CLOUDFLARE_CAPTCHA"
+  },
+  {
+    "name": "Bexar County Texas",
+    "url": "https://www.bexar.org",
+    "requests_status": 403,
+    "requests_err": null,
+    "pw_status": 403,
+    "pw_title": "Access denied | www.bexar.org used Cloudflare to restrict access | www.bexar.org | Cloudflare",
+    "pw_err": null,
+    "verdict": "CONFIRMED_CLOUDFLARE_CAPTCHA"
+  },
+  {
+    "name": "Santa Clara County Planning",
+    "url": "https://www.sccgov.org/sites/dpd",
+    "requests_status": 403,
+    "requests_err": null,
+    "pw_status": 403,
+    "pw_title": "Just a moment...",
+    "pw_err": null,
+    "verdict": "CONFIRMED_CLOUDFLARE_CAPTCHA"
+  },
+  {
+    "name": "Alberta Gazette",
+    "url": "https://open.alberta.ca/publications/alberta-gazette",
+    "requests_status": 403,
+    "requests_err": null,
+    "pw_status": 403,
+    "pw_title": "Just a moment...",
+    "pw_err": null,
+    "verdict": "CONFIRMED_CLOUDFLARE_CAPTCHA"
+  },
+  {
+    "name": "Greater London Authority",
+    "url": "https://www.london.gov.uk/what-we-do/planning",
+    "requests_status": 403,
+    "requests_err": null,
+    "pw_status": 403,
+    "pw_title": "Just a moment...",
+    "pw_err": null,
+    "verdict": "CONFIRMED_CLOUDFLARE_CAPTCHA"
+  },
+  {
+    "name": "Glasgow City Council",
+    "url": "https://www.glasgow.gov.uk/planning",
+    "requests_status": 403,
+    "requests_err": null,
+    "pw_status": 403,
+    "pw_title": "Just a moment...",
+    "pw_err": null,
+    "verdict": "CONFIRMED_CLOUDFLARE_CAPTCHA"
+  },
+  {
+    "name": "City of Austin Code",
+    "url": "https://www.austintexas.gov/page/code-ordinances",
+    "requests_status": 404,
+    "requests_err": null,
+    "pw_status": null,
+    "pw_title": null,
+    "pw_err": "Page.goto: Timeout 15000ms exceeded.\nCall log:\n  - navigating to \"https://www.austintexas.gov/page/code-ordinances\", wai",
+    "verdict": "CONFIRMED_404_DEAD_LINK"
+  },
+  {
+    "name": "Ontario Gazette",
+    "url": "https://www.ontario.ca/page/ontario-gazette",
+    "requests_status": 404,
+    "requests_err": null,
+    "pw_status": null,
+    "pw_title": null,
+    "pw_err": "Page.goto: Timeout 15000ms exceeded.\nCall log:\n  - navigating to \"https://www.ontario.ca/page/ontario-gazette\", waiting ",
+    "verdict": "CONFIRMED_404_DEAD_LINK"
+  },
+  {
+    "name": "Calgary Land Use Bylaw",
+    "url": "https://www.calgary.ca/pda/pd/calgary-land-use-bylaw.html",
+    "requests_status": 404,
+    "requests_err": null,
+    "pw_status": null,
+    "pw_title": null,
+    "pw_err": "Page.goto: Timeout 15000ms exceeded.\nCall log:\n  - navigating to \"https://www.calgary.ca/pda/pd/calgary-land-use-bylaw.h",
+    "verdict": "CONFIRMED_404_DEAD_LINK"
+  },
+  {
+    "name": "City of Montreal Regulations",
+    "url": "https://montreal.ca/en/regulations",
+    "requests_status": 404,
+    "requests_err": null,
+    "pw_status": 404,
+    "pw_title": "Ville de Montr\u00e9al",
+    "pw_err": null,
+    "verdict": "CONFIRMED_404_DEAD_LINK"
+  },
+  {
+    "name": "San Bernardino County",
+    "url": "https://lu.sbcounty.gov",
+    "requests_status": null,
+    "requests_err": "ConnectionError: HTTPSConnectionPool(host='lu.sbcounty.gov', port=443): Max retries exceeded with",
+    "pw_status": null,
+    "pw_title": null,
+    "pw_err": "Page.goto: net::ERR_INTERNET_DISCONNECTED at https://lu.sbcounty.gov/\nCall log:\n  - navigating to \"https://lu.sbcounty.g",
+    "verdict": "FAILED (Req:ConnectionError: HTTPSConnectionPool(host='lu.sbcounty.gov', port=443): Max retries exceeded with, PW:Page.goto: net::ERR_INTERNET_DISCONNECTED at https://lu.sbcounty.gov/\nCall log:\n  - navigating to \"https://lu.sbcounty.g)"
+  },
+  {
+    "name": "Tarrant County Administrator",
+    "url": "https://www.tarrantcounty.com",
+    "requests_status": null,
+    "requests_err": "ConnectionError: HTTPSConnectionPool(host='www.tarrantcounty.com', port=443): Max retries exceede",
+    "pw_status": null,
+    "pw_title": null,
+    "pw_err": "Page.goto: net::ERR_INTERNET_DISCONNECTED at https://www.tarrantcounty.com/\nCall log:\n  - navigating to \"https://www.tar",
+    "verdict": "FAILED (Req:ConnectionError: HTTPSConnectionPool(host='www.tarrantcounty.com', port=443): Max retries exceede, PW:Page.goto: net::ERR_INTERNET_DISCONNECTED at https://www.tarrantcounty.com/\nCall log:\n  - navigating to \"https://www.tar)"
+  },
+  {
+    "name": "Dallas County Planning",
+    "url": "https://www.dallascounty.org",
+    "requests_status": null,
+    "requests_err": "ConnectTimeout: HTTPSConnectionPool(host='www.dallascounty.org', port=443): Max retries exceeded",
+    "pw_status": null,
+    "pw_title": null,
+    "pw_err": "Page.goto: Timeout 15000ms exceeded.\nCall log:\n  - navigating to \"https://www.dallascounty.org/\", waiting until \"domcont",
+    "verdict": "CONFIRMED_SERVER_DOWN_TIMEOUT"
+  },
+  {
+    "name": "Publications du Qu\u00e9bec",
+    "url": "https://www.publicationsquebec.gouv.qc.ca",
+    "requests_status": null,
+    "requests_err": "ConnectionError: HTTPSConnectionPool(host='www.publicationsquebec.gouv.qc.ca', port=443): Max ret",
+    "pw_status": null,
+    "pw_title": null,
+    "pw_err": "Page.goto: net::ERR_INTERNET_DISCONNECTED at https://www.publicationsquebec.gouv.qc.ca/\nCall log:\n  - navigating to \"htt",
+    "verdict": "FAILED (Req:ConnectionError: HTTPSConnectionPool(host='www.publicationsquebec.gouv.qc.ca', port=443): Max ret, PW:Page.goto: net::ERR_INTERNET_DISCONNECTED at https://www.publicationsquebec.gouv.qc.ca/\nCall log:\n  - navigating to \"htt)"
+  },
+  {
+    "name": "The Edinburgh Gazette",
+    "url": "https://www.theedinburghgazette.co.uk",
+    "requests_status": null,
+    "requests_err": "ConnectionError: HTTPSConnectionPool(host='www.theedinburghgazette.co.uk', port=443): Max retries",
+    "pw_status": null,
+    "pw_title": null,
+    "pw_err": "Page.goto: net::ERR_INTERNET_DISCONNECTED at https://www.theedinburghgazette.co.uk/\nCall log:\n  - navigating to \"https:/",
+    "verdict": "FAILED (Req:ConnectionError: HTTPSConnectionPool(host='www.theedinburghgazette.co.uk', port=443): Max retries, PW:Page.goto: net::ERR_INTERNET_DISCONNECTED at https://www.theedinburghgazette.co.uk/\nCall log:\n  - navigating to \"https:/)"
+  },
+  {
+    "name": "San Diego County Planning",
+    "url": "https://www.sandiegocounty.gov",
+    "requests_status": 200,
+    "requests_err": null,
+    "pw_status": null,
+    "pw_title": null,
+    "pw_err": "Page.goto: Timeout 15000ms exceeded.\nCall log:\n  - navigating to \"https://www.sandiegocounty.gov/\", waiting until \"domco",
+    "verdict": "OPERATIONAL_PASS"
+  },
+  {
+    "name": "Miami-Dade County Regulatory",
+    "url": "https://www.miamidade.gov",
+    "requests_status": 200,
+    "requests_err": null,
+    "pw_status": null,
+    "pw_title": null,
+    "pw_err": "Page.content: Unable to retrieve content because the page is navigating and changing the content.",
+    "verdict": "OPERATIONAL_PASS"
+  },
+  {
+    "name": "City of Melbourne Planning",
+    "url": "https://www.melbourne.vic.gov.au",
+    "requests_status": 202,
+    "requests_err": null,
+    "pw_status": 202,
+    "pw_title": "",
+    "pw_err": null,
+    "verdict": "FAILED (Req:202, PW:202)"
+  }
+]

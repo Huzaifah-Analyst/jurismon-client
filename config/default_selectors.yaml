@@ -1,0 +1,27 @@
+# JurisMon Platform Default Selectors
+# Used by crawler adapters when specific site overrides are not provided.
+
+platforms:
+  municode:
+    adapter: municode
+    link_selector: "a[href*='/codes/'], a[href*='ordinance'], a[href*='.pdf'], .municode-doc-link"
+    wait_selector: null
+    file_types: ["pdf", "html"]
+
+  granicus:
+    adapter: granicus
+    link_selector: "table.rgMasterTable a[href*='View.ashx'], table.rgMasterTable a[href*='.pdf'], a[id*='hlAgenda'], a[id*='hlMinutes']"
+    wait_selector: "table.rgMasterTable"
+    file_types: ["pdf"]
+
+  civicplus:
+    adapter: civicplus
+    link_selector: "a[href*='/AgendaCenter/ViewFile/'], a[href*='/DocumentCenter/View/'], a[href*='.pdf']"
+    wait_selector: null
+    file_types: ["pdf"]
+
+  ecode360:
+    adapter: municode
+    link_selector: "a[href*='ecode360.com/'], a[href*='.pdf']"
+    wait_selector: null
+    file_types: ["pdf", "html"]
