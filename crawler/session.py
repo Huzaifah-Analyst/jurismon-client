@@ -90,14 +90,20 @@ class SafeHTTPSession:
         before_sleep=before_sleep_log(logger, logging.WARNING),
         reraise=True,
     )
-    def fetch_page(self, url: str, extra_headers: Optional[Dict[str, str]] = None) -> requests.Response:
-        """Fetches an HTML page with retries and status validation."""
+    def fetch_page(
+        self,
+        url: str,
+        extra_headers: Optional[Dict[str, str]] = None,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> requests.Response:
+        """Fetches a page with retries and status validation."""
         self._polite_delay(url)
         headers = extra_headers or {}
-        
+
         response = self.session.get(
             url,
             headers=headers,
+            params=params or None,
             timeout=self.timeout,
             allow_redirects=True,
         )

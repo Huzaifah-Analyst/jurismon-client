@@ -25,7 +25,7 @@ class RestApiAdapter(BaseAdapter):
         params = selectors.get("params", {})
 
         logger.info(f"Connecting to REST API endpoint: {endpoint_url}")
-        res = self.session.fetch_page(endpoint_url, extra_headers=headers)
+        res = self.session.fetch_page(endpoint_url, extra_headers=headers, params=params)
         
         try:
             data = res.json()
@@ -41,6 +41,9 @@ class RestApiAdapter(BaseAdapter):
 
         title_field = selectors.get("title_field", "title")
         url_field = selectors.get("url_field", "url")
+        # Many registers return only a record id, with the document living at a
+        # predictable address, e.g. "https://www.legislation.gov.au/{id}".
+        url_template = selectors.get("url_template")
         content_field = selectors.get("content_field", "body")
         date_field = selectors.get("date_field", "updated_at")
 
@@ -49,7 +52,17 @@ class RestApiAdapter(BaseAdapter):
                 continue
 
             title = str(item.get(title_field) or item.get("name") or item.get("filename") or "Municipal Record")
-            doc_url = str(item.get(url_field) or item.get("download_url") or item.get("link") or endpoint_url)
+
+            doc_url = ""
+            if url_template:
+                try:
+                    doc_url = url_template.format(**item)
+                except (KeyError, IndexError):
+                    logger.debug(f"url_template did not resolve for a record from {endpoint_url}")
+            if not doc_url:
+                doc_url = str(
+                    item.get(url_field) or item.get("download_url") or item.get("link") or endpoint_url
+                )
             norm_url = URLNormalizer.normalize_url(endpoint_url, doc_url)
             doc_type = URLNormalizer.classify_document(title, norm_url)
 

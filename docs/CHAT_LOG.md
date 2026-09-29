@@ -143,6 +143,29 @@
 
 
 
+### [28 Sep 2026, 12:14 AM] Huzaifah:
+> Reported the initial crawl audit across the 51 links: 32 portals fully operational, 12 returning HTTP 404 or broken DNS at the municipality, 7 behind Cloudflare CAPTCHA/Turnstile. Asked for replacement URLs.
+
+### [28 Sep 2026, 12:42 AM] Malok Mading:
+> This is a great progress brother. Inshallah, I will provide. Share with me the ones with issues. I will manually go through them and replace them with working links.
+
+### [28 Sep 2026, 1:09 AM] Huzaifah:
+> Sent the exact breakdown of all 19 problem links in three groups: (1) Expired/404 - Austin, Ontario Gazette, Calgary, Montreal. (2) Dead domains - San Bernardino, Tarrant County, Publications du Quebec, Edinburgh Gazette, Dallas County, Melbourne. (3) Cloudflare CAPTCHA - NYC Rules, Harris County, Bexar, Santa Clara, Alberta Gazette, Greater London Authority, Glasgow.
+
+### [28 Sep 2026, 1:39 AM] Malok Mading:
+> Okay 👍. First thing tomorrow morning.
+
+*(Note: replacement links for the 12 dead entries had still not arrived as of 29 Sep. One replacement - the Ontario Gazette - was found inside the 18 additional sources file and has been applied.)*
+
+### [28 Sep 2026, 2:04 PM] Huzaifah:
+> Confirmed focus on finalizing the backend and ingestion pipeline before crafting the UI.
+
+### [28 Sep 2026, 2:07 PM] Malok Mading:
+> Yeah, the less the distraction, the better
+
+### [29 Sep 2026] Internal - Ingestion milestone:
+> All 18 additional sources processed. 8 new active sources integrated (Australia Federal Register REST API, Victoria Planning Schemes, UK New SIs Atom feed, UK Planning Data API, Canada Point-in-Time Bulk XML, NZ RMA 1991 XML + PDF, Germany Gesetze im Internet). 3 were duplicates of sources already in the catalogue. 6 are parked with recorded reasons. New XML/Atom and direct-document connectors were built to handle formats the JSON connector could not read. Verified live: 9/9 sources succeeded, 760 documents discovered.
+
 ---
 
 > **Security note (28 Sep 2026):** The VPS root password originally pasted in this

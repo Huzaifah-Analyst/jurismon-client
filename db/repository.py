@@ -62,6 +62,8 @@ class Repository:
                     adapter_type TEXT DEFAULT 'custom',
                     selectors_config TEXT DEFAULT '{}',
                     is_active INTEGER DEFAULT 1,
+                    health_status TEXT DEFAULT 'operational',
+                    status_detail TEXT,
                     created_at TEXT
                 )
             """)

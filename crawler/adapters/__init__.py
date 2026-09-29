@@ -7,6 +7,8 @@ from crawler.adapters.granicus import GranicusAdapter
 from crawler.adapters.civicplus import CivicPlusAdapter
 from crawler.adapters.custom import CustomAdapter
 from crawler.adapters.rest_api import RestApiAdapter
+from crawler.adapters.xml_feed import XmlFeedAdapter
+from crawler.adapters.direct_document import DirectDocumentAdapter
 from crawler.session import SafeHTTPSession
 
 ADAPTER_MAP: Dict[str, Type[BaseAdapter]] = {
@@ -17,6 +19,11 @@ ADAPTER_MAP: Dict[str, Type[BaseAdapter]] = {
     "rest_api": RestApiAdapter,
     "api": RestApiAdapter,
     "json": RestApiAdapter,
+    "xml": XmlFeedAdapter,
+    "atom": XmlFeedAdapter,
+    "feed": XmlFeedAdapter,
+    "direct_document": DirectDocumentAdapter,
+    "document": DirectDocumentAdapter,
 }
 
 
@@ -32,5 +39,8 @@ __all__ = [
     "GranicusAdapter",
     "CivicPlusAdapter",
     "CustomAdapter",
+    "RestApiAdapter",
+    "XmlFeedAdapter",
+    "DirectDocumentAdapter",
     "get_adapter",
 ]

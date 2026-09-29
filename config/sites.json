@@ -254,14 +254,14 @@
   {
     "id": "site-22-ontario",
     "name": "Ontario Gazette",
-    "base_url": "https://www.ontario.ca/page/ontario-gazette",
+    "base_url": "https://www.ontario.ca/search/ontario-gazette",
     "adapter_type": "custom",
     "selectors_config": {
-      "link_selector": "a[href*='.pdf']"
+      "link_selector": "a[href*='.pdf'], a[href*='gazette'], a[href*='notice']"
     },
-    "is_active": false,
-    "health_status": "dead_link",
-    "status_detail": "HTTP 404 / Broken DNS link on municipality server"
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "Replacement URL supplied in the 18 additional sources (28 Sep 2026); old /page/ URL returned 404."
   },
   {
     "id": "site-23-toronto",
@@ -325,7 +325,7 @@
   },
   {
     "id": "site-28-quebec",
-    "name": "Publications du Qu\u00e9bec",
+    "name": "Publications du Québec",
     "base_url": "https://www.publicationsquebec.gouv.qc.ca",
     "adapter_type": "custom",
     "selectors_config": {
@@ -610,5 +610,179 @@
     "is_active": true,
     "health_status": "operational",
     "status_detail": "100% Operational & Ingested"
+  },
+  {
+    "id": "site-52-legislationau-api",
+    "name": "Australia Federal Register of Legislation (REST API)",
+    "base_url": "https://api.prod.legislation.gov.au/v1/titles",
+    "adapter_type": "rest_api",
+    "selectors_config": {
+      "items_key": "value",
+      "title_field": "name",
+      "url_template": "https://www.legislation.gov.au/{id}",
+      "date_field": "makingDate",
+      "headers": {
+        "Accept": "application/json"
+      },
+      "params": {
+        "$top": "200"
+      }
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "Official OData API, no key required. Verified returning Commonwealth Acts and instruments."
+  },
+  {
+    "id": "site-53-vicplanningschemes",
+    "name": "Victoria Planning Schemes",
+    "base_url": "https://planning-schemes.app.planning.vic.gov.au/",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf'], a[href*='scheme'], a[href*='clause'], a[href*='amendment']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "Dynamic planning application; CustomAdapter falls back to the Playwright browser when static parsing yields nothing."
+  },
+  {
+    "id": "site-54-uklegislation-atom",
+    "name": "UK Legislation - New Statutory Instruments (Atom Feed)",
+    "base_url": "https://www.legislation.gov.uk/new/uksi",
+    "adapter_type": "atom",
+    "selectors_config": {
+      "date_tag": "updated"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "Event-driven feed of newly made UK SIs. Verified returning 20 instruments per poll."
+  },
+  {
+    "id": "site-55-ukplanningdata-api",
+    "name": "UK Planning Data API",
+    "base_url": "https://www.planning.data.gov.uk/entity.json",
+    "adapter_type": "rest_api",
+    "selectors_config": {
+      "items_key": "entities",
+      "title_field": "name",
+      "url_template": "https://www.planning.data.gov.uk/entity/{entity}",
+      "date_field": "entry-date",
+      "headers": {
+        "Accept": "application/json"
+      },
+      "params": {
+        "limit": "500"
+      }
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "Conservation areas, Article 4 directions, green belt and listed building datasets."
+  },
+  {
+    "id": "site-56-canada-pitxml",
+    "name": "Canada Point-in-Time Bulk XML (Open Data)",
+    "base_url": "https://open.canada.ca/data/en/dataset/4d277b82-c4af-4431-b31d-48fcece6dd8a",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.xml'], a[href*='.zip'], a[href*='resource']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "Historical point-in-time consolidations of federal Acts - the strongest source for version-to-version diffing."
+  },
+  {
+    "id": "site-57-nzlegislation-xml",
+    "name": "New Zealand Resource Management Act 1991 (XML)",
+    "base_url": "https://www.legislation.govt.nz/act/public/1990/109/en/latest.xml",
+    "adapter_type": "direct_document",
+    "selectors_config": {
+      "document_title": "Resource Management Act 1991 (XML)"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "Single Act addressed directly rather than a listing page; tracked for version drift."
+  },
+  {
+    "id": "site-58-nzlegislation-pdf",
+    "name": "New Zealand Resource Management Act 1991 (PDF)",
+    "base_url": "https://www.legislation.govt.nz/act/public/1990/109/en/latest.pdf",
+    "adapter_type": "direct_document",
+    "selectors_config": {
+      "document_title": "Resource Management Act 1991 (PDF)"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "Same legal object as site-57 in a different representation; validates cross-format normalization."
+  },
+  {
+    "id": "site-59-germany-gesetze",
+    "name": "Germany - Gesetze im Internet",
+    "base_url": "https://www.gesetze-im-internet.de/",
+    "adapter_type": "custom",
+    "selectors_config": {
+      "link_selector": "a[href*='.pdf'], a[href*='.html'], a[href*='index.html']"
+    },
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "Official German federal legal publication portal."
+  },
+  {
+    "id": "site-60-ukdatagov-api",
+    "name": "UK data.gov.uk Catalogue API",
+    "base_url": "https://data.gov.uk/api/action/",
+    "adapter_type": "rest_api",
+    "selectors_config": {},
+    "is_active": false,
+    "health_status": "blocked_403",
+    "status_detail": "Returns HTTP 403 to automated clients. Needs an allow-listed key or a different catalogue endpoint from the client."
+  },
+  {
+    "id": "site-61-canada-justice-xml",
+    "name": "Canada Justice Laws XML Index",
+    "base_url": "https://laws-lois.justice.gc.ca/eng/XML/Legis.xml",
+    "adapter_type": "xml",
+    "selectors_config": {},
+    "is_active": false,
+    "health_status": "unreachable",
+    "status_detail": "Connection timeout on audit. Host may block non-Canadian egress; retry from the VPS after deployment."
+  },
+  {
+    "id": "site-62-canada-justice-web",
+    "name": "Canada Justice Laws Website",
+    "base_url": "https://laws-lois.justice.gc.ca/eng/",
+    "adapter_type": "custom",
+    "selectors_config": {},
+    "is_active": false,
+    "health_status": "unreachable",
+    "status_detail": "Connection timeout on audit, same host as site-61. Retry from the VPS after deployment."
+  },
+  {
+    "id": "site-63-nzlegislation-api",
+    "name": "New Zealand Legislation API",
+    "base_url": "https://api.legislation.govt.nz/v0/works/",
+    "adapter_type": "rest_api",
+    "selectors_config": {},
+    "is_active": false,
+    "health_status": "auth_required",
+    "status_detail": "Returns HTTP 401. Requires an API key that the client must request from NZ PCO."
+  },
+  {
+    "id": "site-64-eu-cellar",
+    "name": "EU Publications Office CELLAR",
+    "base_url": "https://publications.europa.eu/resource/cellar/",
+    "adapter_type": "rest_api",
+    "selectors_config": {},
+    "is_active": false,
+    "health_status": "dead_link",
+    "status_detail": "Returns HTTP 404. The bare CELLAR root is not addressable; a concrete resource URI is needed."
+  },
+  {
+    "id": "site-65-germany-xml-toc",
+    "name": "Germany XML Table of Contents",
+    "base_url": "https://www.gesetze-im-internet.de/gii-toc.xml",
+    "adapter_type": "xml",
+    "selectors_config": {},
+    "is_active": false,
+    "health_status": "unreachable",
+    "status_detail": "Connection error on audit while the parent site (site-59) responded. Retry from the VPS after deployment."
   }
 ]
