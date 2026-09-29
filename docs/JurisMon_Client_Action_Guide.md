@@ -1,7 +1,7 @@
 # JurisMon — Progress Update & Action Guide
 
-**Prepared for:** Malok Mading
-**From:** Huzaifah
+**Prepared for:** Malok Mading  
+**From:** Huzaifah  
 **Date:** 29 September 2026
 
 ---
@@ -94,11 +94,13 @@ Still on the same app page:
    https://jurismon.com/api/webhooks/paypal
    ```
 4. Under **Event types**, tick these five:
-   - `BILLING.SUBSCRIPTION.ACTIVATED`
-   - `BILLING.SUBSCRIPTION.CANCELLED`
-   - `BILLING.SUBSCRIPTION.SUSPENDED`
-   - `BILLING.SUBSCRIPTION.EXPIRED`
-   - `PAYMENT.SALE.COMPLETED`
+
+    - `BILLING.SUBSCRIPTION.ACTIVATED`
+    - `BILLING.SUBSCRIPTION.CANCELLED`
+    - `BILLING.SUBSCRIPTION.SUSPENDED`
+    - `BILLING.SUBSCRIPTION.EXPIRED`
+    - `PAYMENT.SALE.COMPLETED`
+
 5. Click **Save**
 6. The webhook now appears in the list with a **Webhook ID** — copy it
 
