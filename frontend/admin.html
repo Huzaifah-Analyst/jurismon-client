@@ -676,7 +676,7 @@
 
       <span class="sub">connected</span>
 
-      <span class="tag">Sandbox</span>
+      <span class="tag" id="paypal-mode">Sandbox</span>
 
     </a>
 
@@ -1145,89 +1145,27 @@
 
 
 
-  const PLANS = [
+  /* Plans and subscribers are loaded from the API in loadLiveAdminData().
+     They start empty so nothing invented is ever shown on screen. */
 
-    { id: "pro",  name: "Professional", price: 49,   interval: "month", paypal: "P-2JM48012PX3317405" },
+  const PLANS = [];
 
-    { id: "team", name: "Team",         price: 149,  interval: "month", paypal: "P-7TR20456KL9951822" },
+  let planById = {};
 
-    { id: "firm", name: "Firm",         price: 1490, interval: "year",  paypal: "P-5WD88213QA0472639" }
-
-  ];
-
-  const planById = Object.fromEntries(PLANS.map(p => [p.id, p]));
-
-
-
-  const subscribers = [
-
-    ["Alder & Finch LLP",           "ops@alderfinch.example",     "firm", "active",    142],
-
-    ["Northline Land Use Partners", "billing@northline.example",  "pro",  "active",     9],
-
-    ["Mara Ellison",                "mara@ellison.example",       "pro",  "active",    21],
-
-    ["Brightwater Development",     "finance@brightwater.example","team", "active",     4],
-
-    ["Cobalt Title Co.",            "ap@cobalttitle.example",     "pro",  "past_due",  -2],
-
-    ["Hollis Planning Group",       "admin@hollis.example",       "firm", "active",   288],
-
-    ["Juno Real Estate Advisors",   "team@junore.example",        "pro",  "active",    17],
-
-    ["Keel & Harbor Law",           "office@keelharbor.example",  "team", "active",    12],
-
-    ["Linwood Surveyors",           "info@linwood.example",       "pro",  "cancelled", -1],
-
-    ["Meridian Zoning Consultants", "billing@meridianzc.example", "firm", "active",   331],
-
-    ["Orrin Park Capital",          "ops@orrinpark.example",      "pro",  "active",    29],
-
-    ["Pell Street Architects",      "studio@pellstreet.example",  "team", "past_due",  -3]
-
-  ].map(([name, email, plan, status, days], i) => ({
-
-    id: "sub-" + i, name, email, plan, status,
-
-    next: NOW + days * D,
-
-    paypal: "I-" + (["8KX","3LM","9QP","2ZT","6HV","4NB","7RC","1YD","5GF","0WJ","3SE","8UA"][i]) + (10427 + i * 7391).toString(36).toUpperCase() + "SW"
-
-  }));
+  const subscribers = [];
 
   const subByName = n => subscribers.find(s => s.name === n);
 
 
 
+
   let hookSeq = 0;
 
-  const makeHook = (type, subName, amount, result, ago, error) => ({
 
-    id: "WH-" + (48213 + (hookSeq++) * 977).toString(36).toUpperCase() + "V" + (hookSeq * 31) + "PX",
+  /* Real PayPal deliveries, loaded from /api/admin/webhooks. */
 
-    type, sub: subName, amount, result, ts: NOW - ago, error
+  const webhooks = [];
 
-  });
-
-  const webhooks = [
-
-    makeHook("PAYMENT.SALE.COMPLETED",              "Northline Land Use Partners", 49,   "processed", 4 * 60e3),
-
-    makeHook("BILLING.SUBSCRIPTION.PAYMENT.FAILED", "Cobalt Title Co.",            49,   "processed", 2 * H),
-
-    makeHook("BILLING.SUBSCRIPTION.ACTIVATED",      "Orrin Park Capital",          49,   "processed", 5 * H),
-
-    makeHook("PAYMENT.SALE.COMPLETED",              "Keel & Harbor Law",           149,  "processed", 9 * H),
-
-    makeHook("PAYMENT.SALE.COMPLETED",              "Juno Real Estate Advisors",   49,   "failed",    20 * H, "Signature verification failed. PayPal will retry delivery."),
-
-    makeHook("BILLING.SUBSCRIPTION.CANCELLED",      "Linwood Surveyors",           null, "processed", 26 * H),
-
-    makeHook("BILLING.SUBSCRIPTION.PAYMENT.FAILED", "Pell Street Architects",      149,  "processed", 3 * D),
-
-    makeHook("PAYMENT.SALE.COMPLETED",              "Meridian Zoning Consultants", 1490, "processed", 4 * D)
-
-  ];
 
 
 
@@ -1307,9 +1245,9 @@
 
     const total = sources.length;
 
-    const ok = sources.filter(s => s.health === "healthy").length;
+    const ok = sources.filter(s => bucketOf(s.health) === "healthy").length;
 
-    const running = sources.filter(s => s.health === "running").length;
+    const running = sources.filter(s => bucketOf(s.health) === "running").length;
 
     const all = ok === total;
 
@@ -1323,7 +1261,7 @@
 
 
 
-    const failedToday = sources.filter(s => s.health !== "healthy" && s.health !== "running").length;
+    const failedToday = sources.filter(s => !["healthy", "running"].includes(bucketOf(s.health))).length;
 
     $("#k-runs").innerHTML = `${total - failedToday}<small>/${total}</small>`;
 
@@ -1351,7 +1289,7 @@
 
 
 
-    const lastRun = Math.max(...sources.filter(s => s.health !== "failing").map(s => s.ts));
+    const lastRun = Math.max(...sources.filter(s => bucketOf(s.health) !== "failing").map(s => s.ts));
 
     $("#run-meta").textContent = `Last daily run finished at ${clock(lastRun)}, ${rel(lastRun).toLowerCase()}.`;
 
@@ -1359,27 +1297,41 @@
 
 
 
+  /* Populated by /api/admin/overview, which computes MRR server side so the
+     dashboard cannot drift from what the database actually holds. */
+
+  let overview = null;
+
   function renderKpis() {
 
-    const active = subscribers.filter(s => s.status === "active");
+    const active = subscribers.filter(s => s.status === "active").length;
 
-    const pastDue = subscribers.filter(s => s.status === "past_due").length;
+    const pastDue = subscribers.filter(s => s.status === "past_due" || s.status === "suspended").length;
 
-    const cancelled = subscribers.filter(s => s.status === "cancelled").length;
+    const cancelled = subscribers.filter(s => s.status === "cancelled" || s.status === "expired").length;
 
-    $("#k-subs").textContent = active.length;
+    $("#k-subs").textContent = overview ? overview.active_subscribers : active;
 
-    $("#k-subs-foot").innerHTML = `<strong>${pastDue}</strong> past due, <strong>${cancelled}</strong> cancelled`;
+    $("#k-subs-foot").innerHTML = `<strong>${overview ? overview.past_due_subscribers : pastDue}</strong> past due, <strong>${overview ? overview.cancelled_subscribers : cancelled}</strong> cancelled`;
 
-    const mrr = active.reduce((sum, s) => {
+    $("#k-mrr").textContent = overview ? money(Math.round(overview.mrr)) : money(0);
 
-      const p = planById[s.plan];
+    // Showing "Sandbox" while the server is billing real cards is the kind of
+    // mistake that gets noticed only after someone is charged.
 
-      return sum + (p.interval === "year" ? p.price / 12 : p.price);
+    const modeTag = $("#paypal-mode");
 
-    }, 0);
+    if (modeTag && overview && overview.payment_mode) {
 
-    $("#k-mrr").textContent = money(Math.round(mrr));
+      const live = overview.payment_mode === "live";
+
+      modeTag.textContent = live ? "Live" : "Sandbox";
+
+      modeTag.style.background = live ? "#dcfce7" : "";
+
+      modeTag.style.color = live ? "#166534" : "";
+
+    }
 
   }
 
@@ -1389,7 +1341,7 @@
 
   const srcState = { q: "", health: "all", key: "health", dir: -1, page: 0, per: 10 };
 
-  const healthRank = { dead_link: 3, cloudflare_blocked: 2, degraded: 2, failing: 3, running: 1, healthy: 0, operational: 0 };
+  const healthRank = { dead_link: 3, unreachable: 3, failing: 3, cloudflare_blocked: 2, blocked_403: 2, auth_required: 2, degraded: 2, running: 1, healthy: 0, operational: 0 };
 
   const HEALTH_BADGE = {
     healthy:            ["b-ok",   "Operational"],
@@ -1398,8 +1350,29 @@
     degraded:           ["b-warn", "Cloudflare CAPTCHA"],
     dead_link:          ["b-bad",  "Dead Link (404/DNS)"],
     failing:            ["b-bad",  "Dead Link (404/DNS)"],
+    unreachable:        ["b-bad",  "Unreachable"],
+    blocked_403:        ["b-warn", "Blocked (403)"],
+    auth_required:      ["b-warn", "API key required"],
+    unknown:            ["b-warn", "Unknown"],
     running:            ["b-run",  "Ingesting"]
   };
+
+  // A status the catalogue gains later must not blank the whole dashboard.
+  const healthBadge = h => HEALTH_BADGE[h] || ["b-warn", h || "Unknown"];
+
+  /* The grid, the filter pills and the counts work in three buckets, while the
+     catalogue carries a more specific status. Map one onto the other so a new
+     status lands in a sensible bucket instead of being counted nowhere. */
+
+  const HEALTH_BUCKET = {
+    healthy: "healthy", operational: "healthy",
+    degraded: "degraded", cloudflare_blocked: "degraded",
+    blocked_403: "degraded", auth_required: "degraded",
+    failing: "failing", dead_link: "failing", unreachable: "failing",
+    running: "running"
+  };
+
+  const bucketOf = h => HEALTH_BUCKET[h] || "failing";
 
 
 
@@ -1407,11 +1380,11 @@
 
     $("#strip").innerHTML = sources.map(s =>
 
-      `<button class="cell ${s.health === "healthy" ? "" : s.health}" type="button" role="listitem"
+      `<button class="cell ${bucketOf(s.health) === "healthy" ? "" : bucketOf(s.health)}" type="button" role="listitem"
 
-         data-id="${s.id}" title="${esc(s.jurisdiction)}: ${HEALTH_BADGE[s.health][1]}"
+         data-id="${s.id}" title="${esc(s.jurisdiction)}: ${healthBadge(s.health)[1]}"
 
-         aria-label="${esc(s.jurisdiction)}, ${HEALTH_BADGE[s.health][1]}"></button>`).join("");
+         aria-label="${esc(s.jurisdiction)}, ${healthBadge(s.health)[1]}"></button>`).join("");
 
   }
 
@@ -1425,13 +1398,13 @@
 
     const counts = { all: matchQ.length, healthy: 0, degraded: 0, failing: 0 };
 
-    matchQ.forEach(s => { if (counts[s.health] != null) counts[s.health]++; });
+    matchQ.forEach(s => { const b = bucketOf(s.health); if (counts[b] != null) counts[b]++; });
 
     document.querySelectorAll("#src-seg [data-n]").forEach(el => el.textContent = counts[el.dataset.n]);
 
 
 
-    let rows = matchQ.filter(s => srcState.health === "all" || s.health === srcState.health);
+    let rows = matchQ.filter(s => srcState.health === "all" || bucketOf(s.health) === srcState.health);
 
     const { key, dir } = srcState;
 
@@ -1461,7 +1434,7 @@
 
     $("#src-body").innerHTML = slice.length ? slice.map(s => {
 
-      const [cls, label] = HEALTH_BADGE[s.health];
+      const [cls, label] = healthBadge(s.health);
 
       const running = s.health === "running";
 
@@ -1619,35 +1592,41 @@
 
     $("#sub-body").innerHTML = rows.length ? rows.map(s => {
 
-      const p = planById[s.plan];
+      const [cls, label] = SUB_BADGE[s.status] || ["b-warn", s.status || "Unknown"];
 
-      const [cls, label] = SUB_BADGE[s.status];
+      const ended = s.status === "cancelled" || s.status === "expired";
 
-      const nextCell = s.status === "cancelled" ? `<span class="second">Access ended</span>`
+      const retrying = s.status === "past_due" || s.status === "suspended";
 
-        : s.status === "past_due" ? `${dateShort(s.next)}<span class="second">Payment retrying</span>`
+      const next = s.next_billing_at ? new Date(s.next_billing_at).getTime() : null;
 
-        : dateShort(s.next);
+      const nextCell = ended ? `<span class="second">Access ended</span>`
+
+        : !next ? `<span class="second">Not yet scheduled</span>`
+
+        : retrying ? `${dateShort(next)}<span class="second">Payment retrying</span>`
+
+        : dateShort(next);
 
       return `<tr>
 
-        <td class="primary">${esc(s.name)}<span class="second">${esc(s.email)}</span></td>
+        <td class="primary">${esc(s.name)}<span class="second">${esc(s.email || "No email on file")}</span></td>
 
-        <td>${esc(p.name)}<span class="second">${p.interval === "year" ? "Yearly" : "Monthly"}</span></td>
+        <td>${esc(s.plan_name)}<span class="second">${s.plan_interval === "year" ? "Yearly" : s.plan_interval === "month" ? "Monthly" : "&mdash;"}</span></td>
 
         <td><span class="badge ${cls}">${label}</span></td>
 
         <td>${nextCell}</td>
 
-        <td class="num">${money2(p.price)}</td>
+        <td class="num">${s.plan_price == null ? "&mdash;" : money2(s.plan_price)}</td>
 
-        <td><span class="id">${esc(s.paypal)}</span></td>
+        <td><span class="id">${esc(s.paypal || "")}</span></td>
 
-        <td class="num"><button class="btn danger-ghost" type="button" data-cancel="${s.id}" ${s.status === "cancelled" ? "disabled" : ""}>Cancel</button></td>
+        <td class="num"><button class="btn danger-ghost" type="button" data-cancel="${s.id}" ${ended ? "disabled" : ""}>Cancel</button></td>
 
       </tr>`;
 
-    }).join("") : `<tr class="empty-row"><td colspan="7">No subscribers match this filter.</td></tr>`;
+    }).join("") : `<tr class="empty-row"><td colspan="7">${subscribers.length ? "No subscribers match this filter." : "No subscribers yet."}</td></tr>`;
 
     $("#n-subs").textContent = subscribers.length;
 
@@ -1677,15 +1656,13 @@
 
     pending = subscribers.find(s => s.id === b.dataset.cancel);
 
-    const p = planById[pending.plan];
-
     $("#dlg-title").textContent = `Cancel subscription for ${pending.name}?`;
 
     $("#dlg-text").textContent = "PayPal stops all future payments and this subscriber loses access to JurisMon search right away. To come back, they would need to subscribe again.";
 
     $("#dlg-meta").innerHTML = `
 
-      <dt>Plan</dt><dd>${esc(p.name)}, ${money2(p.price)} per ${p.interval}</dd>
+      <dt>Plan</dt><dd>${esc(pending.plan_name)}${pending.plan_price == null ? "" : `, ${money2(pending.plan_price)} per ${pending.plan_interval}`}</dd>
 
       <dt>PayPal subscription</dt><dd>${esc(pending.paypal)}</dd>`;
 
@@ -1699,17 +1676,48 @@
 
 
 
-  function finishCancel() {
+  async function finishCancel() {
 
     if (!pending) return;
 
-    pending.status = "cancelled";
+    const sub = pending;
 
-    webhooks.unshift(makeHook("BILLING.SUBSCRIPTION.CANCELLED", pending.name, null, "processed", 0));
+    // PayPal has to accept the cancellation first. Updating the row before
+    // that would show the subscription as cancelled while it kept billing.
 
-    renderSubs(); renderKpis(); renderHooks(); renderPlans();
+    try {
 
-    toast(`Subscription cancelled for ${pending.name}`);
+      const res = await fetch(`/api/admin/subscriptions/${encodeURIComponent(sub.paypal)}/cancel`, {
+
+        method: "POST",
+
+        headers: { "Authorization": "Bearer " + (localStorage.getItem("jurismon_admin_token") || "") }
+
+      });
+
+      if (!res.ok) {
+
+        const detail = await res.json().catch(() => ({}));
+
+        toast(detail.detail || "PayPal refused the cancellation. The subscription is still active.");
+
+        return;
+
+      }
+
+    } catch (err) {
+
+      toast("Could not reach the server. The subscription has not been cancelled.");
+
+      return;
+
+    }
+
+    sub.status = "cancelled";
+
+    await loadLiveAdminData();
+
+    toast(`Subscription cancelled for ${sub.name}`);
 
   }
 
@@ -1721,7 +1729,8 @@
 
     $("#plans").innerHTML = PLANS.map(p => {
 
-      const subs = subscribers.filter(s => s.plan === p.id && s.status !== "cancelled").length;
+      const subs = p.subscribers != null ? p.subscribers
+        : subscribers.filter(s => s.plan === p.id && s.status !== "cancelled").length;
 
       return `<article class="plan">
 
@@ -1755,27 +1764,12 @@
 
   function payloadFor(h) {
 
-    const s = subByName(h.sub);
+    // The stored payload is exactly what PayPal delivered; show it verbatim so
+    // the inspector is useful for diagnosing a rejected webhook.
 
-    const body = {
+    const body = h.payload && Object.keys(h.payload).length ? { ...h.payload } : {
 
-      id: h.id,
-
-      event_type: h.type,
-
-      create_time: new Date(h.ts).toISOString(),
-
-      resource_type: h.type.startsWith("PAYMENT") ? "sale" : "subscription",
-
-      resource: {
-
-        billing_agreement_id: s ? s.paypal : undefined,
-
-        status: h.type.split(".").pop(),
-
-        ...(h.amount != null ? { amount: { total: h.amount.toFixed(2), currency: "USD" } } : {})
-
-      }
+      note: "No payload was stored for this delivery."
 
     };
 
@@ -1784,6 +1778,7 @@
     return JSON.stringify(body, null, 2);
 
   }
+
 
 
 
@@ -1944,15 +1939,63 @@
       console.warn("Using baseline sources:", err);
     }
 
+    const auth = { "Authorization": "Bearer " + (localStorage.getItem("jurismon_admin_token") || "") };
+
     try {
-      const oRes = await fetch("/api/admin/overview", {
-        headers: { "Authorization": "Bearer " + (localStorage.getItem("admin_token") || "") }
-      });
-      if (oRes.ok) {
-        const oData = await oRes.json();
-        console.log("Admin overview:", oData);
+      const oRes = await fetch("/api/admin/overview", { headers: auth });
+      if (oRes.ok) overview = await oRes.json();
+    } catch (err) {
+      console.warn("Could not load overview:", err);
+    }
+
+    try {
+      const pRes = await fetch("/api/admin/plans", { headers: auth });
+      if (pRes.ok) {
+        const pData = await pRes.json();
+        PLANS.length = 0;
+        pData.plans.forEach(p => PLANS.push(p));
+        planById = Object.fromEntries(PLANS.map(p => [p.id, p]));
       }
-    } catch (err) {}
+    } catch (err) {
+      console.warn("Could not load plans:", err);
+    }
+
+    try {
+      const subRes = await fetch("/api/admin/subscribers", { headers: auth });
+      if (subRes.ok) {
+        const subData = await subRes.json();
+        subscribers.length = 0;
+        subData.subscribers.forEach(s => subscribers.push(s));
+      }
+    } catch (err) {
+      console.warn("Could not load subscribers:", err);
+    }
+
+    try {
+      const wRes = await fetch("/api/admin/webhooks?limit=50", { headers: auth });
+      if (wRes.ok) {
+        const wData = await wRes.json();
+        webhooks.length = 0;
+        wData.events.forEach(e => webhooks.push({
+          id: e.id,
+          type: e.type,
+          sub: e.sub,
+          amount: e.amount,
+          result: e.result === "processed" ? "processed" : "failed",
+          error: e.error,
+          payload: e.payload,
+          ts: e.received_at ? new Date(e.received_at).getTime() : Date.now()
+        }));
+      }
+    } catch (err) {
+      console.warn("Could not load webhook events:", err);
+    }
+
+    // Re-render once real data has landed, replacing the empty first paint.
+    renderKpis();
+    renderSubs();
+    renderPlans();
+    renderHooks();
   }
 
   loadLiveAdminData();

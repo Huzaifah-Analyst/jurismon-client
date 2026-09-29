@@ -43,10 +43,16 @@ Thumbs.db
 .vscode/
 *.swp
 
-# Client-supplied credentials - never commit
+# Client-supplied credentials - never commit.
+# Everything the client sends goes in credentials/ so a new file cannot be
+# swept in by `git add -A` before anyone thinks about it.
+credentials/
 docs/Updates.txt
+docs/Resend*.txt
 **/credentials*.txt
 **/secrets*.txt
+**/*api*key*.txt
+**/*API*Key*.txt
 *.pem
 *.key
 id_rsa*

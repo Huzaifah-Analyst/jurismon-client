@@ -1,0 +1,22 @@
+{
+  "currency": "USD",
+  "trial_days": 14,
+  "plans": [
+    {
+      "id": "professional_monthly",
+      "name": "Professional",
+      "paypal_plan_id": "P-755622228P129234DNK55PJI",
+      "price": 49.0,
+      "interval": "month",
+      "is_active": true
+    },
+    {
+      "id": "professional_annual",
+      "name": "Professional (Annual)",
+      "paypal_plan_id": "P-4KS38013TS839013TNK55PTA",
+      "price": 468.0,
+      "interval": "year",
+      "is_active": true
+    }
+  ]
+}

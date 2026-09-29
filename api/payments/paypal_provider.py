@@ -104,13 +104,28 @@ class PayPalProvider(PaymentProvider):
 
         normalized_status = status_map.get(event_type, "unknown")
         sub_id = resource.get("id") or resource.get("billing_agreement_id", "")
-        email = resource.get("subscriber", {}).get("email_address")
+
+        subscriber = resource.get("subscriber") or {}
+        email = subscriber.get("email_address")
+
+        # PayPal splits the name, and business accounts may send only a
+        # business_name, so fall back through what is actually present.
+        name_parts = subscriber.get("name") or {}
+        full_name = " ".join(
+            part for part in (name_parts.get("given_name"), name_parts.get("surname")) if part
+        ).strip()
+        subscriber_name = full_name or subscriber.get("business_name") or None
+
+        next_billing = (resource.get("billing_info") or {}).get("next_billing_time")
 
         return {
             "event_type": event_type,
             "subscription_id": sub_id,
             "status": normalized_status,
             "email": email,
+            "subscriber_name": subscriber_name,
+            "next_billing_at": next_billing,
+            "plan_id": resource.get("plan_id"),
             "raw": payload,
         }
 

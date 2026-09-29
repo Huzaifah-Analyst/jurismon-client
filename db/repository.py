@@ -108,11 +108,29 @@ class Repository:
                     id TEXT PRIMARY KEY,
                     user_id TEXT,
                     user_email TEXT,
+                    subscriber_name TEXT,
                     provider TEXT DEFAULT 'paypal',
                     external_subscription_id TEXT UNIQUE,
                     plan_id TEXT,
                     status TEXT DEFAULT 'active',
-                    created_at TEXT
+                    next_billing_at TEXT,
+                    created_at TEXT,
+                    updated_at TEXT
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS webhook_events (
+                    id TEXT PRIMARY KEY,
+                    event_id TEXT UNIQUE,
+                    event_type TEXT,
+                    subscription_id TEXT,
+                    subscriber_name TEXT,
+                    amount REAL,
+                    currency TEXT,
+                    result TEXT DEFAULT 'processed',
+                    error_detail TEXT,
+                    payload TEXT,
+                    received_at TEXT
                 )
             """)
             conn.commit()
@@ -135,11 +153,15 @@ class Repository:
                             s_adapter = s.get("adapter_type", "custom")
                             s_selectors = json.dumps(s.get("selectors_config", {}))
                             s_active = 1 if s.get("is_active", True) else 0
+                            # Without these the column default marks every parked
+                            # source 'operational', so the health grid reads 65/65.
+                            s_health = s.get("health_status") or ("operational" if s_active else "unknown")
+                            s_detail = s.get("status_detail")
                             s_created = datetime.now(timezone.utc).isoformat()
                             cur.execute("""
-                                INSERT OR IGNORE INTO sources (id, name, state, county, base_url, adapter_type, selectors_config, is_active, created_at)
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                            """, (s_id, s_name, s_state, s_county, s_url, s_adapter, s_selectors, s_active, s_created))
+                                INSERT OR IGNORE INTO sources (id, name, state, county, base_url, adapter_type, selectors_config, is_active, health_status, status_detail, created_at)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            """, (s_id, s_name, s_state, s_county, s_url, s_adapter, s_selectors, s_active, s_health, s_detail, s_created))
                         conn.commit()
                     except Exception as e:
                         logger.warning(f"Failed to auto-seed sources: {e}")
@@ -415,9 +437,20 @@ class Repository:
             return {"snapshots": formatted_snaps, "diffs": formatted_diffs}
 
     def record_subscription(
-        self, external_sub_id: str, plan_id: str, status: str = "active", user_email: Optional[str] = None
+        self,
+        external_sub_id: str,
+        plan_id: str,
+        status: str = "active",
+        user_email: Optional[str] = None,
+        subscriber_name: Optional[str] = None,
+        next_billing_at: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
-        """Records or updates a user subscription from PayPal/Stripe."""
+        """Records or updates a user subscription from PayPal/Stripe.
+
+        Webhooks arrive out of order and later events (a cancellation, say) carry
+        less detail than the activation did, so a NULL in an update must not wipe
+        a name or billing date we already know.
+        """
         import uuid
         sub_id = str(uuid.uuid4())
         now_iso = datetime.now(timezone.utc).isoformat()
@@ -425,11 +458,20 @@ class Repository:
         with self._connect() as conn:
             cur = conn.cursor()
             cur.execute("""
-                INSERT INTO subscriptions (id, user_email, external_subscription_id, plan_id, status, created_at)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO subscriptions (
+                    id, user_email, subscriber_name, external_subscription_id,
+                    plan_id, status, next_billing_at, created_at, updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(external_subscription_id) DO UPDATE SET
-                    status=excluded.status
-            """, (sub_id, user_email, external_sub_id, plan_id, status, now_iso))
+                    status          = excluded.status,
+                    user_email      = COALESCE(excluded.user_email, subscriptions.user_email),
+                    subscriber_name = COALESCE(excluded.subscriber_name, subscriptions.subscriber_name),
+                    plan_id         = COALESCE(excluded.plan_id, subscriptions.plan_id),
+                    next_billing_at = COALESCE(excluded.next_billing_at, subscriptions.next_billing_at),
+                    updated_at      = excluded.updated_at
+            """, (sub_id, user_email, subscriber_name, external_sub_id,
+                  plan_id, status, next_billing_at, now_iso, now_iso))
             conn.commit()
 
         return {"id": sub_id, "external_subscription_id": external_sub_id, "status": status}
@@ -442,3 +484,56 @@ class Repository:
             cur.execute("SELECT * FROM subscriptions ORDER BY created_at DESC")
             rows = cur.fetchall()
             return [dict(r) for r in rows]
+
+    def record_webhook_event(
+        self,
+        event_type: str,
+        payload: Dict[str, Any],
+        result: str = "processed",
+        event_id: Optional[str] = None,
+        subscription_id: Optional[str] = None,
+        subscriber_name: Optional[str] = None,
+        amount: Optional[float] = None,
+        currency: Optional[str] = None,
+        error_detail: Optional[str] = None,
+    ) -> None:
+        """Stores a received PayPal webhook, processed or rejected.
+
+        Rejected deliveries are recorded too - when live webhooks start failing,
+        the stored payload and reason are the only way to see why.
+        """
+        import uuid
+        with self._connect() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT INTO webhook_events (
+                    id, event_id, event_type, subscription_id, subscriber_name,
+                    amount, currency, result, error_detail, payload, received_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(event_id) DO UPDATE SET
+                    result       = excluded.result,
+                    error_detail = excluded.error_detail
+            """, (
+                str(uuid.uuid4()),
+                event_id or str(uuid.uuid4()),
+                event_type,
+                subscription_id,
+                subscriber_name,
+                amount,
+                currency,
+                result,
+                error_detail,
+                json.dumps(payload)[:20000],
+                datetime.now(timezone.utc).isoformat(),
+            ))
+            conn.commit()
+
+    def list_webhook_events(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """Returns recent webhook deliveries, newest first."""
+        with self._connect() as conn:
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT * FROM webhook_events ORDER BY received_at DESC LIMIT ?", (limit,)
+            )
+            return [dict(r) for r in cur.fetchall()]
