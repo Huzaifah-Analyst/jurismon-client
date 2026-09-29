@@ -8,6 +8,8 @@ pydantic==2.13.5
 
 # Database
 supabase==2.31.0
+# Used by scripts/run_migrations.py to apply migrations to Supabase Postgres
+psycopg2-binary==2.9.13
 
 # Scraping & Crawling
 requests==2.34.2

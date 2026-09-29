@@ -42,3 +42,11 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# Client-supplied credentials - never commit
+docs/Updates.txt
+**/credentials*.txt
+**/secrets*.txt
+*.pem
+*.key
+id_rsa*

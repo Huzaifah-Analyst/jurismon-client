@@ -1,0 +1,38 @@
+[Unit]
+Description=JurisMon Regulatory Drift API
+Documentation=https://github.com/jurismon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=jurismon
+Group=jurismon
+WorkingDirectory=/var/www/jurismon
+EnvironmentFile=/var/www/jurismon/.env
+
+ExecStart=/var/www/jurismon/venv/bin/uvicorn api.main:app \
+    --host 127.0.0.1 \
+    --port 8000 \
+    --workers 2 \
+    --proxy-headers \
+    --forwarded-allow-ips='127.0.0.1'
+
+Restart=always
+RestartSec=5
+# Give up if it crash-loops, so a bad deploy is visible rather than silent.
+StartLimitBurst=5
+StartLimitIntervalSec=120
+
+StandardOutput=append:/var/log/jurismon/api.log
+StandardError=append:/var/log/jurismon/api.error.log
+
+# Hardening: the API only ever needs to read its own directory.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/var/www/jurismon /var/log/jurismon
+
+[Install]
+WantedBy=multi-user.target
