@@ -1,0 +1,80 @@
+Hi Malok,
+
+Thanks, that file covered nearly everything. Here is where each item stands.
+
+Sorted
+
+Supabase — I will create it and transfer ownership to you at handover.
+Ubuntu 24.04 LTS — matches what the provisioning script targets.
+Admin login — received, and it will be stored as a hash rather than as text.
+The four problem sources — parked as you said, with their reasons recorded so we can pick them up later.
+
+Cloudflare
+
+My email is huzaifahnaseer377@gmail.com. When you invite me, the DNS role is enough — no need to grant full account access.
+
+One note on the PayPal keys
+
+I checked them against both PayPal environments, and these are live production credentials, not sandbox. That is fine, it just means anything created with them is real from the first moment, so I will be careful about what I create and when. Worth knowing on your side too.
+
+Now, the subscription tiers — I want to walk you through these properly
+
+The pricing you have designed is good and well thought out. But I want to be straight with you about what it involves to build, because from the outside it reads like a pricing page, and underneath it is a considerably larger piece of engineering than the rest of JurisMon put together. I would rather explain that now than discover it halfway.
+
+Here is the distinction that matters.
+
+Taking the money is the small part. Enforcing what the money buys is the large part.
+
+Think of it as the difference between a ticket booth and a stadium. Selling three kinds of ticket at the booth is straightforward. Making sure the person holding a Starter ticket cannot sit in the Business section, cannot bring four friends, and cannot come back twenty times — that is turnstiles, a seating map, and staff. The booth is a day of work. The rest is the stadium.
+
+Let me take your tiers one line at a time.
+
+"1 user seat / up to 5 seats / unlimited seats"
+
+Right now JurisMon has no user accounts at all. There is one admin login for you, and the search page is open to anyone who has the link. There is no sign-up, no customer login, no concept of an account that a subscription belongs to.
+
+So "seats" is not a setting to switch on. It means building: customer registration, email verification, login and password reset, the idea of an organisation that owns a subscription, inviting teammates into it, removing them, and counting them against a limit. That is a user management system, and it has to exist before the word "seat" means anything.
+
+"500 / 5,000 / 25,000 queries per month"
+
+For this, every single search has to be attributed to an account, counted, stored, and reset on that account's own billing date — not on the first of the month, because a customer who subscribes on the 14th has a limit that runs to the 14th.
+
+Then there is what happens at the limit. Do they get blocked outright? Warned at 80 percent? Shown an upgrade prompt? Do failed queries count? Each of those is a decision, and each one has to be built and tested, because a metering bug either gives service away or wrongly cuts off a paying customer.
+
+"API access: 1,000 / 75,000 programmatic requests per month"
+
+This one is effectively a second product. The current API exists for our own web page to talk to our own backend. A public API that customers build against is a different thing: it needs API keys that can be issued, shown once, rotated and revoked, per-key request counting, rate limiting so one customer cannot slow the service for everyone, proper error responses, and documentation so developers know how to use it. Customers who build against an API also expect it not to change underneath them.
+
+"Monthly and annually with 20% discount"
+
+This part is genuinely quick — it is six plans instead of three, and I can create all six. The complication is what happens afterwards: a customer on Starter monthly who upgrades to Pro annually mid-cycle has to be credited for the unused part, moved to the new plan, and have their quotas adjusted. Plan changes are where subscription systems usually go wrong.
+
+"Custom data exports" and "priority / dedicated support"
+
+Exports are a real feature — choosing what to export, in what format, and generating it without the server stalling on a large request. Support tiers are mostly process on your side, but if it is promised on the pricing page, the system has to know who is entitled to what.
+
+What I can have working quickly
+
+All six plans created in PayPal at your exact prices
+The 14-day trial, with payment details captured up front — PayPal handles this natively as a zero-cost first cycle, so Stripe not being available in South Sudan is not a problem here
+Customers able to subscribe, cancel, and have that reflected automatically
+Your admin dashboard showing every subscriber, which plan they are on, and your monthly revenue
+
+That gives you a working business that takes real money.
+
+What sits outside that
+
+Seats, query limits, the public API with its keys and quotas, exports, and plan upgrade handling. Those are the stadium, not the booth. They are all buildable — I am not saying no to any of it — but they are a distinct and substantial piece of work rather than an extension of what is being finished now.
+
+My honest recommendation
+
+Launch with billing working and the tiers priced exactly as you have designed them. Early customers are few, and you will know each of them by name, so the limits can be managed by hand at first. That gets you earning while we build the enforcement properly instead of rushing it — and rushed billing code is the one kind you really do not want, because its bugs are either lost revenue or angry customers.
+
+One thing I need from you regardless
+
+Your Pro tier lists seats, queries and priority support, but does not mention API access. Starter gets 1,000 requests and Business gets 75,000. Should Pro have an API allowance too, and if so how many? I want to get this right before any plan is created, because PayPal does not let a plan be edited once it has subscribers.
+
+Tell me how you would like to proceed and I will work to that.
+
+Thanks,
+Huzaifah

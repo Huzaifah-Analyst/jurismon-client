@@ -13,7 +13,7 @@ set -euo pipefail
 APP_USER="jurismon"
 APP_DIR="/var/www/jurismon"
 REPO_URL="${1:-${JURISMON_REPO:-}}"
-BRANCH="${JURISMON_BRANCH:-master}"
+BRANCH="${JURISMON_BRANCH:-main}"
 SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 log() { echo ""; echo "=== $1 ==="; }
