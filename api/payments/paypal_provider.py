@@ -9,7 +9,7 @@ import json
 import logging
 from typing import Dict, Any, Optional
 import requests
-from api.payments.base import PaymentProvider, SubscriptionDetails
+from api.payments.base import PaymentProvider, SubscriptionDetails, SubscriptionRequest
 
 logger = logging.getLogger("jurismon.paypal")
 
@@ -128,6 +128,67 @@ class PayPalProvider(PaymentProvider):
             "plan_id": resource.get("plan_id"),
             "raw": payload,
         }
+
+    def create_subscription(
+        self,
+        plan_id: str,
+        return_url: str,
+        cancel_url: str,
+        subscriber_email: Optional[str] = None,
+    ) -> Optional[SubscriptionRequest]:
+        """Starts a PayPal subscription and returns the approval URL.
+
+        Nothing is charged here. The customer authorises payment at the returned
+        URL, and only then does PayPal send BILLING.SUBSCRIPTION.ACTIVATED - so
+        the webhook, not this call, is what marks a subscriber active.
+        """
+        if not plan_id:
+            logger.error("Cannot create a subscription without a plan id.")
+            return None
+
+        payload: Dict[str, Any] = {
+            "plan_id": plan_id,
+            "application_context": {
+                "brand_name": "JurisMon",
+                "user_action": "SUBSCRIBE_NOW",
+                "shipping_preference": "NO_SHIPPING",
+                "return_url": return_url,
+                "cancel_url": cancel_url,
+            },
+        }
+        if subscriber_email:
+            payload["subscriber"] = {"email_address": subscriber_email}
+
+        try:
+            token = self._get_access_token()
+            res = requests.post(
+                f"{self.base_url}/v1/billing/subscriptions",
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                    "Prefer": "return=representation",
+                },
+                json=payload,
+                timeout=20,
+            )
+            res.raise_for_status()
+            data = res.json()
+
+            approval = next(
+                (l.get("href") for l in data.get("links", []) if l.get("rel") == "approve"),
+                None,
+            )
+            if not approval:
+                logger.error("PayPal returned no approval link for plan %s.", plan_id)
+
+            return SubscriptionRequest(
+                id=data.get("id", ""),
+                status=str(data.get("status", "")).lower(),
+                approval_url=approval,
+            )
+        except Exception as e:
+            logger.error(f"Error creating PayPal subscription for {plan_id}: {e}")
+            return None
 
     def get_subscription(self, subscription_id: str) -> Optional[SubscriptionDetails]:
         """Fetches live subscription info from PayPal."""

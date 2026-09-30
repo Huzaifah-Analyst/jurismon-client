@@ -963,11 +963,6 @@
   const linkIcon = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 014.5 9l1-1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
 
   /* ---------- API Fetching ---------- */
-  
-    } catch (e) {
-      console.warn("Could not fetch live source count:", e);
-    }
-  }
 
   async function fetchLiveSearch(query) {
     try {
@@ -990,9 +985,32 @@
     render();
   }
 
-  let counts = { total: 51, operational: 32, cloudflare: 7, dead: 12 };
+  /* Source counts come from the API. The defaults here are only what shows for
+     the instant before the first fetch returns. */
 
-  
+  let counts = { total: 0, operational: 0, cloudflare: 0, dead: 0 };
+
+  async function loadSourcesCount() {
+    try {
+      const res = await fetch("/api/sources");
+      if (!res.ok) return;
+
+      const data = await res.json();
+      counts = {
+        total: data.count ?? 0,
+        operational: data.operational_count ?? 0,
+        cloudflare: data.cloudflare_count ?? 0,
+        dead: data.dead_links_count ?? 0
+      };
+
+      const countEl = document.getElementById("source-count");
+      if (countEl) countEl.textContent = `${counts.operational} / ${counts.total}`;
+
+      const titleEl = document.getElementById("title");
+      if (titleEl) titleEl.textContent =
+        `Search amendments across ${counts.operational} active jurisdictions`;
+
+      updateStatusText();
     } catch (e) {
       console.warn("Could not fetch live source count:", e);
     }

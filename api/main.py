@@ -232,6 +232,77 @@ async def list_sources(filter_type: Optional[str] = Query(default="all")):
 # PAYPAL SUBSCRIPTIONS & WEBHOOK ROUTE
 # ==========================================
 
+class SubscribeRequest(BaseModel):
+    plan: str
+    email: Optional[str] = None
+
+
+@app.get("/api/plans")
+async def public_plans():
+    """The plan catalogue, for the pricing section on the public page."""
+    return {
+        "currency": PLAN_CATALOGUE.get("currency", "USD"),
+        "trial_days": PLAN_CATALOGUE.get("trial_days", 0),
+        "plans": [
+            {
+                "id": p["id"],
+                "name": p["name"],
+                "price": p["price"],
+                "interval": p["interval"],
+            }
+            for p in PLAN_CATALOGUE.get("plans", [])
+            if p.get("is_active", True)
+        ],
+    }
+
+
+@app.post("/api/subscriptions/create")
+async def create_subscription(req: SubscribeRequest, request: Request):
+    """Starts a subscription and returns PayPal's approval URL.
+
+    Nothing is charged here and no subscriber is recorded. The customer
+    authorises payment at the returned URL, and the resulting
+    BILLING.SUBSCRIPTION.ACTIVATED webhook is what marks them active - so a
+    half-finished checkout cannot create a subscriber.
+    """
+    plan = next(
+        (p for p in PLAN_CATALOGUE.get("plans", [])
+         if p["id"] == req.plan and p.get("is_active", True)),
+        None,
+    )
+    if not plan:
+        raise HTTPException(status_code=404, detail="Unknown plan.")
+
+    if not paypal_provider.client_id:
+        raise HTTPException(
+            status_code=503, detail="Payments are not configured on this server."
+        )
+
+    # Built from the request so the customer returns to the host they started
+    # on, rather than a hardcoded domain.
+    base = str(request.base_url).rstrip("/")
+    result = paypal_provider.create_subscription(
+        plan_id=plan["paypal_plan_id"],
+        return_url=f"{base}/?subscribed=1",
+        cancel_url=f"{base}/?subscribe_cancelled=1",
+        subscriber_email=req.email,
+    )
+
+    if not result or not result.approval_url:
+        logger.error("PayPal did not return an approval URL for plan %s.", plan["id"])
+        raise HTTPException(
+            status_code=502, detail="Could not start the subscription. Please try again."
+        )
+
+    logger.info("Subscription %s started for plan %s", result.id, plan["id"])
+    return {
+        "subscription_id": result.id,
+        "status": result.status,
+        "approval_url": result.approval_url,
+        "plan": plan["id"],
+    }
+
+
 @app.post("/api/webhooks/paypal")
 async def paypal_webhook(request: Request):
     """
