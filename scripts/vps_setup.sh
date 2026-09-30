@@ -1,6 +1,6 @@
 #!/bin/bash
 # ====================================================================
-# JurisMon VPS Provisioning & Hardening (Ubuntu 22.04 / 24.04 LTS)
+# JurisMon VPS Provisioning & Hardening (Ubuntu 22.04 / 24.04 / 26.04 LTS)
 #
 # Run once, as root, on a fresh server:
 #     bash scripts/vps_setup.sh
@@ -32,8 +32,11 @@ fi
 # --------------------------------------------------------------------
 log 1 "Updating system packages"
 export DEBIAN_FRONTEND=noninteractive
+export NEEDRESTART_MODE=a          # restart services without prompting
+export NEEDRESTART_SUSPEND=1
+APT_OPTS='-o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold'
 apt-get update
-apt-get upgrade -y
+apt-get upgrade -y $APT_OPTS
 
 # --------------------------------------------------------------------
 log 2 "Installing core dependencies, OCR and Nginx"
