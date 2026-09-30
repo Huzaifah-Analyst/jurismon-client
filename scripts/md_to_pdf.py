@@ -164,27 +164,39 @@ hr {
 a { color: var(--accent); text-decoration: none; }
 """
 
-FOOTER = """
+FOOTER_TEMPLATE = """
 <div style="width:100%;font-size:7.5pt;color:#8a929e;padding:0 16mm;
             font-family:'Segoe UI',Arial,sans-serif;display:flex;
             justify-content:space-between;">
-  <span>JurisMon &mdash; Progress Update &amp; Action Guide</span>
+  <span>__TITLE__</span>
   <span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></span>
 </div>
 """
 
 
+def document_title(markdown_text: str, fallback: str) -> str:
+    """Takes the title from the document's first h1, so the footer matches."""
+    for line in markdown_text.splitlines():
+        if line.startswith("# "):
+            return line[2:].strip()
+    return fallback
+
+
 def convert(md_path: str, pdf_path: str) -> None:
     text = pathlib.Path(md_path).read_text(encoding="utf-8")
+    title = document_title(text, pathlib.Path(md_path).stem.replace("_", " "))
 
     body = markdown.markdown(
         text,
         extensions=["tables", "fenced_code", "sane_lists", "attr_list"],
     )
 
+    import html as _html
+    html_escape = _html.escape
+
     html = f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
-<title>JurisMon - Progress Update &amp; Action Guide</title>
+<title>{html_escape(title)}</title>
 <style>{CSS}</style></head>
 <body>{body}</body></html>"""
 
@@ -203,7 +215,7 @@ def convert(md_path: str, pdf_path: str) -> None:
                 print_background=True,
                 display_header_footer=True,
                 header_template="<div></div>",
-                footer_template=FOOTER,
+                footer_template=FOOTER_TEMPLATE.replace("__TITLE__", html_escape(title)),
                 margin={"top": "18mm", "bottom": "20mm", "left": "16mm", "right": "16mm"},
             )
             browser.close()
