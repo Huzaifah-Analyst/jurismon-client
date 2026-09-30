@@ -22,6 +22,7 @@ from extractor.pdf_extractor import PDFExtractor
 from extractor.html_extractor import HTMLExtractor
 from diff_engine.engine import DiffEngine
 from db.repository import Repository
+from notifications.crawl_report import send_crawl_report
 
 logging.basicConfig(
     level=logging.INFO,
@@ -73,6 +74,7 @@ def main():
 
     sources_succeeded = 0
     sources_failed = 0
+    failure_details = []
     total_docs_processed = 0
     total_diffs_created = 0
 
@@ -91,6 +93,7 @@ def main():
             if not result.success:
                 logger.error(f"Source {source_name} crawl failed: {result.error_message}")
                 sources_failed += 1
+                failure_details.append({"source_name": source_name, "error": str(result.error_message)})
                 continue
 
             sources_succeeded += 1
@@ -164,11 +167,23 @@ def main():
 
         except Exception as source_err:
             sources_failed += 1
+            failure_details.append({"source_name": source_name, "error": str(source_err)})
             logger.error(f"Error during source execution for {source_name}: {source_err}")
 
     duration = round(time.time() - start_time, 2)
     logger.info(f"=== Daily Crawl Completed in {duration}s ===")
     logger.info(f"Sources: {sources_succeeded} succeeded, {sources_failed} failed | Docs: {total_docs_processed} | Diffs: {total_diffs_created}")
+
+    # An unattended run fails silently otherwise - the log sits on the server
+    # and nobody reads it.
+    send_crawl_report(
+        succeeded=sources_succeeded,
+        failed=sources_failed,
+        documents=total_docs_processed,
+        diffs=total_diffs_created,
+        duration_seconds=duration,
+        failures=failure_details,
+    )
 
 
 if __name__ == "__main__":
