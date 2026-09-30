@@ -45,7 +45,14 @@ class FakeQuery:
         return self._record("limit", *a, **k)
 
     def text_search(self, *a, **k):
-        return self._record("text_search", *a, **k)
+        """Mirrors postgrest-py: this returns a builder without limit().
+
+        The permissive version of this fake accepted .text_search().limit(),
+        which the real client raises on - so a chain that returned nothing in
+        production passed here.
+        """
+        self._record("text_search", *a, **k)
+        return _TerminalQuery(self)
 
     def insert(self, payload, *a, **k):
         self.payload = payload
@@ -60,6 +67,21 @@ class FakeQuery:
         if self._raises:
             raise RuntimeError("Supabase unavailable")
         return MagicMock(data=self._data)
+
+
+class _TerminalQuery:
+    """What text_search returns: executable, but no further filtering."""
+
+    def __init__(self, parent):
+        self._parent = parent
+
+    def execute(self):
+        return self._parent.execute()
+
+    def __getattr__(self, name):
+        raise AttributeError(
+            f"'SyncQueryRequestBuilder' object has no attribute '{name}'"
+        )
 
 
 class FakeSupabase:

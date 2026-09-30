@@ -349,13 +349,23 @@ class Repository:
         """Executes full-text ranked queries across snapshots and statutory diff deltas."""
         if self.supabase:
             try:
+                # limit() must precede text_search(): the builder returned by
+                # text_search has no limit(), and the resulting AttributeError
+                # was being swallowed into the SQLite fallback, so search
+                # silently returned nothing in production.
+                # type=plain uses plainto_tsquery, which accepts arbitrary user
+                # input; to_tsquery rejects a phrase like "off street parking".
                 snapshots_res = self.supabase.table("snapshots").select(
                     "id, document_id, version, cleaned_text, crawled_at, documents(title, pdf_url, source_id, sources(name, state))"
-                ).text_search("search_vector", query).limit(limit).execute()
+                ).limit(limit).text_search(
+                    "search_vector", query, options={"type": "plain"}
+                ).execute()
 
                 diffs_res = self.supabase.table("diffs").select(
                     "id, document_id, diff_payload, added_clauses_count, removed_clauses_count, generated_at, documents(title, pdf_url, sources(name, state))"
-                ).text_search("diff_vector", query).limit(limit).execute()
+                ).limit(limit).text_search(
+                    "diff_vector", query, options={"type": "plain"}
+                ).execute()
 
                 return {
                     "snapshots": snapshots_res.data or [],
