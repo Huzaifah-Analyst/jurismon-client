@@ -124,6 +124,81 @@ VERIFICATION — run these and paste the output
 
 ---
 
+# TASK 1B — The page discards the search results the server found
+
+**Severity: BLOCKER. Do this immediately after Task 1.**
+
+```
+THE PROBLEM
+
+The server searches PostgreSQL with full-text search, which stems words: a
+query for "parking" matches text containing "park", "parks" or "parked".
+
+frontend/index.html then re-filters those results on line 941:
+
+    const base = DATA.filter(d => toks.every(t => d.hay.includes(t)));
+
+That is a literal substring test. A snapshot the server matched by stem, but
+which does not contain the exact letters "parking", is thrown away.
+
+Measured on production right now:
+    GET /api/search?q=parking   ->  16 items
+    the page displays           ->  0 results
+
+The search runs twice, under two different sets of rules, and the stricter one
+wins. Deleting DEFAULT_DATA exposed this; before that, demo data was being
+filtered and the page looked like it worked.
+
+WHAT TO DO
+
+1. The server is the search engine. Results that arrive from /api/search must
+   NOT be filtered again by the query. In getResults(), stop applying the token
+   filter to DATA.
+
+2. Keep everything else in getResults() exactly as it is: the filter pills
+   (all / added / removed / snapshot), the sort, and the counts must still work
+   on the server-returned set.
+
+3. Keep the highlight regex `re` being built from the tokens - highlighting the
+   query in the results is still wanted, and is independent of filtering.
+   Highlighting a stem match imperfectly is fine; discarding it is not.
+
+4. Check #summary still reads correctly, e.g. "16 results for “parking”".
+
+WHILE YOU ARE IN THIS FILE, also fix these two leftovers:
+
+5. Line 787: `let SOURCES = 50;` is declared and never used anywhere. Delete it.
+
+6. Line 677: the header still contains the hardcoded literal
+   `<span class="navcount" id="source-count">32 / 51</span>`.
+   loadSourcesCount() overwrites it on boot, but if /api/sources fails the page
+   keeps showing "32 / 51", which is a fabricated count. Change the initial
+   content to an em dash so a failed fetch shows nothing rather than a number
+   that was never true.
+
+WHAT NOT TO DO
+
+- Do not change /api/search or anything in api/.
+- Do not change how DATA is fetched or assigned - Task 1 settled that.
+- Do not change the sort, the pills, the rendering or the CSS.
+- Do not add client-side search of any kind as a "fallback".
+
+VERIFICATION — run these and paste the output
+
+  grep -n "SOURCES" frontend/index.html
+  (must print nothing)
+
+  grep -n "32 / 51" frontend/index.html
+  (must print nothing)
+
+  grep -n "hay.includes" frontend/index.html
+  (must print nothing)
+
+  python -m pytest tests/ -q
+```
+
+---
+
 # TASK 2 — Make the crawler identify itself honestly and configurably
 
 **Severity: HIGH**
