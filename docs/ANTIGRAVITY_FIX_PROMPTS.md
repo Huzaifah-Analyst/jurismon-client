@@ -460,3 +460,131 @@ VERIFICATION — run these and paste the output
 2. The output of: `git diff --stat`
 
 I will verify and confirm before you move to the next task.
+
+---
+
+# TASK 6 — New branding and SEO
+
+**Severity: client request. Do this after Task 1B.**
+
+```
+THE SITUATION
+
+The client supplied new brand images. The generated assets already exist in
+frontend/assets/ and are committed — do NOT regenerate, resize or edit any
+image:
+
+    logo.png             278x72   header logo
+    favicon.ico          16/32/48 multi-size
+    favicon-16.png, favicon-32.png
+    apple-touch-icon.png 180x180
+    icon-192.png, icon-512.png
+    og-image.png         1200x630 social card
+
+Separately, the pages have almost no SEO: no description, no canonical, no
+Open Graph, no Twitter card, no favicon link, no robots.txt, no sitemap.
+The old header image is a 54KB JPEG being drawn at 36 pixels.
+
+WHAT TO DO
+
+1. In BOTH frontend/index.html and frontend/admin.html, change the header
+   image src from /static/assets/logo.jpg to /static/assets/logo.png.
+   Keep the existing width/height/styling attributes exactly as they are.
+   In index.html change alt to "JurisMon".
+   In admin.html change alt to "JurisMon Admin".
+
+2. In frontend/index.html <head>, add these. Use these exact strings — do not
+   write your own copy, and do not add any claim not listed here:
+
+   <link rel="icon" href="/static/assets/favicon.ico" sizes="any">
+   <link rel="icon" type="image/png" sizes="32x32" href="/static/assets/favicon-32.png">
+   <link rel="icon" type="image/png" sizes="16x16" href="/static/assets/favicon-16.png">
+   <link rel="apple-touch-icon" href="/static/assets/apple-touch-icon.png">
+   <link rel="canonical" href="https://jurismon.com/">
+   <meta name="description" content="JurisMon tracks municipal and statutory sources daily and shows exactly what changed. Search zoning amendments, ordinances and meeting minutes across government portals in the US, UK, Canada, Australia and the EU.">
+   <meta name="robots" content="index, follow">
+   <meta name="theme-color" content="#154DA8">
+   <meta property="og:type" content="website">
+   <meta property="og:site_name" content="JurisMon">
+   <meta property="og:title" content="JurisMon — Regulatory Drift Monitor">
+   <meta property="og:description" content="Daily tracking of statutory and zoning changes across government sources. See exactly what text was added or removed.">
+   <meta property="og:url" content="https://jurismon.com/">
+   <meta property="og:image" content="https://jurismon.com/static/assets/og-image.png">
+   <meta property="og:image:width" content="1200">
+   <meta property="og:image:height" content="630">
+   <meta name="twitter:card" content="summary_large_image">
+   <meta name="twitter:title" content="JurisMon — Regulatory Drift Monitor">
+   <meta name="twitter:description" content="Daily tracking of statutory and zoning changes across government sources.">
+   <meta name="twitter:image" content="https://jurismon.com/static/assets/og-image.png">
+
+3. In frontend/index.html <head>, add this JSON-LD block exactly:
+
+   <script type="application/ld+json">
+   {
+     "@context": "https://schema.org",
+     "@type": "WebApplication",
+     "name": "JurisMon",
+     "url": "https://jurismon.com/",
+     "applicationCategory": "BusinessApplication",
+     "description": "Monitors municipal and statutory sources daily and reports what changed.",
+     "offers": {
+       "@type": "Offer",
+       "price": "49.00",
+       "priceCurrency": "USD"
+     }
+   }
+   </script>
+
+4. In frontend/admin.html <head>, add ONLY the favicon links from step 2, plus:
+
+   <meta name="robots" content="noindex, nofollow">
+
+   The admin dashboard must never be indexed. Do not add og: or twitter: tags
+   to it, and do not add a description.
+
+5. You MAY edit api/main.py for this task, but ONLY to add these two routes.
+   Place them next to the existing "/" and "/admin" routes and follow the same
+   style:
+
+   GET /robots.txt  -> plain text, Content-Type text/plain:
+       User-agent: *
+       Allow: /
+       Disallow: /admin
+       Disallow: /api/
+       Sitemap: https://jurismon.com/sitemap.xml
+
+   GET /sitemap.xml -> XML, Content-Type application/xml, listing only
+       https://jurismon.com/ with changefreq daily and priority 1.0.
+
+   Do not add any other route. Do not touch any existing route.
+
+6. Add a test in tests/ that asserts:
+   - GET /robots.txt returns 200, disallows /admin, and names the sitemap
+   - GET /sitemap.xml returns 200 and contains https://jurismon.com/
+   - the index page contains the og:image and canonical tags
+   - the admin page contains noindex AND does not contain og:image
+
+WHAT NOT TO DO
+
+- Do not edit, resize, convert or regenerate any file in frontend/assets/.
+- Do not change page layout, CSS, or any JavaScript.
+- Do not invent marketing copy. Use only the strings given above.
+- Do not add analytics, tracking, or any third-party script.
+- Do not change the <title> of either page.
+
+VERIFICATION — run these and paste the output
+
+  grep -c "logo.jpg" frontend/index.html frontend/admin.html
+  (both must print 0)
+
+  grep -c "og:image\|canonical\|apple-touch-icon" frontend/index.html
+  (must be 3 or more)
+
+  grep -c "noindex" frontend/admin.html
+  (must print 1)
+
+  grep -c "og:image" frontend/admin.html
+  (must print 0)
+
+  python -m pytest tests/ -q
+```
