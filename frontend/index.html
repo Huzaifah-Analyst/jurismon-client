@@ -786,97 +786,8 @@
   const NOW = Date.now();
   let SOURCES = 50;
 
-  // Curated fallback data for rich initial display & demonstration
-  const DEFAULT_DATA = [
-    {
-      id: "nyc-101-4", hoursAgo: 1.2, url: "https://rules.cityofnewyork.us",
-      entity: "New York City Rules & Planning",
-      doc: "Title 62, Accessory dwelling units",
-      section: "§ 101.4",
-      segments: [
-        ["eq", "An accessory dwelling unit shall not exceed "],
-        ["del", "800"], ["add", "1,000"],
-        ["eq", " square feet of gross floor area"],
-        ["add", ", or 50 percent of the principal dwelling, whichever is less"],
-        ["eq", "."]
-      ],
-      full: "An accessory dwelling unit shall not exceed 1,000 square feet of gross floor area, or 50 percent of the principal dwelling, whichever is less. Only one accessory dwelling unit is permitted per lot, and it shall share utility connections with the principal dwelling."
-    },
-    {
-      id: "la-4-12b", hoursAgo: 2.5, url: "https://cityclerk.lacity.org",
-      entity: "City of Los Angeles Planning Commission",
-      doc: "Draft amendment, Short-term rentals",
-      section: "§ 4.12(b)",
-      segments: [
-        ["add", "Short-term rental permits shall be renewed annually, and the permit number shall appear in every listing."]
-      ],
-      full: "(a) No dwelling may be offered as a short-term rental without a valid permit. (b) Short-term rental permits shall be renewed annually, and the permit number shall appear in every listing. (c) Permits are not transferable between owners."
-    },
-    {
-      id: "chi-27-305", hoursAgo: 4, url: "https://chicago.legistar.com",
-      entity: "Chicago City Council Board",
-      doc: "Ordinance 311, Home occupations",
-      section: "§ 27-305",
-      segments: [
-        ["eq", "Home occupations shall be conducted entirely within the dwelling. "],
-        ["del", "No more than one non-resident employee may work on the premises."]
-      ],
-      full: "Home occupations shall be conducted entirely within the dwelling. Signage is limited to one non-illuminated sign not exceeding two square feet."
-    },
-    {
-      id: "hou-12-08-040", hoursAgo: 6, url: "https://houston.novusagenda.com",
-      entity: "Houston City Council Commission",
-      doc: "Title 12, Signage standards",
-      section: "§ 12.08.040",
-      segments: [
-        ["eq", "Freestanding signs shall not exceed "],
-        ["del", "twelve (12)"], ["add", "eight (8)"],
-        ["eq", " feet in height"],
-        ["add", " within 300 feet of a residential district"],
-        ["eq", "."]
-      ],
-      full: "Freestanding signs shall not exceed eight (8) feet in height within 300 feet of a residential district. Elsewhere, freestanding signs shall not exceed twelve (12) feet in height."
-    },
-    {
-      id: "mia-min-0922", hoursAgo: 9, url: "https://miamigov.legistar.com",
-      entity: "City of Miami Hearing Board",
-      doc: "Meeting minutes, 22 September",
-      section: "p. 3",
-      text: "The Board granted a variance from § 5.3 to allow a five-foot fence in the front yard at 18 Mill Road, subject to a clear sight triangle at the driveway.",
-      full: "Present: all five members. The Board granted a variance from § 5.3 to allow a five-foot fence in the front yard at 18 Mill Road, subject to a clear sight triangle at the driveway. The applicant agreed to the condition. Motion carried 4-1."
-    },
-    {
-      id: "phx-18-6", hoursAgo: 20, url: "https://phoenix.gov",
-      entity: "City of Phoenix Council",
-      doc: "Ordinance 2026-09, Off-street parking",
-      section: "§ 18-6",
-      segments: [
-        ["del", "Two off-street parking spaces are required per dwelling unit."],
-        ["add", "Off-street parking is not required for dwellings within one-half mile of a transit stop."]
-      ],
-      full: "Off-street parking is not required for dwellings within one-half mile of a transit stop. All other dwellings shall provide one off-street parking space per unit."
-    },
-    {
-      id: "dal-notice-1008", hoursAgo: 26, url: "https://dallascityhall.com",
-      entity: "Dallas Zoning Board of Adjustment",
-      doc: "Notice of public hearing",
-      section: "p. 1",
-      text: "Notice is given that the Zoning Board will hold a public hearing on 8 October to consider amendments to § 101.4 regarding accessory dwelling units.",
-      full: "Notice is given that the Zoning Board will hold a public hearing on 8 October at 7:00 p.m. in the County Administration Building to consider amendments to § 101.4 regarding accessory dwelling units. Written comments may be submitted before the hearing."
-    },
-    {
-      id: "san-27-410", hoursAgo: 30, url: "https://sandiego.gov",
-      entity: "San Diego Land Use & Housing",
-      doc: "Ordinance 312, Solar energy systems",
-      section: "§ 27-410",
-      segments: [
-        ["add", "Ground-mounted solar energy systems shall be screened from adjoining residential lots by landscaping at least six feet tall at maturity."]
-      ],
-      full: "Ground-mounted solar energy systems are permitted as accessory uses in all agricultural districts. Ground-mounted solar energy systems shall be screened from adjoining residential lots by landscaping at least six feet tall at maturity."
-    }
-  ];
-
-  let DATA = [...DEFAULT_DATA];
+  let DATA = [];
+  let searchError = false;
 
   const LABEL = { added: "Added", removed: "Removed", amended: "Amended", snapshot: "Snapshot" };
 
@@ -969,18 +880,17 @@
       const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
       if (res.ok) {
         const json = await res.json();
-        if (json.items && json.items.length > 0) {
-          DATA = json.items;
-          processData(DATA);
-          render();
-          return;
-        }
+        DATA = json.items || [];
+        searchError = false;
+        processData(DATA);
+        render();
+        return;
       }
     } catch (e) {
-      console.warn("Live search API fallback to baseline:", e);
+      console.warn("Could not reach search service:", e);
     }
-    // Fallback to baseline data filtered locally
-    DATA = [...DEFAULT_DATA];
+    DATA = [];
+    searchError = true;
     processData(DATA);
     render();
   }
@@ -1104,7 +1014,13 @@
     list.innerHTML = results.map(itemHTML).join("");
     empty.hidden = n > 0;
     if (!n) {
-      $("#empty-title").textContent = state.q ? `No matches for “${state.q}”` : "Nothing in this view yet";
+      if (searchError) {
+        $("#empty-title").textContent = "Could not reach the search service. Please try again.";
+      } else if (!DATA.length && !state.q) {
+        $("#empty-title").textContent = "No amendments recorded yet. The crawler runs daily.";
+      } else {
+        $("#empty-title").textContent = "No amendments match that search.";
+      }
     }
 
     if (state.first) {
