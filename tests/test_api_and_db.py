@@ -408,6 +408,27 @@ class TestFastAPIEndpoints(unittest.TestCase):
         self.assertEqual(res.json()["detail"], "This email address is reserved.")
         self.assertIsNone(repo.get_user_by_email(ADMIN_EMAIL))
 
+    def test_customer_token_with_admin_email_cannot_access_admin_via_me(self):
+        """A customer token created with ADMIN_EMAIL must NOT return role 'admin' on GET /api/auth/me,
+        and login must reject the reserved admin email."""
+        from api.auth import ADMIN_EMAIL, create_customer_token
+        login_res = self.client.post("/api/auth/login", json={
+            "email": ADMIN_EMAIL,
+            "password": "Password123!",
+        })
+        self.assertEqual(login_res.status_code, 400)
+        self.assertEqual(login_res.json()["detail"], "This email address is reserved.")
+
+        token = create_customer_token("fake-user-id", ADMIN_EMAIL)
+        me_res = self.client.get(
+            "/api/auth/me",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        if me_res.status_code == 200:
+            self.assertNotEqual(me_res.json().get("role"), "admin")
+        else:
+            self.assertEqual(me_res.status_code, 404)
+
     def test_paypal_webhook_endpoint(self):
         payload = {
             "event_type": "BILLING.SUBSCRIPTION.ACTIVATED",

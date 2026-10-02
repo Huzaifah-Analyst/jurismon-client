@@ -675,6 +675,12 @@ async def customer_resend_code(req: ResendCodeRequest):
 async def customer_login(req: CustomerLoginRequest):
     """Customer login validating credentials and verifying confirmation status."""
     email = (req.email or "").strip().lower()
+    if email == ADMIN_EMAIL.strip().lower():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This email address is reserved.",
+        )
+
     user = repo.get_user_by_email(email)
     if not user:
         raise HTTPException(
@@ -716,14 +722,14 @@ async def get_current_customer_profile(
     auth_user: dict = Depends(require_customer),
 ):
     """Returns current customer profile, trial status, and subscription state."""
-    email = auth_user.get("sub", "")
-    if email == ADMIN_EMAIL:
+    if is_admin_token(auth_user):
         return {
-            "email": email,
+            "email": auth_user.get("sub", ""),
             "role": "admin",
             "access": {"has_access": True, "reason": "admin"},
         }
 
+    email = auth_user.get("sub", "")
     user = repo.get_user_by_email(email)
     if not user:
         user = repo.get_user_by_id(auth_user.get("user_id", ""))

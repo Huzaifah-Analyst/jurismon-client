@@ -757,6 +757,19 @@ class Repository:
         from datetime import datetime, timezone
         norm_email = (email or "").strip().lower()
         now_iso = datetime.now(timezone.utc).isoformat()
+
+        if self.supabase:
+            try:
+                res = self.supabase.table("users").update({
+                    "verification_code": code,
+                    "verification_code_expires_at": expires_at,
+                    "updated_at": now_iso,
+                }).eq("email", norm_email).execute()
+                if res.data:
+                    return True
+            except Exception as e:
+                logger.error(f"Supabase set_verification_code error: {e}")
+
         with self._connect() as conn:
             cur = conn.cursor()
             cur.execute("""
@@ -799,6 +812,22 @@ class Repository:
         now_iso = now.isoformat()
         trial_ends_iso = (now + timedelta(days=trial_days)).isoformat()
 
+        if self.supabase:
+            try:
+                self.supabase.table("users").update({
+                    "is_verified": 1,
+                    "verification_code": None,
+                    "verification_code_expires_at": None,
+                    "trial_started_at": now_iso,
+                    "trial_ends_at": trial_ends_iso,
+                    "updated_at": now_iso,
+                }).eq("email", norm_email).execute()
+                updated_user = self.get_user_by_email(norm_email)
+                return {"success": True, "user": updated_user}
+            except Exception as e:
+                logger.error(f"Supabase verify_user_email error: {e}")
+                return {"success": False, "error": str(e)}
+
         with self._connect() as conn:
             cur = conn.cursor()
             cur.execute("""
@@ -827,6 +856,7 @@ class Repository:
                 res = self.supabase.table("users").select("*").eq("email", norm_email).limit(1).execute()
                 if res.data:
                     return res.data[0]
+                return None
             except Exception as e:
                 logger.error(f"Supabase get_user_by_email error: {e}")
 
@@ -847,6 +877,7 @@ class Repository:
                 res = self.supabase.table("users").select("*").eq("id", user_id).limit(1).execute()
                 if res.data:
                     return res.data[0]
+                return None
             except Exception as e:
                 logger.error(f"Supabase get_user_by_id error: {e}")
 
