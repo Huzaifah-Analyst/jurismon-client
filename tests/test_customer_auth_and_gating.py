@@ -167,6 +167,9 @@ class TestCustomerAuthAndGating(unittest.TestCase):
             "email": "resend@test.com",
             "password": "Password123!",
         })
+        old_code = self._get_code("resend@test.com")
+        self.assertTrue(len(old_code) == 6)
+
         res = self.client.post("/api/auth/resend-code", json={
             "email": "resend@test.com",
         })
@@ -174,7 +177,26 @@ class TestCustomerAuthAndGating(unittest.TestCase):
         data = res.json()
         self.assertEqual(data["status"], "code_resent")
         self.assertNotIn("dev_code", data)
-        self.assertTrue(len(self._get_code("resend@test.com")) == 6)
+
+        new_code = self._get_code("resend@test.com")
+        self.assertTrue(len(new_code) == 6)
+        self.assertNotEqual(old_code, new_code)
+
+        # Old code must now be rejected
+        old_res = self.client.post("/api/auth/verify-code", json={
+            "email": "resend@test.com",
+            "code": old_code,
+        })
+        self.assertEqual(old_res.status_code, 400)
+        self.assertIn("Invalid confirmation code", old_res.json()["detail"])
+
+        # New code must verify successfully
+        new_res = self.client.post("/api/auth/verify-code", json={
+            "email": "resend@test.com",
+            "code": new_code,
+        })
+        self.assertEqual(new_res.status_code, 200)
+        self.assertEqual(new_res.json()["status"], "verified")
 
     def test_get_current_customer_profile(self):
         self.client.post("/api/auth/register", json={

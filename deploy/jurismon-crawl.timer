@@ -1,0 +1,12 @@
+[Unit]
+Description=Run JurisMon Regulatory Drift Crawler daily
+Documentation=https://github.com/jurismon
+
+[Timer]
+OnCalendar=*-*-* 04:00:00
+RandomizedDelaySec=1800
+Persistent=true
+Unit=jurismon-crawl.service
+
+[Install]
+WantedBy=timers.target

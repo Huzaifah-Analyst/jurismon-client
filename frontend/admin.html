@@ -773,16 +773,18 @@
 
   <section class="block" id="sources" aria-labelledby="sources-h">
 
-    <div class="block-head">
-
+    <div class="block-head" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
       <div>
-
         <h2 id="sources-h">Sources</h2>
-
         <p class="block-sub">Municipal portals crawled every day. Select a square to find that source in the table.</p>
-
       </div>
-
+      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+        <button class="btn primary" type="button" id="btn-run-crawl" style="font-weight:600; display:inline-flex; align-items:center; gap:6px;">
+          <svg style="width:14px; height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Run Crawl Now
+        </button>
+        <span id="crawl-status-line" style="font-size:12px; color:var(--ink-sub, #64748b);">Checking crawl status...</span>
+      </div>
     </div>
 
 
@@ -2033,12 +2035,80 @@
       console.warn("Could not load webhook events:", err);
     }
 
+    await checkCrawlStatus();
+
     // Re-render once real data has landed, replacing the empty first paint.
     renderKpis();
     renderSubs();
     renderPlans();
     renderHooks();
   }
+
+  /* ---------- Crawl Run Management ---------- */
+  async function checkCrawlStatus() {
+    const auth = { "Authorization": "Bearer " + (localStorage.getItem("jurismon_admin_token") || "") };
+    const btn = $("#btn-run-crawl");
+    const statusLine = $("#crawl-status-line");
+    if (!statusLine) return;
+
+    try {
+      const res = await fetch("/api/admin/crawl/status", { headers: auth });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.status === "none") {
+          statusLine.textContent = "No crawl runs recorded.";
+          if (btn) btn.disabled = false;
+        } else if (data.status === "running") {
+          const startedAgo = rel(new Date(data.started_at).getTime()).toLowerCase();
+          statusLine.textContent = `Crawl in progress (started ${startedAgo})...`;
+          if (btn) btn.disabled = true;
+        } else {
+          const finishedAgo = rel(new Date(data.finished_at || data.started_at).getTime()).toLowerCase();
+          const total = data.total_sources || 0;
+          const failed = data.sources_failed || 0;
+          statusLine.textContent = `Last crawl: ${finishedAgo}, ${data.status}, ${total} sources, ${failed} errors`;
+          if (btn) btn.disabled = false;
+        }
+      }
+    } catch (e) {
+      console.warn("Could not fetch crawl status:", e);
+    }
+  }
+
+  async function triggerCrawlNow() {
+    const auth = { "Authorization": "Bearer " + (localStorage.getItem("jurismon_admin_token") || "") };
+    const btn = $("#btn-run-crawl");
+    const statusLine = $("#crawl-status-line");
+    if (btn) btn.disabled = true;
+    if (statusLine) statusLine.textContent = "Starting crawl...";
+
+    try {
+      const res = await fetch("/api/admin/crawl/run", {
+        method: "POST",
+        headers: { ...auth, "Content-Type": "application/json" }
+      });
+      if (res.status === 409) {
+        toast("A crawl is already running");
+        await checkCrawlStatus();
+        return;
+      }
+      if (!res.ok) {
+        toast("Failed to start crawl: HTTP " + res.status);
+        if (btn) btn.disabled = false;
+        return;
+      }
+      const data = await res.json();
+      toast("Crawl started (" + (data.crawl_run_id ? data.crawl_run_id.slice(0, 8) : "") + ")");
+      await checkCrawlStatus();
+    } catch (err) {
+      console.error("Error triggering crawl:", err);
+      toast("Network error triggering crawl");
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  const btnRun = $("#btn-run-crawl");
+  if (btnRun) btnRun.addEventListener("click", triggerCrawlNow);
 
   loadLiveAdminData();
 
@@ -2062,7 +2132,7 @@
 
   // Keep relative times fresh
 
-  setInterval(() => { renderSources(); renderSystem(); }, 60e3);
+  setInterval(() => { renderSources(); renderSystem(); checkCrawlStatus(); }, 60e3);
 
 
   /* ---------- Authentication Gate Logic ---------- */

@@ -386,66 +386,110 @@ class Repository:
 
     def search_snapshots_and_diffs(self, query: str, limit: int = 30) -> Dict[str, Any]:
         """Executes full-text ranked queries across snapshots and statutory diff deltas."""
+        clean_q = (query or "").strip()
         if self.supabase:
             try:
-                # limit() must precede text_search(): the builder returned by
-                # text_search has no limit(), and the resulting AttributeError
-                # was being swallowed into the SQLite fallback, so search
-                # silently returned nothing in production.
-                # type=plain uses plainto_tsquery, which accepts arbitrary user
-                # input; to_tsquery rejects a phrase like "off street parking".
-                snapshots_res = self.supabase.table("snapshots").select(
-                    "id, document_id, version, cleaned_text, crawled_at, documents(title, pdf_url, source_id, sources(name, state))"
-                ).limit(limit).text_search(
-                    "search_vector", query, options={"type": "plain"}
-                ).execute()
+                if not clean_q:
+                    # When query is empty or whitespace-only, return most recent rows
+                    snapshots_res = self.supabase.table("snapshots").select(
+                        "id, document_id, version, cleaned_text, crawled_at, documents(title, pdf_url, source_id, sources(name, state))",
+                        count="exact"
+                    ).order("crawled_at", desc=True).limit(limit).execute()
 
-                diffs_res = self.supabase.table("diffs").select(
-                    "id, document_id, diff_payload, added_clauses_count, removed_clauses_count, generated_at, documents(title, pdf_url, sources(name, state))"
-                ).limit(limit).text_search(
-                    "diff_vector", query, options={"type": "plain"}
-                ).execute()
+                    diffs_res = self.supabase.table("diffs").select(
+                        "id, document_id, diff_payload, added_clauses_count, removed_clauses_count, generated_at, documents(title, pdf_url, sources(name, state))",
+                        count="exact"
+                    ).order("generated_at", desc=True).limit(limit).execute()
+                else:
+                    # limit() must precede text_search(): the builder returned by
+                    # text_search has no limit(), and the resulting AttributeError
+                    # was being swallowed into the SQLite fallback, so search
+                    # silently returned nothing in production.
+                    # type=plain uses plainto_tsquery, which accepts arbitrary user
+                    # input; to_tsquery rejects a phrase like "off street parking".
+                    snapshots_res = self.supabase.table("snapshots").select(
+                        "id, document_id, version, cleaned_text, crawled_at, documents(title, pdf_url, source_id, sources(name, state))",
+                        count="exact"
+                    ).limit(limit).text_search(
+                        "search_vector", clean_q, options={"type": "plain"}
+                    ).execute()
 
+                    diffs_res = self.supabase.table("diffs").select(
+                        "id, document_id, diff_payload, added_clauses_count, removed_clauses_count, generated_at, documents(title, pdf_url, sources(name, state))",
+                        count="exact"
+                    ).limit(limit).text_search(
+                        "diff_vector", clean_q, options={"type": "plain"}
+                    ).execute()
+
+                total_snaps = snapshots_res.count if snapshots_res.count is not None else len(snapshots_res.data or [])
+                total_diffs = diffs_res.count if diffs_res.count is not None else len(diffs_res.data or [])
                 return {
                     "snapshots": snapshots_res.data or [],
                     "diffs": diffs_res.data or [],
+                    "total_snapshots": total_snaps,
+                    "total_diffs": total_diffs,
                 }
             except Exception as e:
                 logger.error(f"Supabase search error: {e}")
 
-        # SQLite Search Implementation (LIKE query across text and diff payloads)
-        clean_q = f"%{query.strip()}%"
+        # SQLite Search Implementation
         with self._connect() as conn:
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
 
-            # Search Snapshots
-            cur.execute("""
-                SELECT s.id, s.document_id, s.version, s.cleaned_text, s.crawled_at, s.ocr_applied,
-                       d.title as doc_title, d.pdf_url as doc_url,
-                       src.name as source_name, src.state as source_state, src.county as source_county
-                FROM snapshots s
-                JOIN documents d ON s.document_id = d.id
-                LEFT JOIN sources src ON d.source_id = src.id
-                WHERE s.cleaned_text LIKE ?
-                ORDER BY s.crawled_at DESC
-                LIMIT ?
-            """, (clean_q, limit))
-            snap_rows = cur.fetchall()
+            if not clean_q:
+                # Search Snapshots - most recent without text filter
+                cur.execute("""
+                    SELECT s.id, s.document_id, s.version, s.cleaned_text, s.crawled_at, s.ocr_applied,
+                           d.title as doc_title, d.pdf_url as doc_url,
+                           src.name as source_name, src.state as source_state, src.county as source_county
+                    FROM snapshots s
+                    JOIN documents d ON s.document_id = d.id
+                    LEFT JOIN sources src ON d.source_id = src.id
+                    ORDER BY s.crawled_at DESC
+                    LIMIT ?
+                """, (limit,))
+                snap_rows = cur.fetchall()
 
-            # Search Diffs
-            cur.execute("""
-                SELECT df.id, df.document_id, df.diff_payload, df.added_clauses_count, df.removed_clauses_count, df.generated_at,
-                       d.title as doc_title, d.pdf_url as doc_url,
-                       src.name as source_name, src.state as source_state, src.county as source_county
-                FROM diffs df
-                JOIN documents d ON df.document_id = d.id
-                LEFT JOIN sources src ON d.source_id = src.id
-                WHERE df.diff_payload LIKE ?
-                ORDER BY df.generated_at DESC
-                LIMIT ?
-            """, (clean_q, limit))
-            diff_rows = cur.fetchall()
+                # Search Diffs - most recent without text filter
+                cur.execute("""
+                    SELECT df.id, df.document_id, df.diff_payload, df.added_clauses_count, df.removed_clauses_count, df.generated_at,
+                           d.title as doc_title, d.pdf_url as doc_url,
+                           src.name as source_name, src.state as source_state, src.county as source_county
+                    FROM diffs df
+                    JOIN documents d ON df.document_id = d.id
+                    LEFT JOIN sources src ON d.source_id = src.id
+                    ORDER BY df.generated_at DESC
+                    LIMIT ?
+                """, (limit,))
+                diff_rows = cur.fetchall()
+            else:
+                like_q = f"%{clean_q}%"
+                cur.execute("""
+                    SELECT s.id, s.document_id, s.version, s.cleaned_text, s.crawled_at, s.ocr_applied,
+                           d.title as doc_title, d.pdf_url as doc_url,
+                           src.name as source_name, src.state as source_state, src.county as source_county
+                    FROM snapshots s
+                    JOIN documents d ON s.document_id = d.id
+                    LEFT JOIN sources src ON d.source_id = src.id
+                    WHERE s.cleaned_text LIKE ?
+                    ORDER BY s.crawled_at DESC
+                    LIMIT ?
+                """, (like_q, limit))
+                snap_rows = cur.fetchall()
+
+                cur.execute("""
+                    SELECT df.id, df.document_id, df.diff_payload, df.added_clauses_count, df.removed_clauses_count, df.generated_at,
+                           d.title as doc_title, d.pdf_url as doc_url,
+                           src.name as source_name, src.state as source_state, src.county as source_county
+                    FROM diffs df
+                    JOIN documents d ON df.document_id = d.id
+                    LEFT JOIN sources src ON d.source_id = src.id
+                    WHERE df.diff_payload LIKE ?
+                    ORDER BY df.generated_at DESC
+                    LIMIT ?
+                """, (like_q, limit))
+                diff_rows = cur.fetchall()
 
             formatted_snaps = []
             for r in snap_rows:
@@ -483,7 +527,21 @@ class Repository:
                     },
                 })
 
-            return {"snapshots": formatted_snaps, "diffs": formatted_diffs}
+            if not clean_q:
+                cur.execute("SELECT COUNT(*) FROM snapshots")
+                total_snapshots_count = cur.fetchone()[0]
+                cur.execute("SELECT COUNT(*) FROM diffs")
+                total_diffs_count = cur.fetchone()[0]
+            else:
+                total_snapshots_count = len(formatted_snaps)
+                total_diffs_count = len(formatted_diffs)
+
+            return {
+                "snapshots": formatted_snaps,
+                "diffs": formatted_diffs,
+                "total_snapshots": total_snapshots_count,
+                "total_diffs": total_diffs_count,
+            }
 
     def record_subscription(
         self,
@@ -678,6 +736,42 @@ class Repository:
                 run_id,
             ))
             conn.commit()
+
+    def get_active_crawl_run(self) -> Optional[Dict[str, Any]]:
+        """Returns the currently active crawl run with status='running', if any."""
+        if self.supabase:
+            try:
+                res = self.supabase.table("crawl_runs").select("*").eq("status", "running").order("started_at", desc=True).limit(1).execute()
+                if res.data:
+                    return res.data[0]
+                return None
+            except Exception as e:
+                logger.error(f"Supabase get_active_crawl_run error: {e}")
+
+        with self._connect() as conn:
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM crawl_runs WHERE status = 'running' ORDER BY started_at DESC LIMIT 1")
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+    def get_latest_crawl_run(self) -> Optional[Dict[str, Any]]:
+        """Returns the most recent crawl run."""
+        if self.supabase:
+            try:
+                res = self.supabase.table("crawl_runs").select("*").order("started_at", desc=True).limit(1).execute()
+                if res.data:
+                    return res.data[0]
+                return None
+            except Exception as e:
+                logger.error(f"Supabase get_latest_crawl_run error: {e}")
+
+        with self._connect() as conn:
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM crawl_runs ORDER BY started_at DESC LIMIT 1")
+            row = cur.fetchone()
+            return dict(row) if row else None
 
     def create_user(
         self,

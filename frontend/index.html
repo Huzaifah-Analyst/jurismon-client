@@ -1207,12 +1207,14 @@
       if (res.ok) {
         const json = await res.json();
         DATA = json.items || [];
+        totalIndexedRecords = json.total_snapshots ?? (json.results && json.results.total_snapshots) ?? DATA.length;
         searchGated = !!json.is_gated;
         searchGateReason = json.gate_reason || "";
         searchError = false;
         processData(DATA);
         render();
         updateGateBanner();
+        updateStatusText();
         return;
       }
     } catch (e) {
@@ -1223,6 +1225,7 @@
     processData(DATA);
     render();
     updateGateBanner();
+    updateStatusText();
   }
 
   function updateGateBanner() {
@@ -1253,6 +1256,7 @@
      the instant before the first fetch returns. */
 
   let counts = { total: 0, operational: 0, cloudflare: 0, dead: 0 };
+  let totalIndexedRecords = 0;
   let isAdminView = false;
 
   async function loadSourcesCount() {
@@ -1266,8 +1270,6 @@
       const countEl = document.getElementById("source-count");
       const navLinkEl = countEl ? countEl.closest(".navlink") : null;
       const titleEl = document.getElementById("title");
-      const statEl = document.getElementById("status-text");
-      const recent = DATA.filter(d => d.type === "diff" && d.hoursAgo <= 24).length;
 
       isAdminView = ("operational_count" in data);
 
@@ -1284,9 +1286,6 @@
         if (titleEl) {
           titleEl.textContent = `Search amendments across ${counts.operational} active jurisdictions`;
         }
-        if (statEl) {
-          statEl.innerHTML = `<strong>${counts.operational} operational portals</strong> ingesting daily (${counts.cloudflare} Cloudflare protected, ${counts.dead} expired municipality links). ${recent} statutory changes detected.`;
-        }
       } else {
         const total = data.count ?? data.total_configured ?? 65;
         counts = { total, operational: 0, cloudflare: 0, dead: 0 };
@@ -1295,24 +1294,23 @@
         if (titleEl) {
           titleEl.textContent = `Search amendments across ${total} U.S. jurisdictions`;
         }
-        if (statEl) {
-          statEl.innerHTML = `Monitoring ${total} municipal and county portals daily. ${recent} statutory changes detected.`;
-        }
       }
+      updateStatusText();
     } catch (e) {
       console.warn("Could not fetch live source count:", e);
     }
   }
 
   function updateStatusText() {
-    const recent = DATA.filter(d => d.type === "diff" && d.hoursAgo <= 24).length;
     const statEl = $("#status-text");
     if (!statEl) return;
     if (isAdminView) {
+      const recent = DATA.filter(d => d.type === "diff" && d.hoursAgo <= 24).length;
       statEl.innerHTML = `<strong>${counts.operational} operational portals</strong> ingesting daily (${counts.cloudflare} Cloudflare protected, ${counts.dead} expired municipality links). ${recent} statutory changes detected.`;
     } else {
       const total = counts.total || 65;
-      statEl.innerHTML = `Monitoring ${total} municipal and county portals daily. ${recent} statutory changes detected.`;
+      const recordsStr = totalIndexedRecords ? ` ${totalIndexedRecords} statutory records indexed.` : "";
+      statEl.innerHTML = `Monitoring ${total} municipal and county portals daily.${recordsStr}`;
     }
   }
 

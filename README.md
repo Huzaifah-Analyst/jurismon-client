@@ -4,6 +4,32 @@ JurisMon is a production-grade statutory monitoring pipeline that tracks municip
 
 ---
 
+## 🚨 Deploying a change to jurismon.com (CRITICAL)
+
+> **⚠️ WARNING:** Pushing commits to GitHub does **NOT** update `https://jurismon.com`. Pushes and deployments are strictly separate steps.
+
+Whenever you push changes to `main` (or the client repository), you **MUST** deploy them to the production VPS via SSH:
+
+```bash
+# 1. SSH into the VPS
+ssh <user>@<vps-ip>
+
+# 2. Run the deployment script as root (pulls origin/main, installs dependencies, restarts services)
+sudo bash /var/www/jurismon/scripts/deploy.sh
+```
+
+To verify the deployment was successful:
+```bash
+# Check the running git commit SHA
+git -C /var/www/jurismon rev-parse --short HEAD
+
+# Check service status
+systemctl status jurismon.service
+systemctl status jurismon-crawl.timer
+```
+
+---
+
 ## 🏛️ Architecture Overview
 
 ```

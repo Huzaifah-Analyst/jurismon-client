@@ -77,6 +77,41 @@ class TestDatabaseRepository(unittest.TestCase):
         self.assertGreater(len(results["snapshots"]), 0)
         self.assertIn("30 feet", results["snapshots"][0]["cleaned_text"])
 
+    def test_search_empty_query_returns_recent_rows(self):
+        """search_snapshots_and_diffs('') returns the most recent rows, not an empty list, with rows present."""
+        doc = self.repo.get_or_create_document(
+            source_id="test-empty-q",
+            title="Ordinance Empty Q",
+            pdf_url="https://austin.gov/docs/empty_q.pdf"
+        )
+        self.repo.create_snapshot(
+            document_id=doc["id"],
+            version=1,
+            content_hash="hash_empty_1",
+            raw_text="Raw text",
+            cleaned_text="Zoning amendment text for empty query test."
+        )
+        results = self.repo.search_snapshots_and_diffs(query="")
+        self.assertGreater(len(results["snapshots"]), 0)
+        self.assertIn("Zoning amendment", results["snapshots"][0]["cleaned_text"])
+
+    def test_search_whitespace_query_returns_recent_rows(self):
+        """search_snapshots_and_diffs('   ') behaves identically to empty query."""
+        doc = self.repo.get_or_create_document(
+            source_id="test-ws-q",
+            title="Ordinance WS Q",
+            pdf_url="https://austin.gov/docs/ws_q.pdf"
+        )
+        self.repo.create_snapshot(
+            document_id=doc["id"],
+            version=1,
+            content_hash="hash_ws_1",
+            raw_text="Raw text",
+            cleaned_text="Zoning amendment text for whitespace query test."
+        )
+        results = self.repo.search_snapshots_and_diffs(query="   ")
+        self.assertGreater(len(results["snapshots"]), 0)
+
     def test_record_and_list_subscriptions(self):
         sub = self.repo.record_subscription(
             external_sub_id="I-BW452GLLEP1G",
@@ -424,10 +459,8 @@ class TestFastAPIEndpoints(unittest.TestCase):
             "/api/auth/me",
             headers={"Authorization": f"Bearer {token}"},
         )
-        if me_res.status_code == 200:
-            self.assertNotEqual(me_res.json().get("role"), "admin")
-        else:
-            self.assertEqual(me_res.status_code, 404)
+        self.assertEqual(me_res.status_code, 404)
+        self.assertEqual(me_res.json()["detail"], "User not found.")
 
     def test_paypal_webhook_endpoint(self):
         payload = {
@@ -493,6 +526,68 @@ class TestFastAPIEndpoints(unittest.TestCase):
         self.assertEqual(adm_res.status_code, 200)
         self.assertIn("noindex", adm_res.text)
         self.assertNotIn("og:image", adm_res.text)
+
+    def test_admin_crawl_endpoints(self):
+        """B4: Unauthenticated POST is rejected; a second POST while one is running returns 409;
+        status endpoint returns the latest run."""
+        from api.auth import create_access_token, create_customer_token, ADMIN_EMAIL
+        admin_token = create_access_token({"sub": ADMIN_EMAIL})
+        cust_token = create_customer_token("any-user-id", "customer@test.com")
+
+        # 1. Unauthenticated POST rejected
+        res_no_auth = self.client.post("/api/admin/crawl/run")
+        self.assertIn(res_no_auth.status_code, (401, 403))
+
+        # 2. Customer token rejected (403)
+        res_cust = self.client.post(
+            "/api/admin/crawl/run",
+            headers={"Authorization": f"Bearer {cust_token}"},
+        )
+        self.assertEqual(res_cust.status_code, 403)
+
+        # 3. Status endpoint without auth rejected
+        res_stat_no_auth = self.client.get("/api/admin/crawl/status")
+        self.assertIn(res_stat_no_auth.status_code, (401, 403))
+
+        # 4. First run started with admin token
+        with patch("api.main._run_background_crawl"):
+            res_start = self.client.post(
+                "/api/admin/crawl/run",
+                headers={"Authorization": f"Bearer {admin_token}"},
+            )
+            self.assertEqual(res_start.status_code, 200)
+            data = res_start.json()
+            self.assertEqual(data["status"], "started")
+            self.assertIn("crawl_run_id", data)
+
+            # 5. Status endpoint returns current run
+            res_status = self.client.get(
+                "/api/admin/crawl/status",
+                headers={"Authorization": f"Bearer {admin_token}"},
+            )
+            self.assertEqual(res_status.status_code, 200)
+            status_data = res_status.json()
+            self.assertEqual(status_data["status"], "running")
+
+            # 6. Second POST while one is running returns 409 Conflict
+            res_second = self.client.post(
+                "/api/admin/crawl/run",
+                headers={"Authorization": f"Bearer {admin_token}"},
+            )
+            self.assertEqual(res_second.status_code, 409)
+            self.assertIn("already running", res_second.json()["detail"])
+
+            # Clean up test run so database is clean for subsequent runs
+            from api.main import repo
+            repo.finish_crawl_run(
+                data["crawl_run_id"],
+                status="completed",
+                total_sources=0,
+                sources_succeeded=0,
+                sources_failed=0,
+                documents_found=0,
+                diffs_created=0,
+            )
 
 
 if __name__ == "__main__":

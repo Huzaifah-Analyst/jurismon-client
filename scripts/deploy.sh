@@ -92,10 +92,13 @@ if [ -n "$missing" ]; then
 fi
 
 # --------------------------------------------------------------------
-log "Installing systemd service"
+log "Installing systemd services and crawl timer"
 cp "$APP_DIR/deploy/jurismon.service" /etc/systemd/system/jurismon.service
+cp "$APP_DIR/deploy/jurismon-crawl.service" /etc/systemd/system/jurismon-crawl.service
+cp "$APP_DIR/deploy/jurismon-crawl.timer" /etc/systemd/system/jurismon-crawl.timer
 systemctl daemon-reload
 systemctl enable jurismon
+systemctl enable --now jurismon-crawl.timer
 
 # --------------------------------------------------------------------
 log "Installing Nginx site"
@@ -141,7 +144,9 @@ cat <<DONE
 
  Commit    : $(sudo -u "$APP_USER" git -C "$APP_DIR" rev-parse --short HEAD 2>/dev/null || echo 'n/a')
  Service   : $(systemctl is-active jurismon)
+ Timer     : $(systemctl is-active jurismon-crawl.timer 2>/dev/null || echo 'n/a')
  Logs      : journalctl -u jurismon -f
+             journalctl -u jurismon-crawl.service -f
              /var/log/jurismon/api.log
 
  If TLS is not yet issued:

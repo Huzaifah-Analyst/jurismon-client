@@ -1,0 +1,24 @@
+[Unit]
+Description=JurisMon Daily Regulatory Drift Crawler
+Documentation=https://github.com/jurismon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=jurismon
+Group=jurismon
+WorkingDirectory=/var/www/jurismon
+EnvironmentFile=/var/www/jurismon/.env
+
+ExecStart=/var/www/jurismon/venv/bin/python /var/www/jurismon/scripts/run_crawler.py
+
+StandardOutput=journal
+StandardError=journal
+
+# Hardening: same security profile as jurismon.service
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/var/www/jurismon /var/log/jurismon

@@ -16,6 +16,8 @@ from pathlib import Path
 # Add project root to sys.path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from typing import Optional, List, Dict, Any
+
 from crawler.adapters import get_adapter
 from crawler.requests_crawler import RequestsCrawler
 from extractor.pdf_extractor import PDFExtractor
@@ -59,7 +61,7 @@ def compute_sha256(content: bytes) -> str:
     return hashlib.sha256(content).hexdigest()
 
 
-def main():
+def main(run_id: Optional[str] = None):
     logger.info("=== Starting JurisMon Daily Ingestion & Diff Run ===")
     start_time = time.time()
     sources = load_sites_config()
@@ -81,7 +83,7 @@ def main():
     active_sources = [s for s in sources if s.get("is_active", True)]
     total_sources = len(active_sources)
 
-    run_id = repo.start_crawl_run()
+    run_id = run_id or repo.start_crawl_run()
     run_status = "failed"
 
     try:

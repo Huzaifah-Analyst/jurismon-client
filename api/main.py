@@ -12,7 +12,7 @@ import os
 import json
 import logging
 from typing import Optional, Dict, Any, List
-from fastapi import FastAPI, Request, HTTPException, Query, Depends, status
+from fastapi import FastAPI, Request, HTTPException, Query, Depends, status, BackgroundTasks
 from fastapi.responses import HTMLResponse, FileResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -284,6 +284,13 @@ async def search_endpoint(
             access_status = repo.get_user_access_status(auth_user.get("user_id") or auth_user.get("sub"))
             has_access = bool(access_status.get("has_access"))
 
+    total_snaps = results.get("total_snapshots")
+    if total_snaps is None:
+        total_snaps = len(results.get("snapshots", []))
+    total_dfs = results.get("total_diffs")
+    if total_dfs is None:
+        total_dfs = len(results.get("diffs", []))
+
     if not has_access:
         teaser_items = items[:2]
         for item in teaser_items:
@@ -294,8 +301,8 @@ async def search_endpoint(
             item["is_locked"] = True
         return {
             "query": q,
-            "total_snapshots": len(results.get("snapshots", [])),
-            "total_diffs": len(results.get("diffs", [])),
+            "total_snapshots": total_snaps,
+            "total_diffs": total_dfs,
             "results": results,
             "items": teaser_items,
             "is_gated": True,
@@ -305,8 +312,8 @@ async def search_endpoint(
 
     return {
         "query": q,
-        "total_snapshots": len(results.get("snapshots", [])),
-        "total_diffs": len(results.get("diffs", [])),
+        "total_snapshots": total_snaps,
+        "total_diffs": total_dfs,
         "results": results,
         "items": items,
         "is_gated": False,
@@ -765,6 +772,51 @@ async def admin_login(req: LoginRequest):
         )
     token = create_access_token({"sub": ADMIN_EMAIL})
     return {"access_token": token, "token_type": "bearer"}
+
+
+def _run_background_crawl(run_id: str):
+    try:
+        from scripts.run_crawler import main as execute_crawl
+        execute_crawl(run_id=run_id)
+    except Exception as e:
+        logger.error(f"Background crawl execution error for {run_id}: {e}")
+
+
+@app.post("/api/admin/crawl/run")
+async def trigger_admin_crawl(
+    background_tasks: BackgroundTasks,
+    admin: dict = Depends(require_admin),
+):
+    """Trigger background crawler execution. Refuses with 409 if a crawl is already running."""
+    active_run = repo.get_active_crawl_run()
+    if active_run:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A crawl is already running.",
+        )
+
+    run_id = repo.start_crawl_run()
+    background_tasks.add_task(_run_background_crawl, run_id)
+
+    return {
+        "status": "started",
+        "crawl_run_id": run_id,
+        "message": "Crawl run kicked off in background.",
+    }
+
+
+@app.get("/api/admin/crawl/status")
+async def get_admin_crawl_status(
+    admin: dict = Depends(require_admin),
+):
+    """Returns the latest crawl run status, timestamps, counts, and errors."""
+    latest = repo.get_latest_crawl_run()
+    if not latest:
+        return {
+            "status": "none",
+            "message": "No crawl runs recorded.",
+        }
+    return latest
 
 
 @app.get("/api/admin/overview")

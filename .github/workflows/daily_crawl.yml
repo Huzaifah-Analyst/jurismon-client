@@ -1,10 +1,10 @@
 name: JurisMon Daily Municipal Ingestion
 
+# Manual dispatch only. The daily schedule is managed directly on the VPS via
+# systemd timer (deploy/jurismon-crawl.timer) to prevent scheduler collisions,
+# GitHub Actions cron skips under load, and 60-day inactivity shutoffs.
 on:
-  schedule:
-    # Runs daily at 04:00 UTC (midnight EST)
-    - cron: '0 4 * * *'
-  workflow_dispatch: # Allows manual trigger from GitHub UI
+  workflow_dispatch:
 
 jobs:
   run-daily-crawl:
