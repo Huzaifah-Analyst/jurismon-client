@@ -314,9 +314,21 @@ async def search_endpoint(
 
 
 @app.get("/api/sources")
-async def list_sources(filter_type: Optional[str] = Query(default="all")):
+async def list_sources(
+    filter_type: Optional[str] = Query(default="all"),
+    auth_user: Optional[Dict[str, Any]] = Depends(get_current_customer_optional),
+):
     """Lists municipal sources with real-world audit categorization."""
     all_sources = repo.get_all_sources()
+    total = len(all_sources)
+
+    is_admin = bool(auth_user and auth_user.get("sub") == ADMIN_EMAIL)
+    if not is_admin:
+        return {
+            "count": total,
+            "total_configured": total,
+        }
+
     # health_status is authoritative; falling back to is_active counted every
     # parked source as operational.
     operational = [s for s in all_sources if s.get("health_status") == "operational"]
@@ -324,8 +336,8 @@ async def list_sources(filter_type: Optional[str] = Query(default="all")):
     dead_links = [s for s in all_sources if s.get("health_status") == "dead_link"]
 
     return {
-        "count": len(all_sources),
-        "total_configured": len(all_sources),
+        "count": total,
+        "total_configured": total,
         "operational_count": len(operational),
         "cloudflare_count": len(cloudflare),
         "dead_links_count": len(dead_links),

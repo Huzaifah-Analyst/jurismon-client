@@ -649,6 +649,10 @@
 
 
 
+  @media (max-width: 480px) {
+    .brand-tagline { display: none; }
+  }
+
   @media (max-width: 680px) {
 
     .wrap { padding: 0 16px; }
@@ -868,12 +872,11 @@
 
   <div class="wrap topbar-inner">
 
-    <a class="brand" href="/" aria-label="JurisMon home" style="text-decoration:none; display:flex; align-items:center; gap:12px;">
-      <img src="/static/assets/logo.png" alt="JurisMon" style="height:36px; width:auto; border-radius:6px; object-fit:contain; border:1px solid var(--line);">
-      <div>
-        <div style="font-weight:600; color:var(--ink); font-size:16px; letter-spacing:-0.01em;">JurisMon</div>
-        <div style="font-size:12px; color:var(--muted); line-height:1;">Regulatory Drift Monitor</div>
-      </div>
+    <a class="brand" href="/" aria-label="JurisMon home" style="text-decoration:none; display:flex; align-items:center; gap:10px;">
+      <img src="/static/assets/logo.png" alt="JurisMon" style="height:30px; width:auto; display:block; object-fit:contain;">
+      <span class="brand-tagline" style="font-size:12px; color:var(--muted); line-height:1; border-left:1px solid var(--line); padding-left:10px;">
+        Regulatory Drift Monitor
+      </span>
     </a>
     <nav class="topnav" aria-label="Main" id="nav-actions">
       <span class="navlink" style="cursor:default;"><span class="label">Operational Jurisdictions</span> <span class="navcount" id="source-count">—</span></span>
@@ -898,7 +901,7 @@
 
   <section class="hero" aria-labelledby="title">
 
-    <h1 id="title">Search amendments across 32 active jurisdictions</h1>
+    <h1 id="title">Search amendments across U.S. municipal jurisdictions</h1>
 
     <p class="status"><span class="dot" aria-hidden="true"></span><span id="status-text"></span></p>
 
@@ -1253,25 +1256,46 @@
 
   async function loadSourcesCount() {
     try {
-      const res = await fetch("/api/sources");
+      const token = localStorage.getItem("jurismon_admin_token") || localStorage.getItem("jurismon_token");
+      const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+      const res = await fetch("/api/sources", { headers });
       if (!res.ok) return;
 
       const data = await res.json();
-      counts = {
-        total: data.count ?? 0,
-        operational: data.operational_count ?? 0,
-        cloudflare: data.cloudflare_count ?? 0,
-        dead: data.dead_links_count ?? 0
-      };
-
       const countEl = document.getElementById("source-count");
-      if (countEl) countEl.textContent = `${counts.operational} / ${counts.total}`;
-
+      const navLinkEl = countEl ? countEl.closest(".navlink") : null;
       const titleEl = document.getElementById("title");
-      if (titleEl) titleEl.textContent =
-        `Search amendments across ${counts.operational} active jurisdictions`;
+      const statEl = document.getElementById("status-text");
+      const recent = DATA.filter(d => d.type === "diff" && d.hoursAgo <= 24).length;
 
-      updateStatusText();
+      if ("operational_count" in data) {
+        counts = {
+          total: data.count ?? 0,
+          operational: data.operational_count ?? 0,
+          cloudflare: data.cloudflare_count ?? 0,
+          dead: data.dead_links_count ?? 0
+        };
+
+        if (navLinkEl) navLinkEl.style.display = "";
+        if (countEl) countEl.textContent = `${counts.operational} / ${counts.total}`;
+        if (titleEl) {
+          titleEl.textContent = `Search amendments across ${counts.operational} active jurisdictions`;
+        }
+        if (statEl) {
+          statEl.innerHTML = `<strong>${counts.operational} operational portals</strong> ingesting daily (${counts.cloudflare} Cloudflare protected, ${counts.dead} expired municipality links). ${recent} statutory changes detected.`;
+        }
+      } else {
+        const total = data.count ?? data.total_configured ?? 65;
+        counts = { total, operational: 0, cloudflare: 0, dead: 0 };
+
+        if (navLinkEl) navLinkEl.style.display = "none";
+        if (titleEl) {
+          titleEl.textContent = `Search amendments across ${total} U.S. jurisdictions`;
+        }
+        if (statEl) {
+          statEl.innerHTML = `Monitoring ${total} municipal and county portals daily. ${recent} statutory changes detected.`;
+        }
+      }
     } catch (e) {
       console.warn("Could not fetch live source count:", e);
     }
@@ -1280,8 +1304,12 @@
   function updateStatusText() {
     const recent = DATA.filter(d => d.type === "diff" && d.hoursAgo <= 24).length;
     const statEl = $("#status-text");
-    if (statEl) {
+    if (!statEl) return;
+    if (counts.operational > 0) {
       statEl.innerHTML = `<strong>${counts.operational} operational portals</strong> ingesting daily (${counts.cloudflare} Cloudflare protected, ${counts.dead} expired municipality links). ${recent} statutory changes detected.`;
+    } else {
+      const total = counts.total || 65;
+      statEl.innerHTML = `Monitoring ${total} municipal and county portals daily. ${recent} statutory changes detected.`;
     }
   }
 

@@ -351,10 +351,42 @@ class TestFastAPIEndpoints(unittest.TestCase):
         self.assertIn("results", data)
 
     def test_sources_endpoint(self):
-        response = self.client.get("/api/sources")
+        from api.auth import create_access_token, ADMIN_EMAIL
+        token = create_access_token({"sub": ADMIN_EMAIL})
+        response = self.client.get("/api/sources", headers={"Authorization": f"Bearer {token}"})
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn("sources", data)
+
+    def test_sources_anonymous_hides_operational_breakdown(self):
+        response = self.client.get("/api/sources")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        for key in ["operational_count", "cloudflare_count", "dead_links_count", "sources"]:
+            self.assertNotIn(key, data)
+        self.assertEqual(data["count"], data["total_configured"])
+
+    def test_sources_customer_hides_operational_breakdown(self):
+        from api.auth import create_customer_token
+        token = create_customer_token("cust_test_id", "counsel@firm.com")
+        response = self.client.get("/api/sources", headers={"Authorization": f"Bearer {token}"})
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        for key in ["operational_count", "cloudflare_count", "dead_links_count", "sources"]:
+            self.assertNotIn(key, data)
+        self.assertEqual(data["count"], data["total_configured"])
+
+    def test_sources_admin_sees_full_breakdown(self):
+        from api.auth import create_access_token, ADMIN_EMAIL
+        token = create_access_token({"sub": ADMIN_EMAIL})
+        response = self.client.get("/api/sources", headers={"Authorization": f"Bearer {token}"})
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        for key in ["operational_count", "cloudflare_count", "dead_links_count"]:
+            self.assertIn(key, data)
+        self.assertIn("sources", data)
+        self.assertIsInstance(data["sources"], list)
+        self.assertGreater(len(data["sources"]), 0)
 
     def test_paypal_webhook_endpoint(self):
         payload = {
