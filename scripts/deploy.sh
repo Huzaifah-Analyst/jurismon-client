@@ -106,6 +106,10 @@ cp "$APP_DIR/deploy/nginx.conf" /etc/nginx/sites-available/jurismon
 ln -sf /etc/nginx/sites-available/jurismon /etc/nginx/sites-enabled/jurismon
 rm -f /etc/nginx/sites-enabled/default
 
+if [ -d "/etc/letsencrypt/live/jurismon.com" ]; then
+    certbot --nginx -d jurismon.com -d www.jurismon.com --reinstall --keep-until-expiring --non-interactive --quiet || true
+fi
+
 if nginx -t; then
     systemctl reload nginx
     echo "Nginx reloaded."
