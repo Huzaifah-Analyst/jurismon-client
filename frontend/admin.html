@@ -1919,8 +1919,10 @@
   
   /* ---------- Live API Integration ---------- */
   async function loadLiveAdminData() {
+    const auth = { "Authorization": "Bearer " + (localStorage.getItem("jurismon_admin_token") || "") };
+
     try {
-      const sRes = await fetch("/api/sources");
+      const sRes = await fetch("/api/sources", { headers: auth });
       if (sRes.ok) {
         const sData = await sRes.json();
         if (sData.sources && sData.sources.length > 0) {
@@ -1939,13 +1941,47 @@
           });
           refreshSources();
           renderSystem();
+        } else {
+          console.error("Could not load live sources from /api/sources: 'sources' array missing from response. Authorization required or server error.", sData);
+          sources.length = 0;
+          renderStrip();
+          const srcBody = $("#src-body");
+          if (srcBody) {
+            srcBody.innerHTML = `<tr class="empty-row error-row"><td colspan="6" style="padding:28px 16px; text-align:center; color:var(--bad-ink); background:var(--bad-bg); font-weight:500;">
+              <strong>Error:</strong> Live source data could not be loaded: admin authorization required or response incomplete.
+            </td></tr>`;
+          }
+          const rangeEl = $("#src-range");
+          if (rangeEl) rangeEl.textContent = "Live data unavailable";
+          const stripEl = $("#strip");
+          if (stripEl) stripEl.innerHTML = `<div style="grid-column:1/-1; padding:8px 12px; font-size:12px; color:var(--bad-ink); background:var(--bad-bg); border-radius:4px;">Live sources unavailable (admin token missing or invalid)</div>`;
         }
+      } else {
+        console.error("Failed to fetch /api/sources: HTTP " + sRes.status);
+        sources.length = 0;
+        renderStrip();
+        const srcBody = $("#src-body");
+        if (srcBody) {
+          srcBody.innerHTML = `<tr class="empty-row error-row"><td colspan="6" style="padding:28px 16px; text-align:center; color:var(--bad-ink); background:var(--bad-bg); font-weight:500;">
+            <strong>Error:</strong> Live source data could not be loaded (HTTP ${sRes.status}). Admin authorization required.
+          </td></tr>`;
+        }
+        const rangeEl = $("#src-range");
+        if (rangeEl) rangeEl.textContent = "Live data unavailable";
+        const stripEl = $("#strip");
+        if (stripEl) stripEl.innerHTML = `<div style="grid-column:1/-1; padding:8px 12px; font-size:12px; color:var(--bad-ink); background:var(--bad-bg); border-radius:4px;">Live sources unavailable (HTTP ${sRes.status})</div>`;
       }
     } catch (err) {
-      console.warn("Using baseline sources:", err);
+      console.error("Could not fetch /api/sources:", err);
+      sources.length = 0;
+      renderStrip();
+      const srcBody = $("#src-body");
+      if (srcBody) {
+        srcBody.innerHTML = `<tr class="empty-row error-row"><td colspan="6" style="padding:28px 16px; text-align:center; color:var(--bad-ink); background:var(--bad-bg); font-weight:500;">
+          <strong>Error:</strong> Network error loading live sources.
+        </td></tr>`;
+      }
     }
-
-    const auth = { "Authorization": "Bearer " + (localStorage.getItem("jurismon_admin_token") || "") };
 
     try {
       const oRes = await fetch("/api/admin/overview", { headers: auth });

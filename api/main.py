@@ -31,6 +31,7 @@ from api.auth import (
     create_customer_token,
     get_current_customer_optional,
     require_customer,
+    is_admin_token,
 )
 from api.payments.paypal_provider import PayPalProvider
 from notifications.mailer import Mailer
@@ -276,7 +277,7 @@ async def search_endpoint(
     access_status = {"has_access": False, "reason": "unauthenticated"}
 
     if auth_user:
-        if auth_user.get("sub") == ADMIN_EMAIL:
+        if is_admin_token(auth_user):
             has_access = True
             access_status = {"has_access": True, "reason": "admin"}
         else:
@@ -322,8 +323,7 @@ async def list_sources(
     all_sources = repo.get_all_sources()
     total = len(all_sources)
 
-    is_admin = bool(auth_user and auth_user.get("sub") == ADMIN_EMAIL)
-    if not is_admin:
+    if not is_admin_token(auth_user):
         return {
             "count": total,
             "total_configured": total,
@@ -508,6 +508,11 @@ async def customer_register(req: CustomerRegisterRequest):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Valid email address is required.",
         )
+    if email == ADMIN_EMAIL.strip().lower():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This email address is reserved.",
+        )
 
     password = req.password or ""
     if len(password) < 8:
@@ -624,6 +629,11 @@ async def customer_verify_code(req: VerifyCodeRequest):
 async def customer_resend_code(req: ResendCodeRequest):
     """Resends a new 6-digit email confirmation code."""
     email = (req.email or "").strip().lower()
+    if email == ADMIN_EMAIL.strip().lower():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This email address is reserved.",
+        )
     user = repo.get_user_by_email(email)
     if not user:
         raise HTTPException(

@@ -388,6 +388,26 @@ class TestFastAPIEndpoints(unittest.TestCase):
         self.assertIsInstance(data["sources"], list)
         self.assertGreater(len(data["sources"]), 0)
 
+    def test_customer_token_at_admin_address_is_not_admin(self):
+        from api.auth import create_customer_token, ADMIN_EMAIL
+        token = create_customer_token("cust_admin_spoof", ADMIN_EMAIL)
+        response = self.client.get("/api/sources", headers={"Authorization": f"Bearer {token}"})
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertNotIn("operational_count", data)
+
+    def test_register_rejects_admin_email(self):
+        from api.auth import ADMIN_EMAIL
+        from api.main import repo
+        res = self.client.post("/api/auth/register", json={
+            "email": ADMIN_EMAIL,
+            "password": "ValidPassword123!",
+            "full_name": "Admin Impersonator",
+        })
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()["detail"], "This email address is reserved.")
+        self.assertIsNone(repo.get_user_by_email(ADMIN_EMAIL))
+
     def test_paypal_webhook_endpoint(self):
         payload = {
             "event_type": "BILLING.SUBSCRIPTION.ACTIVATED",

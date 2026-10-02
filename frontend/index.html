@@ -1253,6 +1253,7 @@
      the instant before the first fetch returns. */
 
   let counts = { total: 0, operational: 0, cloudflare: 0, dead: 0 };
+  let isAdminView = false;
 
   async function loadSourcesCount() {
     try {
@@ -1268,7 +1269,9 @@
       const statEl = document.getElementById("status-text");
       const recent = DATA.filter(d => d.type === "diff" && d.hoursAgo <= 24).length;
 
-      if ("operational_count" in data) {
+      isAdminView = ("operational_count" in data);
+
+      if (isAdminView) {
         counts = {
           total: data.count ?? 0,
           operational: data.operational_count ?? 0,
@@ -1305,7 +1308,7 @@
     const recent = DATA.filter(d => d.type === "diff" && d.hoursAgo <= 24).length;
     const statEl = $("#status-text");
     if (!statEl) return;
-    if (counts.operational > 0) {
+    if (isAdminView) {
       statEl.innerHTML = `<strong>${counts.operational} operational portals</strong> ingesting daily (${counts.cloudflare} Cloudflare protected, ${counts.dead} expired municipality links). ${recent} statutory changes detected.`;
     } else {
       const total = counts.total || 65;

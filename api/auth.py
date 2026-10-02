@@ -133,6 +133,20 @@ def require_admin(credentials: HTTPAuthorizationCredentials = Depends(security))
         )
 
 
+def is_admin_token(payload: Optional[dict]) -> bool:
+    """True only for an admin-issued token.
+
+    A customer token carries role='customer'. Checking the
+    subject alone would let a customer account registered at
+    the admin address pass as admin.
+    """
+    if not payload:
+        return False
+    if payload.get("role") == "customer":
+        return False
+    return payload.get("sub") == ADMIN_EMAIL
+
+
 optional_security = HTTPBearer(auto_error=False)
 
 
