@@ -48,6 +48,3 @@ class DiffPayload(BaseModel):
     modified: List[ClauseDiff] = Field(default_factory=list)
     summary: str = ""
     generated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-
-    def to_dict(self) -> Dict[str, Any]:
-        return self.model_dump()

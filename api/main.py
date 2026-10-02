@@ -13,14 +13,27 @@ import json
 import logging
 from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, Request, HTTPException, Query, Depends, status
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from db.repository import Repository
-from api.auth import create_access_token, require_admin, authenticate_admin, ADMIN_EMAIL
+import secrets
+from datetime import datetime, timezone, timedelta
+from api.auth import (
+    create_access_token,
+    require_admin,
+    authenticate_admin,
+    ADMIN_EMAIL,
+    get_password_hash,
+    verify_password,
+    create_customer_token,
+    get_current_customer_optional,
+    require_customer,
+)
 from api.payments.paypal_provider import PayPalProvider
+from notifications.mailer import Mailer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("jurismon.api")
@@ -50,6 +63,7 @@ app.add_middleware(
 
 repo = Repository()
 paypal_provider = PayPalProvider()
+mailer = Mailer()
 
 
 def _load_plan_catalogue() -> Dict[str, Any]:
@@ -85,6 +99,26 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class CustomerRegisterRequest(BaseModel):
+    email: str
+    password: str
+    full_name: Optional[str] = None
+
+
+class CustomerLoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class VerifyCodeRequest(BaseModel):
+    email: str
+    code: str
+
+
+class ResendCodeRequest(BaseModel):
+    email: str
+
+
 # ==========================================
 # PUBLIC SEARCH & FRONTEND ROUTES
 # ==========================================
@@ -103,6 +137,41 @@ async def serve_admin_page():
     if os.path.exists(admin_path):
         return FileResponse(admin_path)
     return "<h1>JurisMon Admin Panel</h1>"
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def serve_favicon():
+    favicon_path = os.path.join(frontend_dir, "assets", "favicon.ico")
+    if os.path.exists(favicon_path):
+        return FileResponse(favicon_path, media_type="image/x-icon")
+    return Response(status_code=404)
+
+
+@app.get("/robots.txt", response_class=PlainTextResponse)
+async def serve_robots_txt():
+    content = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Disallow: /admin\n"
+        "Disallow: /api/\n"
+        "Sitemap: https://jurismon.com/sitemap.xml\n"
+    )
+    return Response(content=content, media_type="text/plain")
+
+
+@app.get("/sitemap.xml")
+async def serve_sitemap_xml():
+    content = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        "  <url>\n"
+        "    <loc>https://jurismon.com/</loc>\n"
+        "    <changefreq>daily</changefreq>\n"
+        "    <priority>1.0</priority>\n"
+        "  </url>\n"
+        "</urlset>\n"
+    )
+    return Response(content=content, media_type="application/xml")
 
 
 def format_result_items(search_data: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -195,16 +264,52 @@ def format_result_items(search_data: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 
 @app.get("/api/search")
-async def search_endpoint(q: str = Query(default="", description="Search keyword or section number")):
+async def search_endpoint(
+    q: str = Query(default="", description="Search keyword or section number"),
+    auth_user: Optional[dict] = Depends(get_current_customer_optional),
+):
     """Instant search querying statutory text snapshots and calculated diffs."""
     results = repo.search_snapshots_and_diffs(query=q)
     items = format_result_items(results)
+
+    has_access = False
+    access_status = {"has_access": False, "reason": "unauthenticated"}
+
+    if auth_user:
+        if auth_user.get("sub") == ADMIN_EMAIL:
+            has_access = True
+            access_status = {"has_access": True, "reason": "admin"}
+        else:
+            access_status = repo.get_user_access_status(auth_user.get("user_id") or auth_user.get("sub"))
+            has_access = bool(access_status.get("has_access"))
+
+    if not has_access:
+        teaser_items = items[:2]
+        for item in teaser_items:
+            item["full"] = (
+                "Full statutory text and clause delta history are locked. "
+                "Sign up for a 14-day free trial or subscribe to JurisMon Professional ($49/mo) to unlock complete access."
+            )
+            item["is_locked"] = True
+        return {
+            "query": q,
+            "total_snapshots": len(results.get("snapshots", [])),
+            "total_diffs": len(results.get("diffs", [])),
+            "results": results,
+            "items": teaser_items,
+            "is_gated": True,
+            "gate_reason": access_status.get("reason", "unauthenticated"),
+            "access": access_status,
+        }
+
     return {
         "query": q,
         "total_snapshots": len(results.get("snapshots", [])),
         "total_diffs": len(results.get("diffs", [])),
         "results": results,
         "items": items,
+        "is_gated": False,
+        "access": access_status,
     }
 
 
@@ -341,13 +446,19 @@ async def paypal_webhook(request: Request):
     email = event_data.get("email")
 
     if sub_id:
+        next_billing = event_data.get("next_billing_at")
+        if not next_billing and status_str in ("active", "completed"):
+            plan_str = str(event_data.get("plan_id") or payload.get("resource", {}).get("plan_id") or "").lower()
+            days = 365 if ("annual" in plan_str or "4ks" in plan_str) else 30
+            next_billing = (datetime.now(timezone.utc) + timedelta(days=days)).isoformat()
+
         repo.record_subscription(
             external_sub_id=sub_id,
             plan_id=event_data.get("plan_id") or payload.get("resource", {}).get("plan_id"),
             status=status_str,
             user_email=email,
             subscriber_name=event_data.get("subscriber_name"),
-            next_billing_at=event_data.get("next_billing_at"),
+            next_billing_at=next_billing,
         )
         logger.info(f"Updated subscription {sub_id} to status '{status_str}' via webhook ({event_type})")
 
@@ -370,6 +481,246 @@ async def paypal_webhook(request: Request):
     )
 
     return {"status": "success", "processed": event_data}
+
+
+# ==========================================
+# CUSTOMER AUTHENTICATION ROUTES
+# ==========================================
+
+@app.post("/api/auth/register")
+async def customer_register(req: CustomerRegisterRequest):
+    """Customer registration issuing 14-day free trial and JWT token."""
+    email = (req.email or "").strip().lower()
+    if not email or "@" not in email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Valid email address is required.",
+        )
+
+    password = req.password or ""
+    if len(password) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must be at least 8 characters long.",
+        )
+    if len(password.encode("utf-8")) > 72:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must be 72 bytes or fewer.",
+        )
+
+    code = f"{secrets.randbelow(900000) + 100000}"
+    expires_at = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
+
+    existing = repo.get_user_by_email(email)
+    if existing:
+        if existing.get("is_verified", 0) == 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="An account with this email already exists. Please log in.",
+            )
+        # Account exists but unverified: update code and resend
+        repo.set_verification_code(email, code, expires_at)
+        user = existing
+    else:
+        pwd_hash = get_password_hash(password)
+        user = repo.create_user(
+            email=email,
+            password_hash=pwd_hash,
+            full_name=(req.full_name or "").strip() or None,
+            trial_days=14,
+            is_verified=0,
+            verification_code=code,
+            verification_code_expires_at=expires_at,
+        )
+
+    # Dispatch confirmation email via Resend
+    html_body = f"""
+    <div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif; max-width:520px; margin:0 auto; padding:24px; border:1px solid #e2e8f0; border-radius:8px; background:#ffffff;">
+      <h2 style="color:#0f172a; margin-top:0; font-size:20px;">Confirm your JurisMon email</h2>
+      <p style="color:#334155; font-size:14px; line-height:1.6;">Thank you for registering. Please enter the 6-digit confirmation code below to activate your account and start your 14-day free trial:</p>
+      <div style="font-size:32px; font-weight:700; letter-spacing:8px; color:#154DA8; background:#f8fafc; border:1px solid #cbd5e1; padding:16px; text-align:center; border-radius:8px; margin:24px 0; font-family:monospace;">
+        {code}
+      </div>
+      <p style="color:#64748b; font-size:12.5px; line-height:1.5;">This code will expire in 15 minutes. If you did not sign up for JurisMon, please disregard this email.</p>
+    </div>
+    """
+    mailer.send(
+        subject="Your JurisMon Confirmation Code",
+        html=html_body,
+        to=[email],
+        text=f"Your JurisMon confirmation code is: {code} (expires in 15 minutes).",
+    )
+    logger.info("Verification code dispatched for %s", email)
+
+    return {
+        "status": "verification_required",
+        "email": email,
+        "message": "A 6-digit confirmation code has been sent to your email. Please confirm your email to activate your account.",
+    }
+
+
+@app.post("/api/auth/verify-code")
+async def customer_verify_code(req: VerifyCodeRequest):
+    """Verifies confirmation code, activates 14-day free trial, and issues JWT access token."""
+    email = (req.email or "").strip().lower()
+    code = (req.code or "").strip()
+    if not email or not code:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email and confirmation code are required.",
+        )
+
+    result = repo.verify_user_email(email, code, trial_days=14)
+    if not result.get("success"):
+        err = result.get("error")
+        if err == "code_expired":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Confirmation code has expired. Please request a new one.",
+            )
+        elif err == "user_not_found":
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No account found with this email.",
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid confirmation code. Please check your email and try again.",
+            )
+
+    user = result.get("user")
+    token = create_customer_token(user_id=user["id"], email=user["email"])
+    access = repo.get_user_access_status(user["id"])
+
+    return {
+        "status": "verified",
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {
+            "id": user["id"],
+            "email": user["email"],
+            "full_name": user.get("full_name"),
+            "trial_ends_at": user.get("trial_ends_at"),
+            "access": access,
+        },
+    }
+
+
+@app.post("/api/auth/resend-code")
+async def customer_resend_code(req: ResendCodeRequest):
+    """Resends a new 6-digit email confirmation code."""
+    email = (req.email or "").strip().lower()
+    user = repo.get_user_by_email(email)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No account found with this email.",
+        )
+
+    if user.get("is_verified", 0) == 1:
+        return {"status": "already_verified", "message": "Email is already verified. Please log in."}
+
+    code = f"{secrets.randbelow(900000) + 100000}"
+    expires_at = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
+    repo.set_verification_code(email, code, expires_at)
+
+    html_body = f"""
+    <div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif; max-width:520px; margin:0 auto; padding:24px; border:1px solid #e2e8f0; border-radius:8px; background:#ffffff;">
+      <h2 style="color:#0f172a; margin-top:0; font-size:20px;">Your new JurisMon confirmation code</h2>
+      <p style="color:#334155; font-size:14px; line-height:1.6;">Please enter the confirmation code below to activate your account:</p>
+      <div style="font-size:32px; font-weight:700; letter-spacing:8px; color:#154DA8; background:#f8fafc; border:1px solid #cbd5e1; padding:16px; text-align:center; border-radius:8px; margin:24px 0; font-family:monospace;">
+        {code}
+      </div>
+      <p style="color:#64748b; font-size:12.5px; line-height:1.5;">This code will expire in 15 minutes.</p>
+    </div>
+    """
+    mailer.send(
+        subject="Your JurisMon Confirmation Code",
+        html=html_body,
+        to=[email],
+        text=f"Your JurisMon confirmation code is: {code} (expires in 15 minutes).",
+    )
+
+    return {
+        "status": "code_resent",
+        "message": "A new confirmation code has been sent to your email.",
+    }
+
+
+@app.post("/api/auth/login")
+async def customer_login(req: CustomerLoginRequest):
+    """Customer login validating credentials and verifying confirmation status."""
+    email = (req.email or "").strip().lower()
+    user = repo.get_user_by_email(email)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password.",
+        )
+
+    stored_hash = user.get("password_hash", "")
+    if not verify_password(req.password or "", stored_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password.",
+        )
+
+    if user.get("is_verified", 0) != 1:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email is not confirmed. Please enter the confirmation code sent to your email.",
+        )
+
+    token = create_customer_token(user_id=user["id"], email=user["email"])
+    access = repo.get_user_access_status(user["id"])
+
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {
+            "id": user["id"],
+            "email": user["email"],
+            "full_name": user.get("full_name"),
+            "trial_ends_at": user.get("trial_ends_at"),
+            "access": access,
+        },
+    }
+
+
+@app.get("/api/auth/me")
+async def get_current_customer_profile(
+    auth_user: dict = Depends(require_customer),
+):
+    """Returns current customer profile, trial status, and subscription state."""
+    email = auth_user.get("sub", "")
+    if email == ADMIN_EMAIL:
+        return {
+            "email": email,
+            "role": "admin",
+            "access": {"has_access": True, "reason": "admin"},
+        }
+
+    user = repo.get_user_by_email(email)
+    if not user:
+        user = repo.get_user_by_id(auth_user.get("user_id", ""))
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found.",
+        )
+
+    access = repo.get_user_access_status(user["id"])
+    return {
+        "id": user["id"],
+        "email": user["email"],
+        "full_name": user.get("full_name"),
+        "trial_started_at": user.get("trial_started_at"),
+        "trial_ends_at": user.get("trial_ends_at"),
+        "access": access,
+    }
 
 
 # ==========================================

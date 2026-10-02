@@ -145,6 +145,31 @@ class TestXmlFeedAdapter(unittest.TestCase):
         })
         self.assertEqual(docs[0].document_type, "ordinance")
 
+    def test_malformed_xml_reports_failure(self):
+        """A broken XML response must produce CrawlResult(success=False) naming the source."""
+        adapter = self._adapter(b"<html><body>502 Bad Gateway</body></html>")
+        result = adapter.crawl({
+            "id": "bad-feed",
+            "name": "Bad Feed",
+            "base_url": "https://example.gov/feed.xml",
+            "selectors_config": {},
+        })
+        self.assertFalse(result.success)
+        self.assertEqual(result.documents, [])
+        self.assertIn("https://example.gov/feed.xml", result.error_message)
+
+    def test_well_formed_empty_xml_reports_success(self):
+        """A well-formed XML feed with no records produces success=True with zero documents."""
+        adapter = self._adapter(b"<?xml version='1.0'?><feed></feed>")
+        result = adapter.crawl({
+            "id": "empty-feed",
+            "name": "Empty Feed",
+            "base_url": "https://example.gov/feed.xml",
+            "selectors_config": {},
+        })
+        self.assertTrue(result.success)
+        self.assertEqual(result.documents, [])
+
 
 class TestDirectDocumentAdapter(unittest.TestCase):
     """Sources that are a single Act rather than a listing page."""
@@ -250,6 +275,38 @@ class TestRestApiUrlTemplate(unittest.TestCase):
 
         _, kwargs = session.fetch_page.call_args
         self.assertEqual(kwargs["params"], {"$top": "200"})
+
+    def test_malformed_json_reports_failure(self):
+        """A broken JSON response must produce CrawlResult(success=False) naming the source."""
+        session = MagicMock()
+        res = MagicMock()
+        res.json.side_effect = ValueError("Invalid JSON response")
+        session.fetch_page.return_value = res
+        adapter = RestApiAdapter(session=session)
+
+        result = adapter.crawl({
+            "id": "bad-api",
+            "name": "Bad API",
+            "base_url": "https://api.example.gov/broken",
+            "selectors_config": {},
+        })
+        self.assertFalse(result.success)
+        self.assertEqual(result.documents, [])
+        self.assertIn("https://api.example.gov/broken", result.error_message)
+
+    def test_well_formed_empty_json_reports_success(self):
+        """A well-formed JSON response with zero records produces success=True with zero documents."""
+        session = _session_returning(b"[]", payload=[])
+        adapter = RestApiAdapter(session=session)
+
+        result = adapter.crawl({
+            "id": "empty-api",
+            "name": "Empty API",
+            "base_url": "https://api.example.gov/empty",
+            "selectors_config": {},
+        })
+        self.assertTrue(result.success)
+        self.assertEqual(result.documents, [])
 
 
 class TestAdapterRegistry(unittest.TestCase):

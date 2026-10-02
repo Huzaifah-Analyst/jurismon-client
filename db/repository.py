@@ -133,6 +133,45 @@ class Repository:
                     received_at TEXT
                 )
             """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS crawl_runs (
+                    id TEXT PRIMARY KEY,
+                    started_at TEXT,
+                    finished_at TEXT,
+                    status TEXT DEFAULT 'running',
+                    total_sources INTEGER DEFAULT 0,
+                    sources_succeeded INTEGER DEFAULT 0,
+                    sources_failed INTEGER DEFAULT 0,
+                    documents_found INTEGER DEFAULT 0,
+                    diffs_created INTEGER DEFAULT 0,
+                    error_logs TEXT DEFAULT '[]'
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id TEXT PRIMARY KEY,
+                    email TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    full_name TEXT,
+                    trial_started_at TEXT,
+                    trial_ends_at TEXT,
+                    is_active INTEGER DEFAULT 1,
+                    is_verified INTEGER DEFAULT 0,
+                    verification_code TEXT,
+                    verification_code_expires_at TEXT,
+                    created_at TEXT,
+                    updated_at TEXT
+                )
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)")
+            cur.execute("PRAGMA table_info(users)")
+            existing_user_cols = {row[1] for row in cur.fetchall()}
+            if "is_verified" not in existing_user_cols:
+                cur.execute("ALTER TABLE users ADD COLUMN is_verified INTEGER DEFAULT 0")
+            if "verification_code" not in existing_user_cols:
+                cur.execute("ALTER TABLE users ADD COLUMN verification_code TEXT")
+            if "verification_code_expires_at" not in existing_user_cols:
+                cur.execute("ALTER TABLE users ADD COLUMN verification_code_expires_at TEXT")
             conn.commit()
 
             # Auto-seed sources if table is empty
@@ -547,3 +586,369 @@ class Repository:
                 "SELECT * FROM webhook_events ORDER BY received_at DESC LIMIT ?", (limit,)
             )
             return [dict(r) for r in cur.fetchall()]
+
+    def start_crawl_run(self) -> str:
+        """Inserts a row with status='running' and started_at=now. Returns the run id."""
+        import uuid
+        run_id = str(uuid.uuid4())
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        if self.supabase:
+            try:
+                res = self.supabase.table("crawl_runs").insert({
+                    "id": run_id,
+                    "started_at": now_iso,
+                    "status": "running",
+                }).execute()
+                if res.data:
+                    return str(res.data[0].get("id", run_id))
+                return run_id
+            except Exception as e:
+                logger.error(f"Supabase start crawl run error: {e}")
+
+        # SQLite Fallback
+        with self._connect() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT INTO crawl_runs (id, started_at, status)
+                VALUES (?, ?, ?)
+            """, (run_id, now_iso, "running"))
+            conn.commit()
+
+        return run_id
+
+    def finish_crawl_run(
+        self,
+        run_id: str,
+        status: str,
+        total_sources: int,
+        sources_succeeded: int,
+        sources_failed: int,
+        documents_found: int,
+        diffs_created: int,
+        error_logs: Optional[Any] = None,
+    ) -> None:
+        """Updates a crawl run row with finished_at=now and the given counts.
+
+        Status must be 'completed', 'failed', or 'partial_failure'.
+        """
+        now_iso = datetime.now(timezone.utc).isoformat()
+        payload_errors = error_logs if error_logs is not None else []
+        json_errors = json.dumps(payload_errors) if not isinstance(payload_errors, str) else payload_errors
+
+        if self.supabase:
+            try:
+                self.supabase.table("crawl_runs").update({
+                    "finished_at": now_iso,
+                    "status": status,
+                    "total_sources": total_sources,
+                    "sources_succeeded": sources_succeeded,
+                    "sources_failed": sources_failed,
+                    "documents_found": documents_found,
+                    "diffs_created": diffs_created,
+                    "error_logs": payload_errors if not isinstance(payload_errors, str) else json.loads(payload_errors),
+                }).eq("id", run_id).execute()
+                return
+            except Exception as e:
+                logger.error(f"Supabase finish crawl run error: {e}")
+
+        # SQLite Fallback
+        with self._connect() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                UPDATE crawl_runs SET
+                    finished_at = ?,
+                    status = ?,
+                    total_sources = ?,
+                    sources_succeeded = ?,
+                    sources_failed = ?,
+                    documents_found = ?,
+                    diffs_created = ?,
+                    error_logs = ?
+                WHERE id = ?
+            """, (
+                now_iso,
+                status,
+                total_sources,
+                sources_succeeded,
+                sources_failed,
+                documents_found,
+                diffs_created,
+                json_errors,
+                run_id,
+            ))
+            conn.commit()
+
+    def create_user(
+        self,
+        email: str,
+        password_hash: str,
+        full_name: Optional[str] = None,
+        trial_days: int = 14,
+        is_verified: int = 0,
+        verification_code: Optional[str] = None,
+        verification_code_expires_at: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Creates a new customer user with email verification status."""
+        import uuid
+        from datetime import datetime, timezone, timedelta
+
+        user_id = str(uuid.uuid4())
+        now = datetime.now(timezone.utc)
+        trial_started_at = now.isoformat() if is_verified else None
+        trial_ends_at = (now + timedelta(days=trial_days)).isoformat() if is_verified else None
+        now_iso = now.isoformat()
+        norm_email = (email or "").strip().lower()
+
+        if self.supabase:
+            try:
+                res = self.supabase.table("users").insert({
+                    "id": user_id,
+                    "email": norm_email,
+                    "password_hash": password_hash,
+                    "full_name": full_name,
+                    "trial_started_at": trial_started_at,
+                    "trial_ends_at": trial_ends_at,
+                    "is_active": 1,
+                    "is_verified": is_verified,
+                    "verification_code": verification_code,
+                    "verification_code_expires_at": verification_code_expires_at,
+                    "created_at": now_iso,
+                    "updated_at": now_iso,
+                }).execute()
+                if res.data:
+                    return res.data[0]
+            except Exception as e:
+                logger.error(f"Supabase create user error: {e}")
+
+        with self._connect() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT INTO users (
+                    id, email, password_hash, full_name,
+                    trial_started_at, trial_ends_at, is_active,
+                    is_verified, verification_code, verification_code_expires_at,
+                    created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                user_id, norm_email, password_hash, full_name,
+                trial_started_at, trial_ends_at, 1,
+                is_verified, verification_code, verification_code_expires_at,
+                now_iso, now_iso
+            ))
+            conn.commit()
+
+        return {
+            "id": user_id,
+            "email": norm_email,
+            "full_name": full_name,
+            "trial_started_at": trial_started_at,
+            "trial_ends_at": trial_ends_at,
+            "is_active": 1,
+            "is_verified": is_verified,
+            "verification_code": verification_code,
+            "verification_code_expires_at": verification_code_expires_at,
+            "created_at": now_iso,
+            "updated_at": now_iso,
+        }
+
+    def set_verification_code(self, email: str, code: str, expires_at: str) -> bool:
+        """Updates user's confirmation code and expiration."""
+        from datetime import datetime, timezone
+        norm_email = (email or "").strip().lower()
+        now_iso = datetime.now(timezone.utc).isoformat()
+        with self._connect() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                UPDATE users SET
+                    verification_code = ?,
+                    verification_code_expires_at = ?,
+                    updated_at = ?
+                WHERE LOWER(email) = LOWER(?)
+            """, (code, expires_at, now_iso, norm_email))
+            conn.commit()
+            return cur.rowcount > 0
+
+    def verify_user_email(self, email: str, code: str, trial_days: int = 14) -> Dict[str, Any]:
+        """Validates confirmation code and activates 14-day free trial upon confirmation."""
+        from datetime import datetime, timezone, timedelta
+        norm_email = (email or "").strip().lower()
+        user = self.get_user_by_email(norm_email)
+        if not user:
+            return {"success": False, "error": "user_not_found"}
+
+        if user.get("is_verified", 0) == 1:
+            return {"success": True, "already_verified": True, "user": user}
+
+        stored_code = (user.get("verification_code") or "").strip()
+        input_code = (code or "").strip()
+
+        if not stored_code or stored_code != input_code:
+            return {"success": False, "error": "invalid_code"}
+
+        now = datetime.now(timezone.utc)
+        expires_str = user.get("verification_code_expires_at")
+        if expires_str:
+            try:
+                expires_at = datetime.fromisoformat(expires_str.replace("Z", "+00:00"))
+                if now > expires_at:
+                    return {"success": False, "error": "code_expired"}
+            except Exception:
+                pass
+
+        now_iso = now.isoformat()
+        trial_ends_iso = (now + timedelta(days=trial_days)).isoformat()
+
+        with self._connect() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                UPDATE users SET
+                    is_verified = 1,
+                    verification_code = NULL,
+                    verification_code_expires_at = NULL,
+                    trial_started_at = ?,
+                    trial_ends_at = ?,
+                    updated_at = ?
+                WHERE LOWER(email) = LOWER(?)
+            """, (now_iso, trial_ends_iso, now_iso, norm_email))
+            conn.commit()
+
+        updated_user = self.get_user_by_email(norm_email)
+        return {"success": True, "user": updated_user}
+
+    def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+        """Retrieves a customer user by email address."""
+        norm_email = (email or "").strip().lower()
+        if not norm_email:
+            return None
+
+        if self.supabase:
+            try:
+                res = self.supabase.table("users").select("*").eq("email", norm_email).limit(1).execute()
+                if res.data:
+                    return res.data[0]
+            except Exception as e:
+                logger.error(f"Supabase get_user_by_email error: {e}")
+
+        with self._connect() as conn:
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1", (norm_email,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+    def get_user_by_id(self, user_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieves a customer user by UUID."""
+        if not user_id:
+            return None
+
+        if self.supabase:
+            try:
+                res = self.supabase.table("users").select("*").eq("id", user_id).limit(1).execute()
+                if res.data:
+                    return res.data[0]
+            except Exception as e:
+                logger.error(f"Supabase get_user_by_id error: {e}")
+
+        with self._connect() as conn:
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM users WHERE id = ? LIMIT 1", (user_id,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+    def get_user_access_status(self, email_or_user_id: str) -> Dict[str, Any]:
+        """Calculates customer access entitlement (active trial vs paid subscription)."""
+        import math
+        from datetime import datetime, timezone
+
+        if not email_or_user_id:
+            return {"has_access": False, "reason": "unauthenticated"}
+
+        user = self.get_user_by_email(email_or_user_id)
+        if not user:
+            user = self.get_user_by_id(email_or_user_id)
+
+        if not user:
+            return {"has_access": False, "reason": "user_not_found"}
+
+        if not user.get("is_active", 1):
+            return {"has_access": False, "reason": "account_disabled"}
+
+        if not user.get("is_verified", 0):
+            return {"has_access": False, "reason": "unverified", "user_email": user.get("email"), "user_id": user.get("id")}
+
+        now = datetime.now(timezone.utc)
+        trial_ends_str = user.get("trial_ends_at")
+        trial_active = False
+        days_remaining = 0
+
+        if trial_ends_str:
+            try:
+                trial_ends = datetime.fromisoformat(trial_ends_str.replace("Z", "+00:00"))
+                if trial_ends > now:
+                    trial_active = True
+                    delta = trial_ends - now
+                    days_remaining = max(0, math.ceil(delta.total_seconds() / 86400))
+            except Exception as e:
+                logger.warning(f"Error parsing trial_ends_at for user {user.get('email')}: {e}")
+
+        if trial_active:
+            return {
+                "has_access": True,
+                "reason": "trial",
+                "trial_active": True,
+                "trial_days_remaining": days_remaining,
+                "trial_ends_at": trial_ends_str,
+                "user_email": user.get("email"),
+                "user_id": user.get("id"),
+            }
+
+        # Check active subscriptions in DB
+        norm_email = user.get("email", "").strip().lower()
+        sub = None
+
+        with self._connect() as conn:
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT * FROM subscriptions
+                WHERE LOWER(user_email) = LOWER(?)
+                  AND status IN ('active', 'completed')
+                ORDER BY updated_at DESC LIMIT 1
+            """, (norm_email,))
+            row = cur.fetchone()
+            if row:
+                sub = dict(row)
+
+        if sub:
+            next_bill_str = sub.get("next_billing_at")
+            sub_active = True
+            if next_bill_str:
+                try:
+                    next_bill = datetime.fromisoformat(next_bill_str.replace("Z", "+00:00"))
+                    # If current time is after next billing, consider grace period
+                    if now > next_bill and (now - next_bill).total_seconds() > 172800:
+                        sub_active = False
+                except Exception as e:
+                    logger.warning(f"Error parsing next_billing_at for {norm_email}: {e}")
+
+            if sub_active:
+                return {
+                    "has_access": True,
+                    "reason": "active_subscription",
+                    "plan_id": sub.get("plan_id"),
+                    "external_subscription_id": sub.get("external_subscription_id"),
+                    "next_billing_at": next_bill_str,
+                    "user_email": user.get("email"),
+                    "user_id": user.get("id"),
+                }
+
+        return {
+            "has_access": False,
+            "reason": "trial_expired",
+            "trial_ends_at": trial_ends_str,
+            "user_email": user.get("email"),
+            "user_id": user.get("id"),
+        }
+

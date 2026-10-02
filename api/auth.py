@@ -131,3 +131,44 @@ def require_admin(credentials: HTTPAuthorizationCredentials = Depends(security))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token"
         )
+
+
+optional_security = HTTPBearer(auto_error=False)
+
+
+def create_customer_token(user_id: str, email: str, expires_delta: Optional[datetime.timedelta] = None) -> str:
+    """Generates JWT token for customer accounts."""
+    to_encode = {
+        "sub": email.strip().lower(),
+        "user_id": user_id,
+        "role": "customer",
+    }
+    return create_access_token(to_encode, expires_delta=expires_delta)
+
+
+def get_current_customer_optional(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security)
+) -> Optional[dict]:
+    """Returns decoded token payload if valid Bearer token provided, else None."""
+    if not credentials or not credentials.credentials:
+        return None
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except JWTError:
+        return None
+
+
+def require_customer(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+) -> dict:
+    """Enforces valid customer or admin session."""
+    token = credentials.credentials
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token"
+        )
+

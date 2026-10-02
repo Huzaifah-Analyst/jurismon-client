@@ -5,9 +5,10 @@ Coordinates concurrent crawling across all configured municipal sources,
 enforcing isolated error boundaries, rate limiting, and progress metrics.
 """
 
+import os
 import time
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pydantic import BaseModel, Field
 
@@ -32,10 +33,22 @@ class OrchestratorRunSummary(BaseModel):
 class CrawlOrchestrator:
     """Manages concurrent execution across 50+ municipal websites."""
 
-    def __init__(self, max_workers: int = 3, default_delay: float = 1.5):
-        self.max_workers = max_workers
-        self.default_delay = default_delay
-        self.session = SafeHTTPSession(default_delay=default_delay)
+    def __init__(
+        self,
+        max_workers: Optional[int] = None,
+        default_delay: Optional[float] = None,
+    ):
+        self.max_workers = (
+            int(max_workers)
+            if max_workers is not None
+            else int(os.getenv("CRAWLER_CONCURRENCY", 3))
+        )
+        self.default_delay = (
+            float(default_delay)
+            if default_delay is not None
+            else float(os.getenv("CRAWLER_DELAY_SECONDS", 1.5))
+        )
+        self.session = SafeHTTPSession(default_delay=self.default_delay)
 
     def crawl_single_source(self, source_config: Dict[str, Any]) -> CrawlResult:
         """Isolated execution for a single municipal entity."""

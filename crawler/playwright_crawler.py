@@ -4,10 +4,11 @@ Handles dynamic JavaScript SPAs, Cloudflare WAF bot challenges, and 403-protecte
 municipal portals using headless Chromium with stealth evasion properties.
 """
 
+import os
 import re
 import time
 import logging
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 from crawler.base import BaseCrawler, CrawlResult, DiscoveredDocument
@@ -34,9 +35,18 @@ Object.defineProperty(navigator, 'plugins', {
 class PlaywrightCrawler(BaseCrawler):
     """Playwright-based browser crawler with stealth properties for WAF/403 bypass."""
 
-    def __init__(self, user_agent: str = None, request_delay: float = 1.5, headless: bool = True):
+    def __init__(
+        self,
+        user_agent: Optional[str] = None,
+        request_delay: Optional[float] = None,
+        headless: Optional[bool] = None,
+    ):
         super().__init__(user_agent=user_agent, request_delay=request_delay)
-        self.headless = headless
+        if headless is not None:
+            self.headless = bool(headless)
+        else:
+            val = os.getenv("HEADLESS_BROWSER", "true").strip().lower()
+            self.headless = val not in ("false", "0", "no")
 
     def crawl_source(self, source_config: Dict[str, Any]) -> CrawlResult:
         """Launches headless Chromium, evades bot detection, waits for DOM rendering, and extracts docs."""

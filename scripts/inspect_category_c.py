@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
 
 sys.path.insert(0, ".")
+from crawler.session import DEFAULT_USER_AGENT
 from crawler.playwright_crawler import STEALTH_JS_INJECTION
 
 test_sites = [
@@ -32,7 +33,7 @@ with sync_playwright() as p:
         ],
     )
     context = browser.new_context(
-        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        user_agent=DEFAULT_USER_AGENT,
         viewport={"width": 1280, "height": 800},
     )
     context.add_init_script(STEALTH_JS_INJECTION)

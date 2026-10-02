@@ -7,6 +7,7 @@ Sub-Task 1.1:
 - Memory-safe streaming downloader for large PDFs (max size cap)
 """
 
+import os
 import time
 import random
 import logging
@@ -23,10 +24,7 @@ from tenacity import (
 
 logger = logging.getLogger("jurismon.session")
 
-DEFAULT_USER_AGENT = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 (JurisMon Statutory Monitor Bot; contact@jurismon.com)"
-)
+DEFAULT_USER_AGENT = "JurisMonBot/1.0 (+https://jurismon.com/bot; contact@jurismon.com)"
 
 # Max file download size cap (50 MB) to prevent Out-Of-Memory (OOM) on 2vCPU / 4GB VPS
 MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024
@@ -38,12 +36,20 @@ class SafeHTTPSession:
     def __init__(
         self,
         user_agent: Optional[str] = None,
-        default_delay: float = 1.5,
+        default_delay: Optional[float] = None,
         timeout: int = 25,
         max_file_size: int = MAX_DOWNLOAD_BYTES,
     ):
-        self.user_agent = user_agent or DEFAULT_USER_AGENT
-        self.default_delay = default_delay
+        self.user_agent = (
+            user_agent
+            if user_agent is not None
+            else os.getenv("CRAWLER_USER_AGENT", DEFAULT_USER_AGENT)
+        )
+        self.default_delay = (
+            float(default_delay)
+            if default_delay is not None
+            else float(os.getenv("CRAWLER_DELAY_SECONDS", 1.5))
+        )
         self.timeout = timeout
         self.max_file_size = max_file_size
         self._last_request_times: Dict[str, float] = {}

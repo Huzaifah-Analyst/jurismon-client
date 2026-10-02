@@ -90,6 +90,95 @@ class TestDatabaseRepository(unittest.TestCase):
         self.assertEqual(len(subs), 1)
         self.assertEqual(subs[0]["user_email"], "subscriber@example.com")
 
+    def test_crawl_run_recording_and_counts_stored(self):
+        """A run is recorded and the counts/status are properly stored."""
+        run_id = self.repo.start_crawl_run()
+        self.assertIsNotNone(run_id)
+
+        with self.repo._connect() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT status, started_at FROM crawl_runs WHERE id=?", (run_id,))
+            row = cur.fetchone()
+            self.assertEqual(row[0], "running")
+            self.assertIsNotNone(row[1])
+
+        self.repo.finish_crawl_run(
+            run_id=run_id,
+            status="completed",
+            total_sources=41,
+            sources_succeeded=40,
+            sources_failed=1,
+            documents_found=120,
+            diffs_created=3,
+            error_logs=[{"source": "test", "error": "timeout"}],
+        )
+
+        with self.repo._connect() as conn:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT status, total_sources, sources_succeeded, sources_failed, documents_found, diffs_created, error_logs, finished_at FROM crawl_runs WHERE id=?",
+                (run_id,),
+            )
+            row = cur.fetchone()
+            self.assertEqual(row[0], "completed")
+            self.assertEqual(row[1], 41)
+            self.assertEqual(row[2], 40)
+            self.assertEqual(row[3], 1)
+            self.assertEqual(row[4], 120)
+            self.assertEqual(row[5], 3)
+            self.assertIn("timeout", row[6])
+            self.assertIsNotNone(row[7])
+
+    def test_run_crawler_records_run_and_stores_counts(self):
+        """scripts.run_crawler.main records a crawl run and stores counts."""
+        from scripts import run_crawler
+
+        fake_sources = [
+            {"id": "s1", "name": "Source 1", "base_url": "https://s1.test", "adapter_type": "custom", "is_active": True},
+            {"id": "s2", "name": "Source 2", "base_url": "https://s2.test", "adapter_type": "custom", "is_active": False},
+        ]
+        mock_result = MagicMock(success=True, documents=[])
+        mock_adapter = MagicMock()
+        mock_adapter.crawl.return_value = mock_result
+
+        with patch("scripts.run_crawler.load_sites_config", return_value=fake_sources), \
+             patch("scripts.run_crawler.Repository", return_value=self.repo), \
+             patch("scripts.run_crawler.get_adapter", return_value=mock_adapter), \
+             patch("scripts.run_crawler.send_crawl_report"):
+            run_crawler.main()
+
+        with self.repo._connect() as conn:
+            row = conn.execute("SELECT status, total_sources, sources_succeeded, sources_failed FROM crawl_runs").fetchone()
+            self.assertIsNotNone(row)
+            self.assertEqual(row[0], "completed")
+            self.assertEqual(row[1], 1)
+            self.assertEqual(row[2], 1)
+            self.assertEqual(row[3], 0)
+
+    def test_run_crawler_crash_records_run_as_failed(self):
+        """A crash during run_crawler still closes the run with status='failed'."""
+        from scripts import run_crawler
+
+        fake_sources = [
+            {"id": "s1", "name": "Source 1", "base_url": "https://s1.test", "adapter_type": "custom", "is_active": True},
+        ]
+
+        def crashing_crawl(*args, **kwargs):
+            raise KeyboardInterrupt("Simulated crash")
+
+        with patch("scripts.run_crawler.load_sites_config", return_value=fake_sources), \
+             patch("scripts.run_crawler.Repository", return_value=self.repo), \
+             patch("scripts.run_crawler.get_adapter", side_effect=crashing_crawl), \
+             patch("scripts.run_crawler.send_crawl_report"):
+            with self.assertRaises(KeyboardInterrupt):
+                run_crawler.main()
+
+        with self.repo._connect() as conn:
+            row = conn.execute("SELECT status, total_sources, sources_failed FROM crawl_runs").fetchone()
+            self.assertIsNotNone(row)
+            self.assertEqual(row[0], "failed")
+            self.assertEqual(row[1], 1)
+
 
 class TestPayPalProvider(unittest.TestCase):
 
@@ -311,6 +400,26 @@ class TestFastAPIEndpoints(unittest.TestCase):
         adm_res = self.client.get("/admin")
         self.assertEqual(adm_res.status_code, 200)
         self.assertIn("JurisMon Admin", adm_res.text)
+
+    def test_branding_seo_and_crawlers(self):
+        robots_res = self.client.get("/robots.txt")
+        self.assertEqual(robots_res.status_code, 200)
+        self.assertIn("Disallow: /admin", robots_res.text)
+        self.assertIn("https://jurismon.com/sitemap.xml", robots_res.text)
+
+        sitemap_res = self.client.get("/sitemap.xml")
+        self.assertEqual(sitemap_res.status_code, 200)
+        self.assertIn("https://jurismon.com/", sitemap_res.text)
+
+        idx_res = self.client.get("/")
+        self.assertEqual(idx_res.status_code, 200)
+        self.assertIn("og:image", idx_res.text)
+        self.assertIn("canonical", idx_res.text)
+
+        adm_res = self.client.get("/admin")
+        self.assertEqual(adm_res.status_code, 200)
+        self.assertIn("noindex", adm_res.text)
+        self.assertNotIn("og:image", adm_res.text)
 
 
 if __name__ == "__main__":

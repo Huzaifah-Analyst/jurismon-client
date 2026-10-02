@@ -5,11 +5,14 @@ SHA256 content hashing, and isolated error boundaries.
 """
 
 import abc
+import os
 import hashlib
 import logging
 import time
 from typing import Dict, List, Optional, Any
 from pydantic import BaseModel
+
+from crawler.session import DEFAULT_USER_AGENT
 
 logger = logging.getLogger("jurismon.crawler")
 
@@ -37,14 +40,17 @@ class CrawlResult(BaseModel):
 class BaseCrawler(abc.ABC):
     """Abstract Base Class for all crawlers and platform adapters."""
 
-    def __init__(self, user_agent: str = None, request_delay: float = 2.0):
-        self.user_agent = user_agent or "JurisMonBot/1.0 (+https://jurismon.com/bot; research@jurismon.com)"
-        self.request_delay = request_delay
-
-    @staticmethod
-    def compute_hash(content: bytes) -> str:
-        """Computes SHA256 content hash."""
-        return hashlib.sha256(content).hexdigest()
+    def __init__(self, user_agent: Optional[str] = None, request_delay: Optional[float] = None):
+        self.user_agent = (
+            user_agent
+            if user_agent is not None
+            else os.getenv("CRAWLER_USER_AGENT", DEFAULT_USER_AGENT)
+        )
+        self.request_delay = (
+            float(request_delay)
+            if request_delay is not None
+            else float(os.getenv("CRAWLER_DELAY_SECONDS", 1.5))
+        )
 
     def polite_sleep(self):
         """Sleeps for the configured delay to respect target municipal servers."""

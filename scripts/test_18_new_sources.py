@@ -1,6 +1,10 @@
 import requests
 import json
+import sys
 from urllib.parse import urlparse
+
+sys.path.insert(0, ".")
+from crawler.session import DEFAULT_USER_AGENT
 
 SOURCES_18 = [
     {"id": "new-01-aus-api", "name": "Australia Federal Register API", "url": "https://api.prod.legislation.gov.au/v1/", "type": "api"},
@@ -24,7 +28,7 @@ SOURCES_18 = [
 ]
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 (JurisMon Regulatory Monitor Bot)",
+    "User-Agent": DEFAULT_USER_AGENT,
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,application/json;q=0.9,*/*;q=0.8",
 }
 

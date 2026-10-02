@@ -1,7 +1,11 @@
 import asyncio
+import sys
 import requests
 from playwright.async_api import async_playwright
 from urllib.parse import urlparse
+
+sys.path.insert(0, ".")
+from crawler.session import DEFAULT_USER_AGENT
 
 TARGET_ISSUES = [
     # 7 Cloudflare suspected
@@ -29,7 +33,7 @@ TARGET_ISSUES = [
 ]
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+    "User-Agent": DEFAULT_USER_AGENT,
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
 }

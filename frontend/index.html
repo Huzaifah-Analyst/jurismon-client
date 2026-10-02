@@ -10,6 +10,43 @@
 
 <title>JurisMon: Regulatory Drift Monitor</title>
 
+<link rel="icon" href="/static/assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/assets/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/static/assets/favicon-16.png">
+<link rel="apple-touch-icon" href="/static/assets/apple-touch-icon.png">
+<link rel="canonical" href="https://jurismon.com/">
+<meta name="description" content="JurisMon tracks municipal and statutory sources daily and shows exactly what changed. Search zoning amendments, ordinances and meeting minutes across government portals in the US, UK, Canada, Australia and the EU.">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#154DA8">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="JurisMon">
+<meta property="og:title" content="JurisMon — Regulatory Drift Monitor">
+<meta property="og:description" content="Daily tracking of statutory and zoning changes across government sources. See exactly what text was added or removed.">
+<meta property="og:url" content="https://jurismon.com/">
+<meta property="og:image" content="https://jurismon.com/static/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="JurisMon — Regulatory Drift Monitor">
+<meta name="twitter:description" content="Daily tracking of statutory and zoning changes across government sources.">
+<meta name="twitter:image" content="https://jurismon.com/static/assets/og-image.png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "JurisMon",
+  "url": "https://jurismon.com/",
+  "applicationCategory": "BusinessApplication",
+  "description": "Monitors municipal and statutory sources daily and reports what changed.",
+  "offers": {
+    "@type": "Offer",
+    "price": "49.00",
+    "priceCurrency": "USD"
+  }
+}
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -649,9 +686,176 @@
 
 
   @media (prefers-reduced-motion: reduce) {
-
     *, *::before, *::after { transition-duration: 0s !important; animation: none !important; }
+  }
 
+  /* ---------- Auth & Paywall Modals & Gate Banner ---------- */
+  .gate-banner {
+    margin: 20px 0 0;
+    padding: 14px 18px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: var(--r-lg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: 14px;
+    color: #166534;
+  }
+  .gate-banner.is-expired {
+    background: #fffbeb;
+    border-color: #fde68a;
+    color: #92400e;
+  }
+  .gate-banner-btn {
+    flex: none;
+    background: var(--ink);
+    color: #fff;
+    border: 0;
+    border-radius: var(--r-md);
+    padding: 8px 14px;
+    font-size: 13.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity .15s var(--ease);
+  }
+  .gate-banner-btn:hover { opacity: .9; }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(15, 23, 42, .6);
+    backdrop-filter: blur(4px);
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s var(--ease);
+  }
+  .modal-overlay.is-active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .modal-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    max-width: 480px;
+    width: 100%;
+    padding: 28px 24px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, .1), 0 8px 10px -6px rgba(0, 0, 0, .1);
+    position: relative;
+    transform: translateY(8px);
+    transition: transform .2s var(--ease);
+  }
+  .modal-overlay.is-active .modal-card {
+    transform: none;
+  }
+  .modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: transparent;
+    border: 0;
+    color: var(--muted);
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: var(--r-sm);
+  }
+  .modal-close:hover { color: var(--ink); }
+
+  .modal-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 20px;
+    gap: 16px;
+  }
+  .modal-tab {
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    padding: 8px 4px;
+    font-size: 14.5px;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    margin-bottom: -1px;
+  }
+  .modal-tab.is-active {
+    color: var(--ink);
+    border-bottom-color: var(--ink);
+  }
+  .form-group {
+    margin-bottom: 16px;
+  }
+  .form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .form-group input {
+    width: 100%;
+    height: 42px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-md);
+    padding: 0 12px;
+    font-size: 14.5px;
+    background: var(--bg);
+  }
+  .form-group input:focus {
+    outline: none;
+    border-color: var(--ink);
+    background: var(--surface);
+  }
+  .btn-submit {
+    width: 100%;
+    height: 44px;
+    background: var(--ink);
+    color: #fff;
+    border: 0;
+    border-radius: var(--r-md);
+    font-size: 14.5px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: opacity .15s var(--ease);
+  }
+  .btn-submit:hover { opacity: .9; }
+  .btn-submit:disabled { opacity: .5; cursor: not-allowed; }
+  .form-error {
+    background: #fff1f2;
+    color: #9f1239;
+    padding: 10px 12px;
+    border-radius: var(--r-md);
+    font-size: 13px;
+    margin-bottom: 14px;
+    display: none;
+  }
+
+  /* Plan card selector in Paywall */
+  .plan-card {
+    border: 2px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: border-color .15s var(--ease), background .15s var(--ease);
+  }
+  .plan-card.is-selected {
+    border-color: #154DA8;
+    background: #f8fafc;
+  }
+  .plan-price {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--ink);
   }
 
 </style>
@@ -660,21 +864,28 @@
 
 <body>
 
-
-
 <header class="topbar">
 
   <div class="wrap topbar-inner">
 
     <a class="brand" href="/" aria-label="JurisMon home" style="text-decoration:none; display:flex; align-items:center; gap:12px;">
-      <img src="/static/assets/logo.jpg" alt="JurisMon Logo" style="height:36px; width:auto; border-radius:6px; object-fit:contain; border:1px solid var(--line);">
+      <img src="/static/assets/logo.png" alt="JurisMon" style="height:36px; width:auto; border-radius:6px; object-fit:contain; border:1px solid var(--line);">
       <div>
         <div style="font-weight:600; color:var(--ink); font-size:16px; letter-spacing:-0.01em;">JurisMon</div>
         <div style="font-size:12px; color:var(--muted); line-height:1;">Regulatory Drift Monitor</div>
       </div>
     </a>
-    <nav class="topnav" aria-label="Main">
-      <span class="navlink" style="cursor:default;"><span class="label">Operational Jurisdictions</span> <span class="navcount" id="source-count">32 / 51</span></span>
+    <nav class="topnav" aria-label="Main" id="nav-actions">
+      <span class="navlink" style="cursor:default;"><span class="label">Operational Jurisdictions</span> <span class="navcount" id="source-count">—</span></span>
+      <div id="auth-unauthed" style="display:flex; align-items:center; gap:8px;">
+        <button type="button" class="btn-outline" id="btn-nav-login" style="cursor:pointer; height:32px; font-weight:500;">Log In</button>
+        <button type="button" class="btn-primary" id="btn-nav-register" style="cursor:pointer; height:32px; font-weight:500; background:var(--ink); color:#fff; border:0; border-radius:var(--r-md); padding:0 12px; font-size:13.5px;">Start 14-Day Free Trial</button>
+      </div>
+      <div id="auth-authed" style="display:none; align-items:center; gap:8px;">
+        <span id="nav-user-badge" style="font-size:12px; padding:2px 8px; border-radius:12px; font-weight:500; background:var(--add-bg); color:var(--add-ink); border:1px solid var(--add-bar);">Trial</span>
+        <span id="nav-user-email" style="font-size:13.5px; color:var(--ink); font-weight:500; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
+        <button type="button" class="btn-outline" id="btn-nav-logout" style="cursor:pointer; height:32px; font-size:12.5px;">Sign Out</button>
+      </div>
     </nav>
 
   </div>
@@ -745,46 +956,150 @@
 
   </section>
 
-
+  <div id="gate-banner" class="gate-banner" style="display:none;">
+    <div id="gate-banner-text">
+      <strong>14-Day Free Trial:</strong> Sign up now for unlimited access to all statutory diffs and snapshots.
+    </div>
+    <button type="button" class="gate-banner-btn" id="gate-banner-cta">Start Free Trial</button>
+  </div>
 
   <p class="summary" id="summary" aria-live="polite"></p>
 
   <ul class="results" id="results"></ul>
 
-
-
   <div class="empty" id="empty" hidden>
-
     <h2 id="empty-title">No matches</h2>
-
     <p>Try a section number such as 101.4, a place name, or switch the filter to All.</p>
-
     <button class="btn-outline" type="button" id="clear">Clear search</button>
-
   </div>
 
-
-
   <footer class="hints" aria-label="Keyboard shortcuts">
-
     <span><kbd>/</kbd> Search</span>
-
     <span><kbd>↑</kbd><kbd>↓</kbd> Move between results</span>
-
     <span><kbd>Enter</kbd> Show full section</span>
-
     <span><kbd>Esc</kbd> Clear</span>
-
   </footer>
 
 </main>
+
+<!-- AUTH MODAL -->
+<div id="auth-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+  <div class="modal-card">
+    <button type="button" class="modal-close" id="auth-modal-close" aria-label="Close modal">&times;</button>
+    <div class="modal-tabs">
+      <button type="button" class="modal-tab is-active" id="tab-register">Start 14-Day Free Trial</button>
+      <button type="button" class="modal-tab" id="tab-login">Log In</button>
+    </div>
+    <div id="auth-error" class="form-error"></div>
+
+    <!-- Register Form -->
+    <form id="form-register">
+      <div class="form-group">
+        <label for="reg-name">Full Name (optional)</label>
+        <input type="text" id="reg-name" placeholder="Counsel or Organization">
+      </div>
+      <div class="form-group">
+        <label for="reg-email">Work Email</label>
+        <input type="email" id="reg-email" required placeholder="name@firm.com">
+      </div>
+      <div class="form-group">
+        <label for="reg-password">Password (min 8 characters)</label>
+        <input type="password" id="reg-password" required minlength="8" placeholder="••••••••">
+      </div>
+      <p style="font-size:12.5px; color:var(--muted); margin:4px 0 14px;">Includes immediate 14 days of full access across all operational municipal portals, clause diffs and snapshots. No credit card required upfront.</p>
+      <button type="submit" class="btn-submit" id="btn-submit-reg">Create Account &amp; Start Trial</button>
+    </form>
+
+    <!-- Login Form -->
+    <form id="form-login" style="display:none;">
+      <div class="form-group">
+        <label for="login-email">Work Email</label>
+        <input type="email" id="login-email" required placeholder="name@firm.com">
+      </div>
+      <div class="form-group">
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" required placeholder="••••••••">
+      </div>
+      <button type="submit" class="btn-submit" id="btn-submit-login">Log In</button>
+    </form>
+
+    <!-- Verification Code Form -->
+    <form id="form-verify" style="display:none;">
+      <div style="margin-bottom:16px;">
+        <h3 style="margin:0 0 6px; font-size:17px; font-weight:600; color:var(--ink);">Confirm your email</h3>
+        <p style="margin:0; font-size:13.5px; color:var(--muted);">We sent a 6-digit confirmation code to <strong id="verify-email-display" style="color:var(--ink);"></strong>. Please enter it below:</p>
+      </div>
+      <div class="form-group">
+        <label for="verify-code">6-Digit Confirmation Code</label>
+        <input type="text" id="verify-code" required maxlength="6" pattern="[0-9]{6}" placeholder="123456" style="font-size:24px; letter-spacing:6px; text-align:center; font-family:monospace; font-weight:600;">
+      </div>
+      <button type="submit" class="btn-submit" id="btn-submit-verify">Confirm &amp; Start 14-Day Free Trial</button>
+      <div style="margin-top:14px; text-align:center; font-size:13px; color:var(--muted);">
+        Didn't receive code? <button type="button" id="btn-resend-code" style="background:none; border:none; color:#154DA8; font-weight:500; cursor:pointer; text-decoration:underline; padding:0;">Resend Code</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- PAYWALL / SUBSCRIPTION MODAL -->
+<div id="paywall-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="paywall-modal-title">
+  <div class="modal-card" style="max-width:500px;">
+    <button type="button" class="modal-close" id="paywall-modal-close" aria-label="Close modal">&times;</button>
+    <div style="margin-bottom:18px;">
+      <span style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:#154DA8;">JurisMon Subscription</span>
+      <h2 id="paywall-modal-title" style="margin:4px 0 6px; font-size:22px; font-weight:600; color:var(--ink);">JurisMon Professional</h2>
+      <p style="margin:0; font-size:14px; color:var(--muted);">Continuous regulatory drift monitoring across all active municipal &amp; statutory portals.</p>
+    </div>
+
+    <div id="paywall-error" class="form-error"></div>
+
+    <!-- Monthly Plan Card -->
+    <div class="plan-card is-selected" id="card-plan-monthly">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-weight:600; color:var(--ink); font-size:15px;">Monthly Billing</div>
+          <div style="font-size:13px; color:var(--muted);">Full regulatory monitoring, billed monthly</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="plan-price">$49<span style="font-size:13.5px; font-weight:400; color:var(--muted);">/mo</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Annual Plan Card -->
+    <div class="plan-card" id="card-plan-annual">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-weight:600; color:var(--ink); font-size:15px;">Annual Billing</span>
+            <span style="font-size:11px; font-weight:600; background:#dcfce7; color:#166534; padding:2px 6px; border-radius:4px;">SAVE 20%</span>
+          </div>
+          <div style="font-size:13px; color:var(--muted);">$39/month, billed annually ($468/year)</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="plan-price">$468<span style="font-size:13.5px; font-weight:400; color:var(--muted);">/yr</span></div>
+        </div>
+      </div>
+    </div>
+
+    <ul style="margin:16px 0 20px; padding-left:20px; font-size:13.5px; color:var(--text); line-height:1.7;">
+      <li>Instant full-text clause search &amp; legal delta redlines</li>
+      <li>Monitored municipal portals updated daily</li>
+      <li>Automated PayPal verification &amp; immediate account activation</li>
+    </ul>
+
+    <button type="button" class="btn-submit" id="btn-paypal-subscribe" style="background:#0070ba; display:flex; align-items:center; justify-content:center; gap:8px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.067 8.478c.492.315.844.82.96 1.41.65 3.32-1.37 6.33-4.51 6.72-.44.05-.88.08-1.32.08h-2.12l-.76 4.82h-3.4l2.9-18.42h6.24c1.1 0 1.95.4 2.01 1.39z"/></svg>
+      Subscribe with PayPal
+    </button>
+  </div>
+</div>
 
 
 
 <script>
 (() => {
   const NOW = Date.now();
-  let SOURCES = 50;
 
   let DATA = [];
   let searchError = false;
@@ -873,17 +1188,28 @@
   const chevron = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const linkIcon = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 014.5 9l1-1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
 
+  /* ---------- Customer Auth & Search Gating State ---------- */
+  let currentUser = null;
+  let searchGated = false;
+  let searchGateReason = "";
+  let selectedPlan = "professional_monthly";
+
   /* ---------- API Fetching ---------- */
 
   async function fetchLiveSearch(query) {
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+      const token = localStorage.getItem("jurismon_token");
+      const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`, { headers });
       if (res.ok) {
         const json = await res.json();
         DATA = json.items || [];
+        searchGated = !!json.is_gated;
+        searchGateReason = json.gate_reason || "";
         searchError = false;
         processData(DATA);
         render();
+        updateGateBanner();
         return;
       }
     } catch (e) {
@@ -893,6 +1219,31 @@
     searchError = true;
     processData(DATA);
     render();
+    updateGateBanner();
+  }
+
+  function updateGateBanner() {
+    const banner = $("#gate-banner");
+    const bannerText = $("#gate-banner-text");
+    const bannerCta = $("#gate-banner-cta");
+    if (!banner || !bannerText || !bannerCta) return;
+
+    if (searchGated) {
+      banner.style.display = "flex";
+      if (searchGateReason === "trial_expired") {
+        banner.classList.add("is-expired");
+        bannerText.innerHTML = "<strong>14-Day Free Trial Expired:</strong> Subscribe to JurisMon Professional ($49/month or $468/year) to unlock unlimited regulatory drift monitoring.";
+        bannerCta.textContent = "Upgrade to Professional";
+        bannerCta.onclick = () => openPaywallModal();
+      } else {
+        banner.classList.remove("is-expired");
+        bannerText.innerHTML = "<strong>Free Preview Mode:</strong> Showing initial municipal changes. Start your 14-day free trial for full text across all 65 jurisdictions.";
+        bannerCta.textContent = "Start 14-Day Free Trial";
+        bannerCta.onclick = () => openAuthModal("register");
+      }
+    } else {
+      banner.style.display = "none";
+    }
   }
 
   /* Source counts come from the API. The defaults here are only what shows for
@@ -938,7 +1289,7 @@
   function getResults() {
     const toks = tokenize(state.q);
     re = toks.length ? new RegExp("(" + toks.map(escRe).join("|") + ")", "gi") : null;
-    const base = DATA.filter(d => toks.every(t => d.hay.includes(t)));
+    const base = DATA;
     const counts = {
       all: base.length,
       added: base.filter(d => inFilter(d, "added")).length,
@@ -983,7 +1334,18 @@
           <div class="full"><div class="full-inner">
             <div class="full-box">
               <p class="full-label">${fullLabel}</p>
-              <p class="full-text">${hl(d.full)}</p>
+              ${d.is_locked ? `
+                <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:6px; padding:12px 14px; margin-top:8px;">
+                  <div style="font-weight:600; color:#92400e; font-size:13.5px; display:flex; align-items:center; gap:6px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    Full Statutory Redline &amp; Text Locked
+                  </div>
+                  <p style="margin:4px 0 10px; font-size:13px; color:#78350f;">Complete text and historical clause redlines require an active trial or JurisMon Professional subscription.</p>
+                  <button type="button" class="btn-primary" onclick="window.triggerAuthOrPaywall()" style="background:#154DA8; color:#fff; border:0; padding:6px 14px; font-size:13px; border-radius:4px; cursor:pointer; font-weight:500;">
+                    ${searchGateReason === 'trial_expired' ? 'Upgrade to JurisMon Professional ($49/mo)' : 'Start 14-Day Free Trial'}
+                  </button>
+                </div>
+              ` : `<p class="full-text">${hl(d.full)}</p>`}
             </div>
           </div></div>
           <div class="actions">
@@ -1150,15 +1512,395 @@
     }
   });
 
+  /* ---------- Customer Auth & Paywall Modals Logic ---------- */
+  const authModal = $("#auth-modal");
+  const paywallModal = $("#paywall-modal");
+  const authError = $("#auth-error");
+  const paywallError = $("#paywall-error");
+
+  function openAuthModal(tab = "register") {
+    authError.style.display = "none";
+    authError.textContent = "";
+    setAuthTab(tab);
+    authModal.classList.add("is-active");
+  }
+
+  function closeAuthModal() {
+    authModal.classList.remove("is-active");
+  }
+
+  function openPaywallModal() {
+    paywallError.style.display = "none";
+    paywallError.textContent = "";
+    paywallModal.classList.add("is-active");
+  }
+
+  function closePaywallModal() {
+    paywallModal.classList.remove("is-active");
+  }
+
+  window.triggerAuthOrPaywall = () => {
+    if (searchGateReason === "trial_expired") {
+      openPaywallModal();
+    } else {
+      openAuthModal("register");
+    }
+  };
+
+  let pendingEmail = "";
+
+  function openAuthModal(tab = "register") {
+    authError.style.display = "none";
+    authError.textContent = "";
+    $(".modal-tabs").style.display = "flex";
+    $("#form-verify").style.display = "none";
+    setAuthTab(tab);
+    authModal.classList.add("is-active");
+  }
+
+  function showVerifyScreen(email) {
+    pendingEmail = email;
+    authError.style.display = "none";
+    $(".modal-tabs").style.display = "none";
+    $("#form-register").style.display = "none";
+    $("#form-login").style.display = "none";
+    $("#form-verify").style.display = "block";
+    $("#verify-email-display").textContent = email;
+    const codeInput = $("#verify-code");
+    codeInput.value = "";
+    codeInput.focus();
+  }
+
+  function closeAuthModal() {
+    authModal.classList.remove("is-active");
+    $(".modal-tabs").style.display = "flex";
+    $("#form-verify").style.display = "none";
+  }
+
+  function openPaywallModal() {
+    paywallError.style.display = "none";
+    paywallError.textContent = "";
+    paywallModal.classList.add("is-active");
+  }
+
+  function closePaywallModal() {
+    paywallModal.classList.remove("is-active");
+  }
+
+  window.triggerAuthOrPaywall = () => {
+    if (searchGateReason === "trial_expired") {
+      openPaywallModal();
+    } else {
+      openAuthModal("register");
+    }
+  };
+
+  function setAuthTab(tab) {
+    const isReg = tab === "register";
+    $("#tab-register").classList.toggle("is-active", isReg);
+    $("#tab-login").classList.toggle("is-active", !isReg);
+    $("#form-register").style.display = isReg ? "block" : "none";
+    $("#form-login").style.display = isReg ? "none" : "block";
+    $("#form-verify").style.display = "none";
+    $(".modal-tabs").style.display = "flex";
+  }
+
+  $("#tab-register").addEventListener("click", () => setAuthTab("register"));
+  $("#tab-login").addEventListener("click", () => setAuthTab("login"));
+  $("#auth-modal-close").addEventListener("click", closeAuthModal);
+  $("#paywall-modal-close").addEventListener("click", closePaywallModal);
+
+  authModal.addEventListener("click", e => {
+    if (e.target === authModal) closeAuthModal();
+  });
+  paywallModal.addEventListener("click", e => {
+    if (e.target === paywallModal) closePaywallModal();
+  });
+
+  $("#btn-nav-login").addEventListener("click", () => openAuthModal("login"));
+  $("#btn-nav-register").addEventListener("click", () => openAuthModal("register"));
+
+  $("#btn-nav-logout").addEventListener("click", () => {
+    localStorage.removeItem("jurismon_token");
+    localStorage.removeItem("jurismon_user");
+    currentUser = null;
+    updateTopNav();
+    fetchLiveSearch(state.q);
+  });
+
+  // Register form submit
+  $("#form-register").addEventListener("submit", async e => {
+    e.preventDefault();
+    authError.style.display = "none";
+    const btn = $("#btn-submit-reg");
+    btn.disabled = true;
+    btn.textContent = "Sending Confirmation Code...";
+
+    const fullName = $("#reg-name").value.trim();
+    const email = $("#reg-email").value.trim();
+    const password = $("#reg-password").value;
+
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, full_name: fullName || null }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        authError.textContent = data.detail || "Registration failed. Please try again.";
+        authError.style.display = "block";
+        btn.disabled = false;
+        btn.textContent = "Create Account & Start Trial";
+        return;
+      }
+      // Registration requires 6-digit confirmation code
+      showVerifyScreen(email);
+    } catch (err) {
+      authError.textContent = "Network error. Please try again.";
+      authError.style.display = "block";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Create Account & Start Trial";
+    }
+  });
+
+  // Verification Code submit
+  $("#form-verify").addEventListener("submit", async e => {
+    e.preventDefault();
+    authError.style.display = "none";
+    const btn = $("#btn-submit-verify");
+    btn.disabled = true;
+    btn.textContent = "Verifying Code...";
+
+    const code = $("#verify-code").value.trim();
+
+    try {
+      const res = await fetch("/api/auth/verify-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: pendingEmail, code }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        authError.textContent = data.detail || "Invalid confirmation code.";
+        authError.style.display = "block";
+        btn.disabled = false;
+        btn.textContent = "Confirm & Start 14-Day Free Trial";
+        return;
+      }
+      localStorage.setItem("jurismon_token", data.access_token);
+      localStorage.setItem("jurismon_user", JSON.stringify(data.user));
+      currentUser = data.user;
+      closeAuthModal();
+      updateTopNav();
+      fetchLiveSearch(state.q);
+    } catch (err) {
+      authError.textContent = "Network error verifying code. Please try again.";
+      authError.style.display = "block";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Confirm & Start 14-Day Free Trial";
+    }
+  });
+
+  // Resend code button
+  $("#btn-resend-code").addEventListener("click", async () => {
+    if (!pendingEmail) return;
+    authError.style.display = "none";
+    try {
+      const res = await fetch("/api/auth/resend-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: pendingEmail }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert("A new confirmation code has been sent to " + pendingEmail);
+        const codeInput = $("#verify-code");
+        codeInput.value = "";
+        codeInput.focus();
+      } else {
+        authError.textContent = data.detail || "Could not resend code.";
+        authError.style.display = "block";
+      }
+    } catch (err) {
+      authError.textContent = "Error connecting to server.";
+      authError.style.display = "block";
+    }
+  });
+
+  // Login form submit
+  $("#form-login").addEventListener("submit", async e => {
+    e.preventDefault();
+    authError.style.display = "none";
+    const btn = $("#btn-submit-login");
+    btn.disabled = true;
+    btn.textContent = "Signing In...";
+
+    const email = $("#login-email").value.trim();
+    const password = $("#login-password").value;
+
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (res.status === 403 && data.detail && data.detail.includes("not confirmed")) {
+          showVerifyScreen(email);
+          authError.textContent = "Please enter the confirmation code sent to your email.";
+          authError.style.display = "block";
+          return;
+        }
+        authError.textContent = data.detail || "Invalid email or password.";
+        authError.style.display = "block";
+        btn.disabled = false;
+        btn.textContent = "Log In";
+        return;
+      }
+      localStorage.setItem("jurismon_token", data.access_token);
+      localStorage.setItem("jurismon_user", JSON.stringify(data.user));
+      currentUser = data.user;
+      closeAuthModal();
+      updateTopNav();
+      fetchLiveSearch(state.q);
+    } catch (err) {
+      authError.textContent = "Network error. Please try again.";
+      authError.style.display = "block";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Log In";
+    }
+  });
+
+  // Plan Selection
+  window.selectPlan = planId => {
+    selectedPlan = planId;
+    $("#card-plan-monthly").classList.toggle("is-selected", planId === "professional_monthly");
+    $("#card-plan-annual").classList.toggle("is-selected", planId === "professional_annual");
+  };
+  $("#card-plan-monthly").addEventListener("click", () => selectPlan("professional_monthly"));
+  $("#card-plan-annual").addEventListener("click", () => selectPlan("professional_annual"));
+
+  // PayPal Subscribe button
+  $("#btn-paypal-subscribe").addEventListener("click", async () => {
+    paywallError.style.display = "none";
+    const btn = $("#btn-paypal-subscribe");
+    btn.disabled = true;
+    btn.innerHTML = "Connecting to PayPal...";
+
+    const email = currentUser ? currentUser.email : null;
+    try {
+      const res = await fetch("/api/subscriptions/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: selectedPlan, email }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.approval_url) {
+        paywallError.textContent = data.detail || "Could not initialize PayPal checkout. Please try again.";
+        paywallError.style.display = "block";
+        btn.disabled = false;
+        btn.innerHTML = "Subscribe with PayPal";
+        return;
+      }
+      window.location.href = data.approval_url;
+    } catch (err) {
+      paywallError.textContent = "Network error connecting to PayPal. Please try again.";
+      paywallError.style.display = "block";
+      btn.disabled = false;
+      btn.innerHTML = "Subscribe with PayPal";
+    }
+  });
+
+  function updateTopNav() {
+    const unauthed = $("#auth-unauthed");
+    const authed = $("#auth-authed");
+    const emailEl = $("#nav-user-email");
+    const badgeEl = $("#nav-user-badge");
+
+    if (currentUser) {
+      unauthed.style.display = "none";
+      authed.style.display = "flex";
+      emailEl.textContent = currentUser.email || "";
+      emailEl.title = currentUser.email || "";
+
+      const acc = currentUser.access || {};
+      if (acc.reason === "active_subscription") {
+        badgeEl.textContent = "Pro Active";
+        badgeEl.style.background = "#dcfce7";
+        badgeEl.style.color = "#166534";
+        badgeEl.style.borderColor = "#86efac";
+      } else if (acc.reason === "trial") {
+        const days = acc.trial_days_remaining ?? 14;
+        badgeEl.textContent = `${days}d Trial`;
+        badgeEl.style.background = "#eff6ff";
+        badgeEl.style.color = "#1e40af";
+        badgeEl.style.borderColor = "#bfdbfe";
+      } else {
+        badgeEl.textContent = "Trial Expired";
+        badgeEl.style.background = "#fee2e2";
+        badgeEl.style.color = "#991b1b";
+        badgeEl.style.borderColor = "#fca5a5";
+        badgeEl.style.cursor = "pointer";
+        badgeEl.onclick = openPaywallModal;
+      }
+    } else {
+      unauthed.style.display = "flex";
+      authed.style.display = "none";
+    }
+  }
+
+  async function checkUserSession() {
+    const token = localStorage.getItem("jurismon_token");
+    if (!token) {
+      currentUser = null;
+      updateTopNav();
+      return;
+    }
+    try {
+      const res = await fetch("/api/auth/me", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        currentUser = await res.json();
+        localStorage.setItem("jurismon_user", JSON.stringify(currentUser));
+        updateTopNav();
+        return;
+      }
+    } catch (e) {
+      console.warn("Could not check auth status:", e);
+    }
+    localStorage.removeItem("jurismon_token");
+    localStorage.removeItem("jurismon_user");
+    currentUser = null;
+    updateTopNav();
+  }
+
   /* ---------- Boot ---------- */
+  checkUserSession().then(() => {
+    fetchLiveSearch("");
+  });
   loadSourcesCount();
-  fetchLiveSearch("");
   updateStatusText();
   render();
   moveIndicator();
   requestAnimationFrame(() => pills.classList.add("ready"));
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveIndicator);
   window.addEventListener("resize", moveIndicator);
+
+  // Check URL query parameters for subscription status
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("subscribed") === "1") {
+    alert("Subscription activated! Your JurisMon Professional account is now fully active.");
+    window.history.replaceState({}, document.title, window.location.pathname);
+  } else if (params.get("subscribe_cancelled") === "1") {
+    alert("PayPal subscription checkout was cancelled.");
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
 
   const target = location.hash && document.getElementById(location.hash.slice(1));
   if (target && target.classList.contains("result")) {

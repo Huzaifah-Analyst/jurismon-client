@@ -10,6 +10,7 @@ nothing - so this adapter parses XML into the same DiscoveredDocument schema.
 """
 
 import logging
+import xml.parsers.expat
 from typing import Dict, Any, List, Optional
 from bs4 import BeautifulSoup
 from crawler.adapters.base_adapter import BaseAdapter
@@ -38,9 +39,23 @@ class XmlFeedAdapter(BaseAdapter):
         logger.info(f"Fetching XML source: {endpoint_url}")
         res = self.session.fetch_page(endpoint_url, extra_headers=headers)
 
-        # The "xml" tree builder drops namespace prefixes, so <atom:entry> and
-        # <entry> can both be found by plain tag name.
-        soup = BeautifulSoup(res.content, "xml")
+        # Validate that the response is well-formed XML rather than an HTML
+        # error page or broken markup.
+        try:
+            parser = xml.parsers.expat.ParserCreate()
+            parser.UseForeignDTD(True)
+            parser.Parse(res.content, True)
+            # The "xml" tree builder drops namespace prefixes, so <atom:entry> and
+            # <entry> can both be found by plain tag name.
+            soup = BeautifulSoup(res.content, "xml")
+        except Exception as e:
+            raise ValueError(f"Expected XML from {endpoint_url} but could not parse it: {e}")
+
+        root = soup.find()
+        if root is None:
+            raise ValueError(f"Expected XML from {endpoint_url} but could not parse it: no XML root element found")
+        if root.name.lower() == "html":
+            raise ValueError(f"Expected XML from {endpoint_url} but got HTML document")
 
         items = self._find_items(soup, selectors.get("item_tag"))
         if not items:

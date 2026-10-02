@@ -31,7 +31,7 @@ class RestApiAdapter(BaseAdapter):
             data = res.json()
         except Exception as e:
             logger.error(f"Failed to parse JSON response from {endpoint_url}: {e}")
-            return []
+            raise ValueError(f"Expected JSON from {endpoint_url} but could not parse it: {e}")
 
         documents: List[DiscoveredDocument] = []
         

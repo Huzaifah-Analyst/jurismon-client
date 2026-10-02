@@ -78,112 +78,137 @@ def main():
     total_docs_processed = 0
     total_diffs_created = 0
 
-    for source_cfg in sources:
-        if not source_cfg.get("is_active", True):
-            continue
+    active_sources = [s for s in sources if s.get("is_active", True)]
+    total_sources = len(active_sources)
 
-        source_name = source_cfg.get("name", "Unnamed")
-        adapter_type = source_cfg.get("adapter_type", "custom")
-        logger.info(f"--- Processing Source: {source_name} (Adapter: {adapter_type}) ---")
+    run_id = repo.start_crawl_run()
+    run_status = "failed"
 
-        try:
-            adapter = get_adapter(adapter_type)
-            result = adapter.crawl(source_cfg)
-
-            if not result.success:
-                logger.error(f"Source {source_name} crawl failed: {result.error_message}")
-                sources_failed += 1
-                failure_details.append({"source_name": source_name, "error": str(result.error_message)})
+    try:
+        for source_cfg in sources:
+            if not source_cfg.get("is_active", True):
                 continue
 
-            sources_succeeded += 1
-            logger.info(f"Discovered {len(result.documents)} documents for {source_name}")
+            source_name = source_cfg.get("name", "Unnamed")
+            adapter_type = source_cfg.get("adapter_type", "custom")
+            logger.info(f"--- Processing Source: {source_name} (Adapter: {adapter_type}) ---")
 
-            for doc_item in result.documents:
-                total_docs_processed += 1
-                try:
-                    # 1. Fetch document binary/HTML
-                    if doc_item.url.lower().endswith(".pdf") or "pdf" in doc_item.url.lower():
-                        content_bytes = requests_fetcher.fetch_pdf_bytes(doc_item.url)
-                        content_hash = compute_sha256(content_bytes)
+            try:
+                adapter = get_adapter(adapter_type)
+                result = adapter.crawl(source_cfg)
 
-                        # Extract text with layout awareness and OCR fallback
-                        cleaned_text, raw_text, ocr_applied = PDFExtractor.extract_from_bytes(content_bytes)
-                    else:
-                        resp = requests_fetcher.fetch_url(doc_item.url)
-                        content_bytes = resp.content
-                        content_hash = compute_sha256(content_bytes)
-                        cleaned_text, raw_text = HTMLExtractor.extract_from_html(resp.text)
-                        ocr_applied = False
+                if not result.success:
+                    logger.error(f"Source {source_name} crawl failed: {result.error_message}")
+                    sources_failed += 1
+                    failure_details.append({"source_name": source_name, "error": str(result.error_message)})
+                    continue
 
-                    # 2. Database check if repo connected
-                    if repo.is_connected():
-                        db_source = repo.upsert_source(source_cfg)
-                        source_id = db_source["id"] if db_source else source_cfg.get("id")
-                        
-                        db_doc = repo.get_or_create_document(
-                            source_id=source_id,
-                            title=doc_item.title,
-                            pdf_url=doc_item.url,
-                            document_type=doc_item.document_type,
-                        )
-                        doc_id = db_doc["id"] if db_doc else None
+                sources_succeeded += 1
+                logger.info(f"Discovered {len(result.documents)} documents for {source_name}")
 
-                        if doc_id:
-                            latest_snap = repo.get_latest_snapshot(doc_id)
-                            # Check if unchanged
-                            if latest_snap and latest_snap.get("content_hash") == content_hash:
-                                logger.info(f"Document '{doc_item.title}' unchanged (hash match). Skipping.")
-                                continue
+                for doc_item in result.documents:
+                    total_docs_processed += 1
+                    try:
+                        # 1. Fetch document binary/HTML
+                        if doc_item.url.lower().endswith(".pdf") or "pdf" in doc_item.url.lower():
+                            content_bytes = requests_fetcher.fetch_pdf_bytes(doc_item.url)
+                            content_hash = compute_sha256(content_bytes)
 
-                            # New or Changed: Create snapshot
-                            next_version = (latest_snap.get("version", 0) + 1) if latest_snap else 1
-                            new_snap = repo.create_snapshot(
-                                document_id=doc_id,
-                                version=next_version,
-                                content_hash=content_hash,
-                                raw_text=raw_text,
-                                cleaned_text=cleaned_text,
-                                ocr_applied=ocr_applied,
+                            # Extract text with layout awareness and OCR fallback
+                            cleaned_text, raw_text, ocr_applied = PDFExtractor.extract_from_bytes(content_bytes)
+                        else:
+                            resp = requests_fetcher.fetch_url(doc_item.url)
+                            content_bytes = resp.content
+                            content_hash = compute_sha256(content_bytes)
+                            cleaned_text, raw_text = HTMLExtractor.extract_from_html(resp.text)
+                            ocr_applied = False
+
+                        # 2. Database check if repo connected
+                        if repo.is_connected():
+                            db_source = repo.upsert_source(source_cfg)
+                            source_id = db_source["id"] if db_source else source_cfg.get("id")
+                            
+                            db_doc = repo.get_or_create_document(
+                                source_id=source_id,
+                                title=doc_item.title,
+                                pdf_url=doc_item.url,
+                                document_type=doc_item.document_type,
                             )
+                            doc_id = db_doc["id"] if db_doc else None
 
-                            # 3. If previous snapshot exists, generate Diff
-                            if latest_snap and new_snap:
-                                old_text = latest_snap.get("cleaned_text", "")
-                                diff_res = diff_engine.compare(old_text=old_text, new_text=cleaned_text)
-                                repo.save_diff(
+                            if doc_id:
+                                latest_snap = repo.get_latest_snapshot(doc_id)
+                                # Check if unchanged
+                                if latest_snap and latest_snap.get("content_hash") == content_hash:
+                                    logger.info(f"Document '{doc_item.title}' unchanged (hash match). Skipping.")
+                                    continue
+
+                                # New or Changed: Create snapshot
+                                next_version = (latest_snap.get("version", 0) + 1) if latest_snap else 1
+                                new_snap = repo.create_snapshot(
                                     document_id=doc_id,
-                                    previous_snapshot_id=latest_snap["id"],
-                                    current_snapshot_id=new_snap["id"],
-                                    diff_payload=diff_res.model_dump(),
+                                    version=next_version,
+                                    content_hash=content_hash,
+                                    raw_text=raw_text,
+                                    cleaned_text=cleaned_text,
+                                    ocr_applied=ocr_applied,
                                 )
-                                total_diffs_created += 1
-                                logger.info(f"Diff generated for '{doc_item.title}': {diff_res.summary}")
-                    else:
-                        logger.info(f"[Dry Run] Cleaned {len(cleaned_text)} chars from {doc_item.title} (hash: {content_hash[:8]})")
 
-                except Exception as doc_err:
-                    logger.warning(f"Error processing doc {doc_item.url}: {doc_err}")
+                                # 3. If previous snapshot exists, generate Diff
+                                if latest_snap and new_snap:
+                                    old_text = latest_snap.get("cleaned_text", "")
+                                    diff_res = diff_engine.compare(old_text=old_text, new_text=cleaned_text)
+                                    repo.save_diff(
+                                        document_id=doc_id,
+                                        previous_snapshot_id=latest_snap["id"],
+                                        current_snapshot_id=new_snap["id"],
+                                        diff_payload=diff_res.model_dump(),
+                                    )
+                                    total_diffs_created += 1
+                                    logger.info(f"Diff generated for '{doc_item.title}': {diff_res.summary}")
+                        else:
+                            logger.info(f"[Dry Run] Cleaned {len(cleaned_text)} chars from {doc_item.title} (hash: {content_hash[:8]})")
 
-        except Exception as source_err:
-            sources_failed += 1
-            failure_details.append({"source_name": source_name, "error": str(source_err)})
-            logger.error(f"Error during source execution for {source_name}: {source_err}")
+                    except Exception as doc_err:
+                        logger.warning(f"Error processing doc {doc_item.url}: {doc_err}")
 
-    duration = round(time.time() - start_time, 2)
-    logger.info(f"=== Daily Crawl Completed in {duration}s ===")
-    logger.info(f"Sources: {sources_succeeded} succeeded, {sources_failed} failed | Docs: {total_docs_processed} | Diffs: {total_diffs_created}")
+            except Exception as source_err:
+                sources_failed += 1
+                failure_details.append({"source_name": source_name, "error": str(source_err)})
+                logger.error(f"Error during source execution for {source_name}: {source_err}")
 
-    # An unattended run fails silently otherwise - the log sits on the server
-    # and nobody reads it.
-    send_crawl_report(
-        succeeded=sources_succeeded,
-        failed=sources_failed,
-        documents=total_docs_processed,
-        diffs=total_diffs_created,
-        duration_seconds=duration,
-        failures=failure_details,
-    )
+        if sources_failed == 0:
+            run_status = "completed"
+        elif sources_succeeded == 0:
+            run_status = "failed"
+        else:
+            run_status = "partial_failure"
+
+        duration = round(time.time() - start_time, 2)
+        logger.info(f"=== Daily Crawl Completed in {duration}s ===")
+        logger.info(f"Sources: {sources_succeeded} succeeded, {sources_failed} failed | Docs: {total_docs_processed} | Diffs: {total_diffs_created}")
+
+        # An unattended run fails silently otherwise - the log sits on the server
+        # and nobody reads it.
+        send_crawl_report(
+            succeeded=sources_succeeded,
+            failed=sources_failed,
+            documents=total_docs_processed,
+            diffs=total_diffs_created,
+            duration_seconds=duration,
+            failures=failure_details,
+        )
+    finally:
+        repo.finish_crawl_run(
+            run_id=run_id,
+            status=run_status,
+            total_sources=total_sources,
+            sources_succeeded=sources_succeeded,
+            sources_failed=sources_failed,
+            documents_found=total_docs_processed,
+            diffs_created=total_diffs_created,
+            error_logs=failure_details,
+        )
 
 
 if __name__ == "__main__":
