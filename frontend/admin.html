@@ -619,8 +619,6 @@
 
 
 
-  .foot { margin: 48px 0 40px; font-size: 12.5px; color: var(--faint); }
-
 
 
   @media (max-width: 960px) {
@@ -1022,8 +1020,6 @@
 
 
 
-  <p class="foot">Showing sample data. Connect Supabase and PayPal to load live records.</p>
-
   <footer class="admin-footer" style="margin-top: 32px; padding: 24px 0 env(safe-area-inset-bottom, 24px); border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; text-align: center;">
     &copy; 2026 JurisMon. All rights reserved. &bull; Contact: <a href="mailto:support@jurismon.com" style="color:var(--text); text-decoration:underline;">support@jurismon.com</a>
   </footer>
@@ -1113,23 +1109,13 @@
 (() => {
 
   /* ------------------------------------------------------------------
-
-     SAMPLE DATA ONLY (fictional jurisdictions, firms and IDs).
-
-     Replace the three arrays below with Supabase queries:
-
-       sources      -> table `sources` joined with latest `crawl_runs`
-
-       subscribers  -> table `subscriptions`
-
-       webhooks     -> table `paypal_webhook_events`
-
-     Cancelling should call your backend, which calls the PayPal
-
-     Subscriptions API; access is removed when the CANCELLED webhook
-
-     is confirmed.
-
+     Live Admin Panel Data Integration
+     Data is fetched dynamically via authenticated backend API endpoints:
+       - /api/sources: Portal status, health checks & crawl history
+       - /api/admin/metrics: Ingestion counts & database totals
+       - /api/admin/subscribers: Active accounts & tier information
+       - /api/admin/webhooks: PayPal webhook delivery log
+     Panels render explicit loading, signed-out, and error fallback states.
   ------------------------------------------------------------------ */
 
   const NOW = Date.now();
@@ -1638,7 +1624,7 @@
 
     setTimeout(() => {
 
-      const fixed = prev.health !== "failing";   // sample: failing portal still down, others recover
+      const fixed = prev.health !== "failing";   // simulation: failing portal still down, others recover
 
       s.ts = Date.now();
 

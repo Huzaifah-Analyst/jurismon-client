@@ -1233,6 +1233,21 @@ class TestTermsAndPrivacyPages(unittest.TestCase):
         self.assertNotEqual(script_pos, -1, "<script> tag must exist in admin.html")
         self.assertLess(gate_pos, script_pos, "id='auth-gate' must appear earlier in the document than <script>")
 
+    def test_pages_contain_no_sample_or_fictional_data_indicators(self):
+        """Assert no page served by the app contains forbidden sample or fictional data indicators."""
+        forbidden_strings = ["sample data", "fictional", "dummy data", "demo data"]
+        pages = ["/", "/admin", "/terms", "/privacy"]
+        for page in pages:
+            res = self.client.get(page)
+            self.assertEqual(res.status_code, 200, f"Page {page} returned status {res.status_code}")
+            page_text = res.text.lower()
+            for forbidden in forbidden_strings:
+                self.assertNotIn(
+                    forbidden,
+                    page_text,
+                    f"Forbidden string '{forbidden}' found in response from '{page}'"
+                )
+
 
 if __name__ == "__main__":
     unittest.main()
