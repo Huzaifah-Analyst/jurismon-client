@@ -118,6 +118,8 @@ class PayPalProvider(PaymentProvider):
 
         next_billing = (resource.get("billing_info") or {}).get("next_billing_time")
 
+        custom_id = resource.get("custom_id")
+
         return {
             "event_type": event_type,
             "subscription_id": sub_id,
@@ -126,6 +128,7 @@ class PayPalProvider(PaymentProvider):
             "subscriber_name": subscriber_name,
             "next_billing_at": next_billing,
             "plan_id": resource.get("plan_id"),
+            "custom_id": custom_id,
             "raw": payload,
         }
 
@@ -135,6 +138,7 @@ class PayPalProvider(PaymentProvider):
         return_url: str,
         cancel_url: str,
         subscriber_email: Optional[str] = None,
+        custom_id: Optional[str] = None,
     ) -> Optional[SubscriptionRequest]:
         """Starts a PayPal subscription and returns the approval URL.
 
@@ -156,6 +160,8 @@ class PayPalProvider(PaymentProvider):
                 "cancel_url": cancel_url,
             },
         }
+        if custom_id:
+            payload["custom_id"] = str(custom_id)
         if subscriber_email:
             payload["subscriber"] = {"email_address": subscriber_email}
 

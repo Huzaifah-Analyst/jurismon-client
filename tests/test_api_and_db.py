@@ -245,6 +245,45 @@ class TestPayPalProvider(unittest.TestCase):
         event = provider.process_webhook_event(fake_payload)
         self.assertEqual(event["status"], "cancelled")
 
+    def test_process_webhook_event_extracts_custom_id(self):
+        provider = PayPalProvider()
+        fake_payload = {
+            "event_type": "BILLING.SUBSCRIPTION.ACTIVATED",
+            "resource": {
+                "id": "I-TEST-CID",
+                "custom_id": "user-uuid-1234",
+                "subscriber": {"email_address": "buyer@test.com"}
+            }
+        }
+        event = provider.process_webhook_event(fake_payload)
+        self.assertEqual(event["custom_id"], "user-uuid-1234")
+        self.assertEqual(event["subscription_id"], "I-TEST-CID")
+
+    def test_create_subscription_payload_includes_custom_id(self):
+        provider = PayPalProvider(client_id="cid", client_secret="sec")
+        with patch.object(provider, "_get_access_token", return_value="fake_token"), \
+             patch("requests.post") as mock_post:
+            mock_post.return_value.status_code = 201
+            mock_post.return_value.json.return_value = {
+                "id": "I-SUB-123",
+                "status": "APPROVAL_PENDING",
+                "links": [{"rel": "approve", "href": "https://paypal.com/checkout?id=123"}],
+            }
+            res = provider.create_subscription(
+                plan_id="P-TEST-PLAN",
+                return_url="https://site.test/return",
+                cancel_url="https://site.test/cancel",
+                subscriber_email="work@firm.com",
+                custom_id="user-uuid-999",
+            )
+            self.assertIsNotNone(res)
+            self.assertEqual(res.id, "I-SUB-123")
+            mock_post.assert_called_once()
+            call_kwargs = mock_post.call_args[1]
+            payload = call_kwargs["json"]
+            self.assertEqual(payload["custom_id"], "user-uuid-999")
+            self.assertEqual(payload["subscriber"]["email_address"], "work@firm.com")
+
 
 class TestPayPalWebhookVerification(unittest.TestCase):
     """Regression cover for the webhook signature path, which no test reached."""
@@ -640,6 +679,113 @@ class TestFastAPIEndpoints(unittest.TestCase):
 
             # Clean up new test run
             repo.finish_crawl_run(new_run_id, status="completed")
+
+    def test_unauthenticated_checkout_refused(self):
+        """B3/B5: Unauthenticated checkout request is refused with 401."""
+        response = self.client.post("/api/subscriptions/create", json={"plan": "professional_monthly"})
+        self.assertEqual(response.status_code, 401)
+
+    def test_create_subscription_sends_custom_id(self):
+        """B1/B5: Authenticated checkout passes user's UUID as custom_id to PayPal."""
+        from api.auth import create_customer_token
+        from api.payments.paypal_provider import SubscriptionRequest
+
+        user_id = "test-customer-uuid-42"
+        user_email = "lawyer@firm.com"
+        token = create_customer_token(user_id=user_id, email=user_email)
+
+        mock_sub = SubscriptionRequest(
+            id="I-NEW-SUB",
+            status="APPROVAL_PENDING",
+            approval_url="https://www.sandbox.paypal.com/checkoutnow?token=I-NEW-SUB",
+            plan_id="P-4KS041180N5953043M743TVI",
+        )
+
+        with patch("api.main.paypal_provider.client_id", "mock-cid"), \
+             patch("api.main.paypal_provider.create_subscription", return_value=mock_sub) as mock_create:
+            res = self.client.post(
+                "/api/subscriptions/create",
+                headers={"Authorization": f"Bearer {token}"},
+                json={"plan": "professional_monthly"},
+            )
+            self.assertEqual(res.status_code, 200)
+            mock_create.assert_called_once()
+            kwargs = mock_create.call_args[1]
+            self.assertEqual(kwargs.get("custom_id"), user_id)
+            self.assertEqual(kwargs.get("subscriber_email"), user_email)
+
+    def test_webhook_resolves_by_custom_id_first(self):
+        """B2/B5: Webhook resolves user by custom_id first, even if PayPal payer email differs."""
+        from api.main import repo
+        target_uid = "firm-user-uuid-777"
+        firm_email = "firm_lead@corporate.com"
+        personal_payer_email = "personal_paypal@gmail.com"
+
+        with patch.object(repo, "get_user_by_id", return_value={"id": target_uid, "email": firm_email}), \
+             patch.object(repo, "record_subscription") as mock_record, \
+             patch("api.main.paypal_provider.verify_webhook", return_value=True):
+
+            payload = {
+                "id": "WH-TEST-CUSTOMID-1",
+                "event_type": "BILLING.SUBSCRIPTION.ACTIVATED",
+                "resource": {
+                    "id": "I-SUB-DIFFERENT-EMAIL",
+                    "plan_id": "P-PRO",
+                    "custom_id": target_uid,
+                    "subscriber": {
+                        "email_address": personal_payer_email
+                    }
+                }
+            }
+            res = self.client.post("/api/webhooks/paypal", json=payload)
+            self.assertEqual(res.status_code, 200)
+            mock_record.assert_called_once()
+            record_kwargs = mock_record.call_args[1]
+            self.assertEqual(record_kwargs.get("user_id"), target_uid)
+            self.assertEqual(record_kwargs.get("user_email"), firm_email)
+
+    def test_webhook_resolves_by_email_when_custom_id_absent(self):
+        """B2/B5: Webhook falls back to payer email matching when custom_id is absent."""
+        from api.main import repo
+        fallback_uid = "fallback-user-uuid-888"
+        payer_email = "legacy_user@test.com"
+
+        with patch.object(repo, "get_user_by_email", return_value={"id": fallback_uid, "email": payer_email}), \
+             patch.object(repo, "record_subscription") as mock_record, \
+             patch("api.main.paypal_provider.verify_webhook", return_value=True):
+
+            payload = {
+                "id": "WH-TEST-NOCUSTOMID-1",
+                "event_type": "BILLING.SUBSCRIPTION.ACTIVATED",
+                "resource": {
+                    "id": "I-SUB-LEGACY",
+                    "plan_id": "P-PRO",
+                    "subscriber": {
+                        "email_address": payer_email
+                    }
+                }
+            }
+            res = self.client.post("/api/webhooks/paypal", json=payload)
+            self.assertEqual(res.status_code, 200)
+            mock_record.assert_called_once()
+            record_kwargs = mock_record.call_args[1]
+            self.assertEqual(record_kwargs.get("user_id"), fallback_uid)
+            self.assertEqual(record_kwargs.get("user_email"), payer_email)
+
+    def test_admin_crawl_status_includes_sources_skipped(self):
+        """C1/C2: /api/admin/crawl/status includes sources_skipped and summary."""
+        from api.auth import create_access_token, ADMIN_EMAIL
+        admin_token = create_access_token({"sub": ADMIN_EMAIL})
+
+        res = self.client.get(
+            "/api/admin/crawl/status",
+            headers={"Authorization": f"Bearer {admin_token}"},
+        )
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertIn("sources_skipped", data)
+        self.assertIn("summary", data)
+        self.assertIn("skipped", data["summary"])
 
 
 if __name__ == "__main__":

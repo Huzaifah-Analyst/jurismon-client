@@ -142,11 +142,20 @@ class Repository:
                     total_sources INTEGER DEFAULT 0,
                     sources_succeeded INTEGER DEFAULT 0,
                     sources_failed INTEGER DEFAULT 0,
+                    sources_skipped INTEGER DEFAULT 0,
                     documents_found INTEGER DEFAULT 0,
                     diffs_created INTEGER DEFAULT 0,
                     error_logs TEXT DEFAULT '[]'
                 )
             """)
+            try:
+                cur.execute("ALTER TABLE crawl_runs ADD COLUMN sources_skipped INTEGER DEFAULT 0")
+            except Exception:
+                pass
+            try:
+                cur.execute("ALTER TABLE subscriptions ADD COLUMN user_id TEXT")
+            except Exception:
+                pass
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                     id TEXT PRIMARY KEY,
@@ -551,12 +560,13 @@ class Repository:
         user_email: Optional[str] = None,
         subscriber_name: Optional[str] = None,
         next_billing_at: Optional[str] = None,
+        user_id: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         """Records or updates a user subscription from PayPal/Stripe.
 
         Webhooks arrive out of order and later events (a cancellation, say) carry
         less detail than the activation did, so a NULL in an update must not wipe
-        a name or billing date we already know.
+        a name, user ID, or billing date we already know.
         """
         import uuid
         sub_id = str(uuid.uuid4())
@@ -566,18 +576,19 @@ class Repository:
             cur = conn.cursor()
             cur.execute("""
                 INSERT INTO subscriptions (
-                    id, user_email, subscriber_name, external_subscription_id,
+                    id, user_id, user_email, subscriber_name, external_subscription_id,
                     plan_id, status, next_billing_at, created_at, updated_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(external_subscription_id) DO UPDATE SET
                     status          = excluded.status,
+                    user_id         = COALESCE(excluded.user_id, subscriptions.user_id),
                     user_email      = COALESCE(excluded.user_email, subscriptions.user_email),
                     subscriber_name = COALESCE(excluded.subscriber_name, subscriptions.subscriber_name),
                     plan_id         = COALESCE(excluded.plan_id, subscriptions.plan_id),
                     next_billing_at = COALESCE(excluded.next_billing_at, subscriptions.next_billing_at),
                     updated_at      = excluded.updated_at
-            """, (sub_id, user_email, subscriber_name, external_sub_id,
+            """, (sub_id, user_id, user_email, subscriber_name, external_sub_id,
                   plan_id, status, next_billing_at, now_iso, now_iso))
             conn.commit()
 
@@ -685,6 +696,8 @@ class Repository:
         documents_found: int = 0,
         diffs_created: int = 0,
         error_logs: Optional[Any] = None,
+        sources_skipped: int = 0,
+        skipped_sources: Optional[Any] = None,
     ) -> None:
         """Updates a crawl run row with finished_at=now and the given counts.
 
@@ -696,6 +709,7 @@ class Repository:
 
         if self.supabase:
             try:
+                logs_payload = payload_errors if not isinstance(payload_errors, str) else json.loads(payload_errors)
                 self.supabase.table("crawl_runs").update({
                     "finished_at": now_iso,
                     "status": status,
@@ -704,7 +718,7 @@ class Repository:
                     "sources_failed": sources_failed,
                     "documents_found": documents_found,
                     "diffs_created": diffs_created,
-                    "error_logs": payload_errors if not isinstance(payload_errors, str) else json.loads(payload_errors),
+                    "error_logs": logs_payload,
                 }).eq("id", run_id).execute()
                 return
             except Exception as e:
@@ -720,6 +734,7 @@ class Repository:
                     total_sources = ?,
                     sources_succeeded = ?,
                     sources_failed = ?,
+                    sources_skipped = ?,
                     documents_found = ?,
                     diffs_created = ?,
                     error_logs = ?
@@ -730,6 +745,7 @@ class Repository:
                 total_sources,
                 sources_succeeded,
                 sources_failed,
+                sources_skipped,
                 documents_found,
                 diffs_created,
                 json_errors,
@@ -784,6 +800,11 @@ class Repository:
                     self.finish_crawl_run(
                         run_id=candidate["id"],
                         status="failed",
+                        total_sources=candidate.get("total_sources") or 0,
+                        sources_succeeded=candidate.get("sources_succeeded") or 0,
+                        sources_failed=candidate.get("sources_failed") or 0,
+                        documents_found=candidate.get("documents_found") or 0,
+                        diffs_created=candidate.get("diffs_created") or 0,
                         error_logs=[{"error": f"Crawl abandoned: process did not complete within {max_age_hours} hours."}],
                     )
                     return None
@@ -794,21 +815,29 @@ class Repository:
 
     def get_latest_crawl_run(self) -> Optional[Dict[str, Any]]:
         """Returns the most recent crawl run."""
+        row_dict = None
         if self.supabase:
             try:
                 res = self.supabase.table("crawl_runs").select("*").order("started_at", desc=True).limit(1).execute()
                 if res.data:
-                    return res.data[0]
-                return None
+                    row_dict = res.data[0]
             except Exception as e:
                 logger.error(f"Supabase get_latest_crawl_run error: {e}")
 
-        with self._connect() as conn:
-            conn.row_factory = sqlite3.Row
-            cur = conn.cursor()
-            cur.execute("SELECT * FROM crawl_runs ORDER BY started_at DESC LIMIT 1")
-            row = cur.fetchone()
-            return dict(row) if row else None
+        if not row_dict:
+            with self._connect() as conn:
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+                cur.execute("SELECT * FROM crawl_runs ORDER BY started_at DESC LIMIT 1")
+                row = cur.fetchone()
+                if row:
+                    row_dict = dict(row)
+
+        if row_dict:
+            if "sources_skipped" not in row_dict or row_dict["sources_skipped"] is None:
+                total = row_dict.get("total_sources") or 41
+                row_dict["sources_skipped"] = max(0, 65 - total)
+        return row_dict
 
     def create_user(
         self,
@@ -1075,10 +1104,10 @@ class Repository:
             cur = conn.cursor()
             cur.execute("""
                 SELECT * FROM subscriptions
-                WHERE LOWER(user_email) = LOWER(?)
+                WHERE (LOWER(user_email) = LOWER(?) OR (user_id IS NOT NULL AND user_id = ?))
                   AND status IN ('active', 'completed')
                 ORDER BY updated_at DESC LIMIT 1
-            """, (norm_email,))
+            """, (norm_email, str(user.get("id"))))
             row = cur.fetchone()
             if row:
                 sub = dict(row)

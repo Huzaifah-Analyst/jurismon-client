@@ -81,7 +81,18 @@ def main(run_id: Optional[str] = None):
     total_diffs_created = 0
 
     active_sources = [s for s in sources if s.get("is_active", True)]
+    skipped_sources = [s for s in sources if not s.get("is_active", True)]
     total_sources = len(active_sources)
+    sources_skipped = len(skipped_sources)
+    skipped_details = [
+        {
+            "id": s.get("id"),
+            "name": s.get("name"),
+            "url": s.get("base_url") or s.get("url"),
+            "reason": s.get("health_status") or "inactive",
+        }
+        for s in skipped_sources
+    ]
 
     if not run_id:
         active = repo.get_active_crawl_run()
@@ -193,7 +204,11 @@ def main(run_id: Optional[str] = None):
 
         duration = round(time.time() - start_time, 2)
         logger.info(f"=== Daily Crawl Completed in {duration}s ===")
-        logger.info(f"Sources: {sources_succeeded} succeeded, {sources_failed} failed | Docs: {total_docs_processed} | Diffs: {total_diffs_created}")
+        logger.info(
+            f"Sources: {total_sources} crawled, {sources_succeeded} succeeded, "
+            f"{sources_failed} failed, {sources_skipped} skipped | "
+            f"Docs: {total_docs_processed} | Diffs: {total_diffs_created}"
+        )
 
         # An unattended run fails silently otherwise - the log sits on the server
         # and nobody reads it.
@@ -215,6 +230,8 @@ def main(run_id: Optional[str] = None):
             documents_found=total_docs_processed,
             diffs_created=total_diffs_created,
             error_logs=failure_details,
+            sources_skipped=sources_skipped,
+            skipped_sources=skipped_details,
         )
 
 

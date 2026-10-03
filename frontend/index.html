@@ -1235,6 +1235,15 @@
     const bannerCta = $("#gate-banner-cta");
     if (!banner || !bannerText || !bannerCta) return;
 
+    if (window.isConfirmingSubscription) {
+      banner.style.display = "flex";
+      banner.classList.remove("is-expired");
+      bannerText.innerHTML = "<strong>Confirming your subscription with PayPal...</strong> This takes just a few seconds.";
+      bannerCta.style.display = "none";
+      return;
+    }
+    bannerCta.style.display = "";
+
     if (searchGated) {
       banner.style.display = "flex";
       if (searchGateReason === "trial_expired") {
@@ -1790,6 +1799,16 @@
   $("#btn-paypal-subscribe").addEventListener("click", async () => {
     paywallError.style.display = "none";
     const btn = $("#btn-paypal-subscribe");
+
+    const token = localStorage.getItem("jurismon_token");
+    if (!currentUser || !token) {
+      closePaywallModal();
+      openAuthModal("register");
+      authError.textContent = "Please create an account or log in before subscribing.";
+      authError.style.display = "block";
+      return;
+    }
+
     btn.disabled = true;
     btn.innerHTML = "Connecting to PayPal...";
 
@@ -1797,7 +1816,10 @@
     try {
       const res = await fetch("/api/subscriptions/create", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({ plan: selectedPlan, email }),
       });
       const data = await res.json();
@@ -1896,9 +1918,46 @@
   // Check URL query parameters for subscription status
   const params = new URLSearchParams(window.location.search);
   if (params.get("subscribed") === "1") {
-    alert("Subscription activated! Your JurisMon Professional account is now fully active.");
     window.history.replaceState({}, document.title, window.location.pathname);
-    fetchLiveSearch(state.q);
+    window.isConfirmingSubscription = true;
+    updateGateBanner();
+
+    let attempts = 0;
+    const maxAttempts = 6;
+    const pollInterval = setInterval(async () => {
+      attempts++;
+      const token = localStorage.getItem("jurismon_token");
+      if (token) {
+        try {
+          const res = await fetch("/api/auth/me", {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            currentUser = data;
+            localStorage.setItem("jurismon_user", JSON.stringify(data));
+            updateTopNav();
+            const acc = data.access || {};
+            if (acc.has_access && acc.reason === "active_subscription") {
+              clearInterval(pollInterval);
+              window.isConfirmingSubscription = false;
+              updateGateBanner();
+              fetchLiveSearch(state.q);
+              alert("Subscription activated! Your JurisMon Professional account is now fully active.");
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn("Polling /api/auth/me error:", e);
+        }
+      }
+      if (attempts >= maxAttempts) {
+        clearInterval(pollInterval);
+        window.isConfirmingSubscription = false;
+        updateGateBanner();
+        fetchLiveSearch(state.q);
+      }
+    }, 2500);
   } else if (params.get("subscribe_cancelled") === "1") {
     alert("PayPal subscription checkout was cancelled.");
     window.history.replaceState({}, document.title, window.location.pathname);

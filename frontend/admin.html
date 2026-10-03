@@ -2065,9 +2065,11 @@
           if (btn) btn.disabled = true;
         } else {
           const finishedAgo = rel(new Date(data.finished_at || data.started_at).getTime()).toLowerCase();
-          const total = data.total_sources || 0;
+          const crawled = data.total_sources || 0;
+          const succeeded = data.sources_succeeded != null ? data.sources_succeeded : Math.max(0, crawled - (data.sources_failed || 0));
           const failed = data.sources_failed || 0;
-          statusLine.textContent = `Last crawl: ${finishedAgo}, ${data.status}, ${total} sources, ${failed} errors`;
+          const skipped = data.sources_skipped != null ? data.sources_skipped : Math.max(0, 65 - crawled);
+          statusLine.textContent = `Last crawl: ${finishedAgo} (${data.status}) — ${crawled} crawled, ${succeeded} succeeded, ${failed} failed, ${skipped} skipped`;
           if (btn) btn.disabled = false;
         }
       }

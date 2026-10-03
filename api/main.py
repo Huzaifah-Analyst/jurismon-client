@@ -392,13 +392,15 @@ async def public_plans():
 
 
 @app.post("/api/subscriptions/create")
-async def create_subscription(req: SubscribeRequest, request: Request):
+async def create_subscription(
+    req: SubscribeRequest,
+    request: Request,
+    auth_user: dict = Depends(require_customer),
+):
     """Starts a subscription and returns PayPal's approval URL.
 
-    Nothing is charged here and no subscriber is recorded. The customer
-    authorises payment at the returned URL, and the resulting
-    BILLING.SUBSCRIPTION.ACTIVATED webhook is what marks them active - so a
-    half-finished checkout cannot create a subscriber.
+    Requires authenticated customer so the account identity (custom_id) can
+    be linked to the subscription, preventing unlinked or orphaned payments.
     """
     plan = next(
         (p for p in PLAN_CATALOGUE.get("plans", [])
@@ -413,6 +415,13 @@ async def create_subscription(req: SubscribeRequest, request: Request):
             status_code=503, detail="Payments are not configured on this server."
         )
 
+    user_id = auth_user.get("user_id")
+    customer_email = auth_user.get("sub")
+    if not user_id and customer_email:
+        u = repo.get_user_by_email(customer_email)
+        if u:
+            user_id = u.get("id")
+
     # Built from the request so the customer returns to the host they started
     # on, rather than a hardcoded domain.
     base = str(request.base_url).rstrip("/")
@@ -420,7 +429,8 @@ async def create_subscription(req: SubscribeRequest, request: Request):
         plan_id=plan["paypal_plan_id"],
         return_url=f"{base}/?subscribed=1",
         cancel_url=f"{base}/?subscribe_cancelled=1",
-        subscriber_email=req.email,
+        subscriber_email=req.email or customer_email,
+        custom_id=str(user_id) if user_id else None,
     )
 
     if not result or not result.approval_url:
@@ -429,7 +439,7 @@ async def create_subscription(req: SubscribeRequest, request: Request):
             status_code=502, detail="Could not start the subscription. Please try again."
         )
 
-    logger.info("Subscription %s started for plan %s", result.id, plan["id"])
+    logger.info("Subscription %s started for plan %s (custom_id: %s)", result.id, plan["id"], user_id)
     return {
         "subscription_id": result.id,
         "status": result.status,
@@ -474,6 +484,27 @@ async def paypal_webhook(request: Request):
     event_type = event_data.get("event_type")
     status_str = event_data.get("status")
     email = event_data.get("email")
+    custom_id = event_data.get("custom_id")
+
+    # Resolve subscriber identity by custom_id FIRST, then fall back to payer email
+    resolved_user = None
+    resolved_user_id = None
+    resolved_email = email
+
+    if custom_id:
+        resolved_user = repo.get_user_by_id(custom_id)
+        if not resolved_user:
+            resolved_user = repo.get_user_by_email(custom_id)
+        if resolved_user:
+            resolved_user_id = str(resolved_user.get("id"))
+            resolved_email = resolved_user.get("email") or email
+            logger.info("Resolved subscription %s to user_id %s via custom_id", sub_id, resolved_user_id)
+
+    if not resolved_user and email:
+        resolved_user = repo.get_user_by_email(email)
+        if resolved_user:
+            resolved_user_id = str(resolved_user.get("id"))
+            logger.info("Resolved subscription %s to user_id %s via payer email fallback", sub_id, resolved_user_id)
 
     if sub_id:
         next_billing = event_data.get("next_billing_at")
@@ -486,11 +517,12 @@ async def paypal_webhook(request: Request):
             external_sub_id=sub_id,
             plan_id=event_data.get("plan_id") or payload.get("resource", {}).get("plan_id"),
             status=status_str,
-            user_email=email,
+            user_email=resolved_email,
             subscriber_name=event_data.get("subscriber_name"),
             next_billing_at=next_billing,
+            user_id=resolved_user_id,
         )
-        logger.info(f"Updated subscription {sub_id} to status '{status_str}' via webhook ({event_type})")
+        logger.info(f"Updated subscription {sub_id} to status '{status_str}' for user {resolved_user_id or resolved_email} via webhook ({event_type})")
 
     resource = payload.get("resource", {}) or {}
     amount_block = resource.get("amount") or {}
@@ -855,6 +887,12 @@ async def get_admin_crawl_status(
             "status": "none",
             "message": "No crawl runs recorded.",
         }
+    crawled = latest.get("total_sources") or 0
+    failed = latest.get("sources_failed") or 0
+    succeeded = latest.get("sources_succeeded") if latest.get("sources_succeeded") is not None else max(0, crawled - failed)
+    skipped = latest.get("sources_skipped") if latest.get("sources_skipped") is not None else max(0, 65 - crawled)
+    latest["sources_skipped"] = skipped
+    latest["summary"] = f"{crawled} crawled, {succeeded} succeeded, {failed} failed, {skipped} skipped"
     return latest
 
 

@@ -47,6 +47,7 @@ Thumbs.db
 # Everything the client sends goes in credentials/ so a new file cannot be
 # swept in by `git add -A` before anyone thinks about it.
 credentials/
+docs/source of truth.txt
 docs/Updates.txt
 docs/Resend*.txt
 **/credentials*.txt
