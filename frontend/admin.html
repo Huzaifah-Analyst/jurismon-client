@@ -673,8 +673,6 @@
 
       <img src="/static/assets/logo.png" alt="JurisMon Admin" style="height:28px; width:auto; border-radius:4px; object-fit:contain; border:1px solid var(--line);">
 
-      <span class="brand-name">JurisMon</span>
-
       <span class="brand-area">Admin</span>
 
     </a>
@@ -683,7 +681,7 @@
 
       <span class="dot live" id="sys-dot"></span>
 
-      <span id="sys-text"></span>
+      <span id="sys-text">Loading portal status...</span>
 
     </a>
 
@@ -695,16 +693,12 @@
 
       <span class="sub">connected</span>
 
-      <span class="tag" id="paypal-mode">Sandbox</span>
+      <span class="tag" id="paypal-mode">—</span>
 
     </a>
 
     <span class="avatar" aria-label="Signed in as admin">MM</span>
 
-    <button id="btn-logout" class="chip" style="cursor:pointer; background:#fff; color:var(--bad-ink); font-weight:500; border-color:var(--line);" title="Sign out of Admin Session">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-      Log out
-    </button>
     <button id="btn-logout" class="chip" style="cursor:pointer; background:#fff; color:var(--bad-ink); font-weight:500; border-color:var(--line);" title="Sign out of Admin Session">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
       Log out
@@ -1104,69 +1098,9 @@
 
 
 
-  const PLACES = [
-
-    "Harlow County","Brookhaven","Marlow Township","Redwater County","Easton Falls","Kinsley","Ashford","Bellmont",
-
-    "Cedar Hollow","Dunmore Township","Elmstead","Fairbrook County","Glenvale","Hartwell","Ironbridge","Juniper Falls",
-
-    "Kestrel County","Lakemont","Millbrook Township","Northgate","Oakridge County","Pinecrest","Quarry Hill","Ravensworth",
-
-    "Stonebridge","Thornbury Township","Upton County","Valewood","Westbury","Yarrow County","Alder Springs","Birchfield",
-
-    "Clearwater Township","Deerfield County","Eagle Rock","Foxhall","Greystone","Highmoor County","Ivy Glen","Jasper Township",
-
-    "Kingsford","Linden County","Maple Grove","Newhaven Township","Orchard Park","Prescott County","Riverton","Silverlake",
-
-    "Timberline Township","Willow Creek"
-
-  ];
-
-  const ADAPTERS = ["Municode", "Granicus", "CivicPlus", "Municode", "Custom"];
-
-  const PROBLEMS = {
-
-    7:  ["degraded", "3 of 5 PDFs extracted, 2 timed out"],
-
-    23: ["failing",  "HTTP 503 from portal since yesterday"],
-
-    41: ["degraded", "Layout changed, adapter using fallback selectors"]
-
-  };
-
-
-
-  const sources = PLACES.map((place, i) => {
-
-    const kind = /County$/.test(place) ? "county" : /Township$/.test(place) ? "township" : "city";
-
-    const name = kind === "county" ? (i % 2 ? "Planning Commission" : "Zoning Board")
-
-               : kind === "township" ? "Board of Supervisors"
-
-               : (i % 2 ? "City Council" : "Planning Commission");
-
-    const p = PROBLEMS[i];
-
-    return {
-
-      id: "src-" + i,
-
-      name,
-
-      jurisdiction: kind === "city" ? "City of " + place : place,
-
-      adapter: ADAPTERS[i % ADAPTERS.length],
-
-      health: p ? p[0] : "healthy",
-
-      note: p ? p[1] : "",
-
-      ts: p && p[0] === "failing" ? NOW - 26 * H : NOW - (1.5 * H + i * 17 * 1000 * 6)
-
-    };
-
-  });
+  /* Real sources loaded from /api/sources in loadLiveAdminData().
+     Starts empty so nothing invented is ever shown on screen. */
+  const sources = [];
 
 
 
@@ -1194,9 +1128,9 @@
 
 
 
-  // 14 days of run history: [total, failed]; today computed live
+  // Run history of failed counts per day, loaded from crawl runs if available.
 
-  const history = [0,1,0,0,2,1,0,0,1,0,0,3,1];
+  const history = [];
 
 
 
@@ -1266,11 +1200,35 @@
 
   /* ---------- Header + KPIs ---------- */
 
+  let sourceCounts = null;
+
   function renderSystem() {
 
-    const total = sources.length;
+    if (!sourceCounts && sources.length === 0) {
 
-    const ok = sources.filter(s => bucketOf(s.health) === "healthy").length;
+      $("#sys-text").textContent = "Loading portal status...";
+
+      $("#sys-dot").className = "dot live warn";
+
+      $("#k-runs").innerHTML = "—<small>/—</small>";
+
+      $("#k-runs-foot").innerHTML = "Checking sources...";
+
+      $("#k-bars").innerHTML = "";
+
+      $("#run-meta").textContent = "Loading run status...";
+
+      return;
+
+    }
+
+    const total = sourceCounts ? sourceCounts.total : sources.length;
+
+    const ok = sourceCounts ? sourceCounts.operational : sources.filter(s => bucketOf(s.health) === "healthy").length;
+
+    const cf = sourceCounts ? sourceCounts.cloudflare : sources.filter(s => s.health === "cloudflare_blocked").length;
+
+    const dead = sourceCounts ? sourceCounts.dead : sources.filter(s => s.health === "dead_link").length;
 
     const running = sources.filter(s => bucketOf(s.health) === "running").length;
 
@@ -1280,15 +1238,15 @@
 
       ? `${ok}/${total} sources operational, ${running} running`
 
-      : `${ok}/${total} sources operational (7 Cloudflare protected, 12 dead links)`;
+      : `${ok}/${total} sources operational (${cf} Cloudflare protected, ${dead} dead links)`;
 
     $("#sys-dot").className = "dot live" + (all ? "" : " warn");
 
 
 
-    const failedToday = sources.filter(s => !["healthy", "running"].includes(bucketOf(s.health))).length;
+    const failedToday = total - ok;
 
-    $("#k-runs").innerHTML = `${total - failedToday}<small>/${total}</small>`;
+    $("#k-runs").innerHTML = `${ok}<small>/${total}</small>`;
 
     $("#k-runs-foot").innerHTML = failedToday
 
@@ -1314,9 +1272,19 @@
 
 
 
-    const lastRun = Math.max(...sources.filter(s => bucketOf(s.health) !== "failing").map(s => s.ts));
+    const validTs = sources.filter(s => bucketOf(s.health) !== "failing" && s.ts).map(s => s.ts);
 
-    $("#run-meta").textContent = `Last daily run finished at ${clock(lastRun)}, ${rel(lastRun).toLowerCase()}.`;
+    if (validTs.length > 0) {
+
+      const lastRun = Math.max(...validTs);
+
+      $("#run-meta").textContent = `Last daily run finished at ${clock(lastRun)}, ${rel(lastRun).toLowerCase()}.`;
+
+    } else {
+
+      $("#run-meta").textContent = "Source catalog loaded.";
+
+    }
 
   }
 
@@ -1335,26 +1303,39 @@
 
     const cancelled = subscribers.filter(s => s.status === "cancelled" || s.status === "expired").length;
 
-    $("#k-subs").textContent = overview ? overview.active_subscribers : active;
+    $("#k-subs").textContent = overview ? overview.active_subscribers : (subscribers.length ? active : "—");
 
-    $("#k-subs-foot").innerHTML = `<strong>${overview ? overview.past_due_subscribers : pastDue}</strong> past due, <strong>${overview ? overview.cancelled_subscribers : cancelled}</strong> cancelled`;
+    $("#k-subs-foot").innerHTML = overview
 
-    $("#k-mrr").textContent = overview ? money(Math.round(overview.mrr)) : money(0);
+      ? `<strong>${overview.past_due_subscribers}</strong> past due, <strong>${overview.cancelled_subscribers}</strong> cancelled`
 
-    // Showing "Sandbox" while the server is billing real cards is the kind of
-    // mistake that gets noticed only after someone is charged.
+      : (subscribers.length ? `<strong>${pastDue}</strong> past due, <strong>${cancelled}</strong> cancelled` : "—");
+
+    $("#k-mrr").textContent = overview ? money(Math.round(overview.mrr)) : (subscribers.length ? money(0) : "—");
 
     const modeTag = $("#paypal-mode");
 
-    if (modeTag && overview && overview.payment_mode) {
+    if (modeTag) {
 
-      const live = overview.payment_mode === "live";
+      if (overview && overview.payment_mode) {
 
-      modeTag.textContent = live ? "Live" : "Sandbox";
+        const live = overview.payment_mode === "live";
 
-      modeTag.style.background = live ? "#dcfce7" : "";
+        modeTag.textContent = live ? "Live" : "Sandbox";
 
-      modeTag.style.color = live ? "#166534" : "";
+        modeTag.style.background = live ? "#dcfce7" : "";
+
+        modeTag.style.color = live ? "#166534" : "";
+
+      } else {
+
+        modeTag.textContent = "—";
+
+        modeTag.style.background = "";
+
+        modeTag.style.color = "";
+
+      }
 
     }
 
@@ -1936,15 +1917,44 @@
 
 
   
+  function handleExpiredSession() {
+    localStorage.removeItem("jurismon_admin_token");
+    sources.length = 0;
+    subscribers.length = 0;
+    PLANS.length = 0;
+    webhooks.length = 0;
+    overview = null;
+    sourceCounts = null;
+    refreshSources();
+    renderKpis();
+    renderSubs();
+    renderPlans();
+    renderHooks();
+    if (authGate) authGate.style.display = "flex";
+    if (loginErr) {
+      loginErr.textContent = "Your admin session has expired. Please sign in again.";
+      loginErr.style.display = "block";
+    }
+  }
+
   /* ---------- Live API Integration ---------- */
   async function loadLiveAdminData() {
-    const auth = { "Authorization": "Bearer " + (localStorage.getItem("jurismon_admin_token") || "") };
+    const token = localStorage.getItem("jurismon_admin_token");
+    if (!token) {
+      checkAuth();
+      return;
+    }
+    const auth = { "Authorization": "Bearer " + token };
 
     try {
       const sRes = await fetch("/api/sources", { headers: auth });
+      if (sRes.status === 401 || sRes.status === 403) {
+        handleExpiredSession();
+        return;
+      }
       if (sRes.ok) {
         const sData = await sRes.json();
-        if (sData.sources && sData.sources.length > 0) {
+        if (sData.sources && Array.isArray(sData.sources)) {
           sources.length = 0;
           sData.sources.forEach((s, idx) => {
             const hStatus = s.health_status || (s.is_active ? "operational" : "dead_link");
@@ -1952,58 +1962,36 @@
               id: s.id || ("src-" + idx),
               name: s.name,
               jurisdiction: s.state ? `${s.name} (${s.state})` : s.name,
-              adapter: s.adapter_type.charAt(0).toUpperCase() + s.adapter_type.slice(1),
+              adapter: (s.adapter_type || "Custom").charAt(0).toUpperCase() + (s.adapter_type || "Custom").slice(1),
               health: hStatus,
-              note: s.status_detail || s.base_url,
+              note: s.status_detail || s.base_url || "",
               ts: s.created_at ? new Date(s.created_at).getTime() : NOW - (idx * 3600e3 * 0.5)
             });
           });
+          sourceCounts = {
+            total: sData.count != null ? sData.count : (sData.total_configured != null ? sData.total_configured : sources.length),
+            operational: sData.operational_count != null ? sData.operational_count : sources.filter(s => bucketOf(s.health) === "healthy").length,
+            cloudflare: sData.cloudflare_count != null ? sData.cloudflare_count : sources.filter(s => s.health === "cloudflare_blocked").length,
+            dead: sData.dead_links_count != null ? sData.dead_links_count : sources.filter(s => s.health === "dead_link").length
+          };
           refreshSources();
-          renderSystem();
         } else {
-          console.error("Could not load live sources from /api/sources: 'sources' array missing from response. Authorization required or server error.", sData);
-          sources.length = 0;
-          renderStrip();
-          const srcBody = $("#src-body");
-          if (srcBody) {
-            srcBody.innerHTML = `<tr class="empty-row error-row"><td colspan="6" style="padding:28px 16px; text-align:center; color:var(--bad-ink); background:var(--bad-bg); font-weight:500;">
-              <strong>Error:</strong> Live source data could not be loaded: admin authorization required or response incomplete.
-            </td></tr>`;
-          }
-          const rangeEl = $("#src-range");
-          if (rangeEl) rangeEl.textContent = "Live data unavailable";
-          const stripEl = $("#strip");
-          if (stripEl) stripEl.innerHTML = `<div style="grid-column:1/-1; padding:8px 12px; font-size:12px; color:var(--bad-ink); background:var(--bad-bg); border-radius:4px;">Live sources unavailable (admin token missing or invalid)</div>`;
+          handleExpiredSession();
+          return;
         }
       } else {
         console.error("Failed to fetch /api/sources: HTTP " + sRes.status);
-        sources.length = 0;
-        renderStrip();
-        const srcBody = $("#src-body");
-        if (srcBody) {
-          srcBody.innerHTML = `<tr class="empty-row error-row"><td colspan="6" style="padding:28px 16px; text-align:center; color:var(--bad-ink); background:var(--bad-bg); font-weight:500;">
-            <strong>Error:</strong> Live source data could not be loaded (HTTP ${sRes.status}). Admin authorization required.
-          </td></tr>`;
-        }
-        const rangeEl = $("#src-range");
-        if (rangeEl) rangeEl.textContent = "Live data unavailable";
-        const stripEl = $("#strip");
-        if (stripEl) stripEl.innerHTML = `<div style="grid-column:1/-1; padding:8px 12px; font-size:12px; color:var(--bad-ink); background:var(--bad-bg); border-radius:4px;">Live sources unavailable (HTTP ${sRes.status})</div>`;
       }
     } catch (err) {
       console.error("Could not fetch /api/sources:", err);
-      sources.length = 0;
-      renderStrip();
-      const srcBody = $("#src-body");
-      if (srcBody) {
-        srcBody.innerHTML = `<tr class="empty-row error-row"><td colspan="6" style="padding:28px 16px; text-align:center; color:var(--bad-ink); background:var(--bad-bg); font-weight:500;">
-          <strong>Error:</strong> Network error loading live sources.
-        </td></tr>`;
-      }
     }
 
     try {
       const oRes = await fetch("/api/admin/overview", { headers: auth });
+      if (oRes.status === 401 || oRes.status === 403) {
+        handleExpiredSession();
+        return;
+      }
       if (oRes.ok) overview = await oRes.json();
     } catch (err) {
       console.warn("Could not load overview:", err);
@@ -2011,6 +1999,10 @@
 
     try {
       const pRes = await fetch("/api/admin/plans", { headers: auth });
+      if (pRes.status === 401 || pRes.status === 403) {
+        handleExpiredSession();
+        return;
+      }
       if (pRes.ok) {
         const pData = await pRes.json();
         PLANS.length = 0;
@@ -2023,6 +2015,10 @@
 
     try {
       const subRes = await fetch("/api/admin/subscribers", { headers: auth });
+      if (subRes.status === 401 || subRes.status === 403) {
+        handleExpiredSession();
+        return;
+      }
       if (subRes.ok) {
         const subData = await subRes.json();
         subscribers.length = 0;
@@ -2034,6 +2030,10 @@
 
     try {
       const wRes = await fetch("/api/admin/webhooks?limit=50", { headers: auth });
+      if (wRes.status === 401 || wRes.status === 403) {
+        handleExpiredSession();
+        return;
+      }
       if (wRes.ok) {
         const wData = await wRes.json();
         webhooks.length = 0;
@@ -2054,7 +2054,7 @@
 
     await checkCrawlStatus();
 
-    // Re-render once real data has landed, replacing the empty first paint.
+    // Re-render once real data has landed
     renderKpis();
     renderSubs();
     renderPlans();
@@ -2069,7 +2069,10 @@
     if (!statusLine) return;
 
     try {
-      const res = await fetch("/api/admin/crawl/status", { headers: auth });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const res = await fetch("/api/admin/crawl/status", { headers: auth, signal: controller.signal });
+      clearTimeout(timeoutId);
       if (res.ok) {
         const data = await res.json();
         if (data.status === "none") {
@@ -2088,9 +2091,14 @@
           statusLine.textContent = `Last crawl: ${finishedAgo} (${data.status}) — ${crawled} crawled, ${succeeded} succeeded, ${failed} failed, ${skipped} skipped`;
           if (btn) btn.disabled = false;
         }
+      } else {
+        statusLine.textContent = "Crawl status unavailable";
+        if (btn) btn.disabled = false;
       }
     } catch (e) {
       console.warn("Could not fetch crawl status:", e);
+      statusLine.textContent = "Crawl status unavailable";
+      if (btn) btn.disabled = false;
     }
   }
 
@@ -2129,30 +2137,35 @@
   const btnRun = $("#btn-run-crawl");
   if (btnRun) btnRun.addEventListener("click", triggerCrawlNow);
 
-  loadLiveAdminData();
-
   /* ---------- Boot ---------- */
+  (async function boot() {
+    checkAuth();
+    const token = localStorage.getItem("jurismon_admin_token");
+    if (token) {
+      await loadLiveAdminData();
+    } else {
+      renderSystem();
+      renderKpis();
+      renderSubs();
+      renderPlans();
+      renderHooks();
+    }
 
-  refreshSources();
+    moveTabLine();
 
-  renderKpis();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveTabLine);
 
-  renderSubs();
-
-  renderPlans();
-
-  renderHooks();
-
-  moveTabLine();
-
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveTabLine);
-
-  window.addEventListener("resize", moveTabLine);
+    window.addEventListener("resize", moveTabLine);
+  })();
 
   // Keep relative times fresh
-
-  setInterval(() => { renderSources(); renderSystem(); checkCrawlStatus(); }, 60e3);
-
+  setInterval(() => {
+    if (localStorage.getItem("jurismon_admin_token")) {
+      renderSources();
+      renderSystem();
+      checkCrawlStatus();
+    }
+  }, 60e3);
 
   /* ---------- Authentication Gate Logic ---------- */
   const authGate = document.getElementById("auth-gate");
@@ -2174,6 +2187,23 @@
     }
   }
 
+  function logout() {
+    localStorage.removeItem("jurismon_admin_token");
+    sources.length = 0;
+    subscribers.length = 0;
+    PLANS.length = 0;
+    webhooks.length = 0;
+    overview = null;
+    sourceCounts = null;
+    refreshSources();
+    renderKpis();
+    renderSubs();
+    renderPlans();
+    renderHooks();
+    checkAuth();
+    toast("Logged out of Admin Session");
+  }
+
   if (loginForm) {
     loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -2190,7 +2220,7 @@
           if (authGate) authGate.style.display = "none";
           loginPass.value = "";
           toast("Authenticated successfully.");
-          loadLiveAdminData();
+          await loadLiveAdminData();
         } else {
           loginErr.textContent = "Invalid email or password. Please try again.";
           loginErr.style.display = "block";
@@ -2216,11 +2246,7 @@
   }
 
   if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => {
-      localStorage.removeItem("jurismon_admin_token");
-      checkAuth();
-      toast("Logged out of Admin Session");
-    });
+    logoutBtn.addEventListener("click", logout);
   }
 
   checkAuth();

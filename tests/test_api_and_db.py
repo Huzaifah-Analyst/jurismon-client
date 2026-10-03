@@ -1191,6 +1191,37 @@ class TestTermsAndPrivacyPages(unittest.TestCase):
         self.assertEqual(logo_res.status_code, 200)
         self.assertIn("image", logo_res.headers.get("content-type", ""))
 
+    def test_admin_html_has_no_fabricated_data_or_duplicate_elements(self):
+        """admin.html contains zero fabricated source names, no hardcoded source counts, and no duplicate header elements."""
+        res = self.client.get("/admin")
+        self.assertEqual(res.status_code, 200)
+        html = res.text
+
+        # Zero fabricated source names
+        fabricated_names = [
+            "Timberline", "Willow Creek", "Harlow County", "Redwater County",
+            "Brookhaven", "Marlow Township", "Easton Falls", "Cedar Hollow",
+            "Dunmore Township", "Alder Springs"
+        ]
+        for name in fabricated_names:
+            self.assertNotIn(name, html, f"Fabricated name '{name}' found in admin.html")
+
+        # No hardcoded source counts or Cloudflare string
+        self.assertNotIn("7 Cloudflare protected", html)
+        self.assertNotIn("47/50", html)
+
+        # No duplicate brand wordmark in header
+        self.assertNotIn('<span class="brand-name">JurisMon</span>', html)
+
+        # Exactly one logout button
+        self.assertEqual(html.count('id="btn-logout"'), 1)
+
+        # Default PayPal badge is unknown/dash, not Sandbox
+        self.assertIn('id="paypal-mode">—', html)
+
+        # Header status starts with loading indicator
+        self.assertIn('id="sys-text">Loading portal status...<', html)
+
 
 if __name__ == "__main__":
     unittest.main()
