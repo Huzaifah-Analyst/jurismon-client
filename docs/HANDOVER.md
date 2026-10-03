@@ -206,7 +206,7 @@ To permanently prevent this, `tests/test_schema_contract.py::TestSQLitePostgresS
 
 ## 7. Admin Credentials & Access Rotation
 
-The administrative panel (`https://jurismon.com/admin`) is protected by HTTP Basic Authentication validated against `ADMIN_PASSWORD_HASH`.
+The administrative panel (`https://jurismon.com/admin`) is protected by JWT Bearer authentication: `POST /api/admin/login` validates the submitted password against `ADMIN_PASSWORD_HASH` and issues a signed bearer token, `api/auth.py` enforces security via `HTTPBearer` with `require_admin()` decoding the JWT claims, and the frontend persists the authenticated session in `localStorage` under `jurismon_admin_token`.
 
 ### Password Rotation Procedure
 To change or rotate the admin password:
@@ -247,6 +247,6 @@ source /var/www/jurismon/venv/bin/activate  # Or on local: .\venv\Scripts\activa
 python -m pytest tests/ -v
 ```
 
-All 250 test cases run completely self-contained and offline:
+All 252 test cases run completely self-contained and offline:
 - Tests use temporary SQLite databases or mocked PostgREST clients.
 - External services (PayPal, Supabase cloud, Resend) are mocked in integration tests to ensure deterministic execution without live API credentials.
