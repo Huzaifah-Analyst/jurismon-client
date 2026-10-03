@@ -78,22 +78,6 @@
     text-decoration: none;
     color: inherit;
   }
-  .brand-mark {
-    width: 24px;
-    height: 24px;
-    border-radius: var(--r-md);
-    background: var(--ink);
-    color: #fff;
-    display: grid;
-    place-items: center;
-    font-size: 14px;
-    font-weight: 600;
-  }
-  .brand-name {
-    font-weight: 600;
-    color: var(--ink);
-    letter-spacing: -0.01em;
-  }
   .nav-back {
     font-size: 13.5px;
     font-weight: 500;
@@ -235,9 +219,10 @@
 
 <header class="topbar">
   <div class="wrap topbar-inner">
-    <a class="brand" href="/" aria-label="JurisMon home">
-      <span class="brand-mark">§</span>
-      <span class="brand-name">JurisMon</span>
+    <a class="brand" href="/" aria-label="JurisMon home"
+       style="text-decoration:none; display:flex; align-items:center; gap:10px;">
+      <img src="/static/assets/logo.png" alt="JurisMon"
+           style="height:30px; width:auto; display:block; object-fit:contain;">
     </a>
     <a class="nav-back" href="/">← Back to Search</a>
   </div>

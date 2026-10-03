@@ -1180,6 +1180,17 @@ class TestTermsAndPrivacyPages(unittest.TestCase):
             self.assertIn("support@jurismon.com", res.text)
             self.assertNotIn("(placeholder", res.text.lower())
 
+    def test_terms_and_privacy_render_real_logo_and_no_brand_mark(self):
+        """GET /terms and GET /privacy each contain /static/assets/logo.png and do NOT contain brand-mark."""
+        for path in ["/terms", "/privacy"]:
+            res = self.client.get(path)
+            self.assertEqual(res.status_code, 200)
+            self.assertIn("/static/assets/logo.png", res.text)
+            self.assertNotIn("brand-mark", res.text)
+        logo_res = self.client.get("/static/assets/logo.png")
+        self.assertEqual(logo_res.status_code, 200)
+        self.assertIn("image", logo_res.headers.get("content-type", ""))
+
 
 if __name__ == "__main__":
     unittest.main()
