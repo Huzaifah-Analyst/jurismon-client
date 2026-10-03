@@ -5,6 +5,7 @@ import shutil
 import tempfile
 import unittest
 import json
+import uuid
 from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 
@@ -786,6 +787,230 @@ class TestFastAPIEndpoints(unittest.TestCase):
         self.assertIn("sources_skipped", data)
         self.assertIn("summary", data)
         self.assertIn("skipped", data["summary"])
+
+
+class TestForgotPasswordAndReset(unittest.TestCase):
+
+    def setUp(self):
+        self.client = TestClient(app)
+        from api.main import _forgot_password_timestamps
+        _forgot_password_timestamps.clear()
+        self.created_emails = []
+
+    def tearDown(self):
+        from api.main import repo
+        for email in self.created_emails:
+            if repo.supabase:
+                try:
+                    repo.supabase.table("users").delete().eq("email", email).execute()
+                except Exception:
+                    pass
+            with repo._connect() as conn:
+                conn.cursor().execute("DELETE FROM users WHERE LOWER(email) = LOWER(?)", (email,))
+                conn.commit()
+
+    def _unique_email(self, prefix: str = "test") -> str:
+        email = f"{prefix}_{uuid.uuid4().hex[:10]}@lawfirm.com"
+        self.created_emails.append(email)
+        return email
+
+    def test_forgot_password_sends_code_and_returns_200_for_known_email(self):
+        """forgot-password sends code and returns 200 for known email."""
+        from api.main import repo
+        test_email = self._unique_email("known")
+        repo.create_user(
+            email=test_email,
+            password_hash="mock_hash",
+            is_verified=1,
+        )
+        with patch("api.main.mailer.send", return_value=True) as mock_send:
+            res = self.client.post("/api/auth/forgot-password", json={"email": test_email})
+            self.assertEqual(res.status_code, 200)
+            self.assertEqual(res.json()["status"], "success")
+            mock_send.assert_called_once()
+            kwargs = mock_send.call_args[1]
+            subject = kwargs.get("subject", "")
+            self.assertIn("Reset your JurisMon password", subject)
+
+        user = repo.get_user_by_email(test_email)
+        self.assertIsNotNone(user.get("verification_code"))
+
+    def test_forgot_password_returns_200_for_unknown_email_no_email_sent(self):
+        """forgot-password returns 200 for unknown email (no email sent)."""
+        unknown_email = f"nonexistent_{uuid.uuid4().hex[:10]}@lawfirm.com"
+        with patch("api.main.mailer.send", return_value=True) as mock_send:
+            res = self.client.post("/api/auth/forgot-password", json={"email": unknown_email})
+            self.assertEqual(res.status_code, 200)
+            self.assertEqual(res.json()["status"], "success")
+            mock_send.assert_not_called()
+
+    def test_forgot_password_rejects_admin_email(self):
+        """forgot-password rejects ADMIN_EMAIL with 400."""
+        from api.auth import ADMIN_EMAIL
+        res = self.client.post("/api/auth/forgot-password", json={"email": ADMIN_EMAIL})
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("reserved", res.json()["detail"].lower())
+
+    def test_reset_password_with_valid_code_updates_password_and_allows_login(self):
+        """reset-password with valid code updates password and allows login."""
+        from api.main import repo
+        from api.auth import get_password_hash
+        test_email = self._unique_email("reset_success")
+        old_pw = "OldPassword123!"
+        new_pw = "NewSecurePassword456!"
+        repo.create_user(
+            email=test_email,
+            password_hash=get_password_hash(old_pw),
+            is_verified=1,
+            verification_code="123456",
+            verification_code_expires_at="2099-01-01T00:00:00+00:00",
+        )
+
+        res = self.client.post("/api/auth/reset-password", json={
+            "email": test_email,
+            "code": "123456",
+            "new_password": new_pw,
+        })
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["status"], "success")
+
+        # Confirm new password allows login
+        login_res = self.client.post("/api/auth/login", json={
+            "email": test_email,
+            "password": new_pw,
+        })
+        self.assertEqual(login_res.status_code, 200)
+        self.assertIn("access_token", login_res.json())
+
+    def test_reset_password_with_expired_code_returns_400(self):
+        """reset-password with expired code returns 400."""
+        from api.main import repo
+        test_email = self._unique_email("expired")
+        repo.create_user(
+            email=test_email,
+            password_hash="mock_hash",
+            is_verified=1,
+            verification_code="654321",
+            verification_code_expires_at="2020-01-01T00:00:00+00:00",
+        )
+
+        res = self.client.post("/api/auth/reset-password", json={
+            "email": test_email,
+            "code": "654321",
+            "new_password": "NewValidPassword123!",
+        })
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("expired", res.json()["detail"].lower())
+
+    def test_reset_password_with_wrong_code_returns_400(self):
+        """reset-password with wrong code returns 400."""
+        from api.main import repo
+        test_email = self._unique_email("wrong_code")
+        repo.create_user(
+            email=test_email,
+            password_hash="mock_hash",
+            is_verified=1,
+            verification_code="111222",
+            verification_code_expires_at="2099-01-01T00:00:00+00:00",
+        )
+
+        res = self.client.post("/api/auth/reset-password", json={
+            "email": test_email,
+            "code": "999888",
+            "new_password": "NewValidPassword123!",
+        })
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("invalid", res.json()["detail"].lower())
+
+    def test_reset_password_enforces_min_and_max_length(self):
+        """reset-password enforces >= 8 chars and <= 72 bytes."""
+        from api.main import repo
+        test_email = self._unique_email("length")
+        repo.create_user(
+            email=test_email,
+            password_hash="mock_hash",
+            is_verified=1,
+            verification_code="123456",
+            verification_code_expires_at="2099-01-01T00:00:00+00:00",
+        )
+
+        # Too short (< 8 chars)
+        res_short = self.client.post("/api/auth/reset-password", json={
+            "email": test_email,
+            "code": "123456",
+            "new_password": "short",
+        })
+        self.assertEqual(res_short.status_code, 400)
+        self.assertIn("8 characters", res_short.json()["detail"])
+
+        # Too long (> 72 bytes)
+        res_long = self.client.post("/api/auth/reset-password", json={
+            "email": test_email,
+            "code": "123456",
+            "new_password": "a" * 73,
+        })
+        self.assertEqual(res_long.status_code, 400)
+        self.assertIn("72 bytes", res_long.json()["detail"])
+
+    def test_old_password_fails_after_reset(self):
+        """old password fails after reset."""
+        from api.main import repo
+        from api.auth import get_password_hash
+        test_email = self._unique_email("pw_change")
+        old_pw = "OriginalPass123!"
+        new_pw = "UpdatedPass456!"
+        repo.create_user(
+            email=test_email,
+            password_hash=get_password_hash(old_pw),
+            is_verified=1,
+            verification_code="777888",
+            verification_code_expires_at="2099-01-01T00:00:00+00:00",
+        )
+
+        # Reset password
+        res = self.client.post("/api/auth/reset-password", json={
+            "email": test_email,
+            "code": "777888",
+            "new_password": new_pw,
+        })
+        self.assertEqual(res.status_code, 200)
+
+        # Old password must now fail
+        login_fail = self.client.post("/api/auth/login", json={
+            "email": test_email,
+            "password": old_pw,
+        })
+        self.assertEqual(login_fail.status_code, 401)
+
+    def test_code_cannot_be_reused_second_time(self):
+        """code cannot be reused a second time."""
+        from api.main import repo
+        from api.auth import get_password_hash
+        test_email = self._unique_email("single_use")
+        repo.create_user(
+            email=test_email,
+            password_hash=get_password_hash("InitPass123!"),
+            is_verified=1,
+            verification_code="555666",
+            verification_code_expires_at="2099-01-01T00:00:00+00:00",
+        )
+
+        # First use succeeds
+        res1 = self.client.post("/api/auth/reset-password", json={
+            "email": test_email,
+            "code": "555666",
+            "new_password": "FirstReset123!",
+        })
+        self.assertEqual(res1.status_code, 200)
+
+        # Second use with same code must be rejected (400)
+        res2 = self.client.post("/api/auth/reset-password", json={
+            "email": test_email,
+            "code": "555666",
+            "new_password": "SecondReset456!",
+        })
+        self.assertEqual(res2.status_code, 400)
+        self.assertIn("invalid", res2.json()["detail"].lower())
 
 
 if __name__ == "__main__":

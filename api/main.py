@@ -11,6 +11,7 @@ Provides:
 import os
 import sys
 import json
+import time
 import shutil
 import subprocess
 import logging
@@ -121,6 +122,16 @@ class VerifyCodeRequest(BaseModel):
 
 class ResendCodeRequest(BaseModel):
     email: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+    code: str
+    new_password: str
 
 
 # ==========================================
@@ -718,6 +729,129 @@ async def customer_resend_code(req: ResendCodeRequest):
     return {
         "status": "code_resent",
         "message": "A new confirmation code has been sent to your email.",
+    }
+
+
+_forgot_password_timestamps: Dict[str, List[float]] = {}
+
+
+@app.post("/api/auth/forgot-password")
+async def customer_forgot_password(req: ForgotPasswordRequest):
+    """Initiates password reset by issuing a 6-digit verification code.
+
+    Always returns 200 with identical message regardless of whether the email exists.
+    Rejects ADMIN_EMAIL with 400.
+    Enforces rate limit of 4 requests per email per hour (429).
+    """
+    email = (req.email or "").strip().lower()
+    if not email or "@" not in email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Valid email address is required.",
+        )
+    if email == ADMIN_EMAIL.strip().lower():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This email address is reserved.",
+        )
+
+    # In-memory sliding window rate limit: max 4 requests per email per hour
+    now_ts = time.time()
+    cutoff = now_ts - 3600
+    timestamps = [t for t in _forgot_password_timestamps.get(email, []) if t > cutoff]
+    if len(timestamps) >= 4:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many password reset requests. Please try again later.",
+        )
+    timestamps.append(now_ts)
+    _forgot_password_timestamps[email] = timestamps
+
+    user = repo.get_user_by_email(email)
+    if user:
+        code = f"{secrets.randbelow(900000) + 100000}"
+        expires_at = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
+        repo.set_verification_code(email, code, expires_at)
+
+        html_body = f"""
+        <div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif; max-width:520px; margin:0 auto; padding:24px; border:1px solid #e2e8f0; border-radius:8px; background:#ffffff;">
+          <h2 style="color:#0f172a; margin-top:0; font-size:20px;">Reset your JurisMon password</h2>
+          <p style="color:#334155; font-size:14px; line-height:1.6;">We received a request to reset your password. Please enter the 6-digit verification code below to set a new password:</p>
+          <div style="font-size:32px; font-weight:700; letter-spacing:8px; color:#154DA8; background:#f8fafc; border:1px solid #cbd5e1; padding:16px; text-align:center; border-radius:8px; margin:24px 0; font-family:monospace;">
+            {code}
+          </div>
+          <p style="color:#64748b; font-size:12.5px; line-height:1.5;">This code will expire in 15 minutes. If you did not request a password reset, you can safely ignore this email.</p>
+        </div>
+        """
+        mailer.send(
+            subject="Reset your JurisMon password",
+            html=html_body,
+            to=[email],
+            text=f"Your JurisMon password reset code is: {code} (expires in 15 minutes). If you did not request this, please ignore.",
+        )
+        logger.info("Password reset code dispatched for %s", email)
+
+    return {
+        "status": "success",
+        "message": "If an account exists with this email, a password reset code has been sent.",
+    }
+
+
+@app.post("/api/auth/reset-password")
+async def customer_reset_password(req: ResetPasswordRequest):
+    """Resets user password after verifying 6-digit code."""
+    email = (req.email or "").strip().lower()
+    code = (req.code or "").strip()
+    new_password = req.new_password or ""
+
+    if not email or not code:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email and reset code are required.",
+        )
+
+    if len(new_password) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must be at least 8 characters long.",
+        )
+    if len(new_password.encode("utf-8")) > 72:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must be 72 bytes or fewer.",
+        )
+
+    val = repo.validate_verification_code(email, code)
+    if not val.get("valid"):
+        err = val.get("error")
+        if err == "code_expired":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Reset code has expired. Please request a new one.",
+            )
+        elif err == "user_not_found":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid request.",
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid confirmation code. Please check your email and try again.",
+            )
+
+    pwd_hash = get_password_hash(new_password)
+    updated = repo.update_user_password(email, pwd_hash)
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update password. Please try again.",
+        )
+
+    logger.info("Password successfully reset for %s", email)
+    return {
+        "status": "success",
+        "message": "Password updated successfully. Please log in with your new password.",
     }
 
 

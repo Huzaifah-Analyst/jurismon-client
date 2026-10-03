@@ -943,6 +943,32 @@ class Repository:
             conn.commit()
             return cur.rowcount > 0
 
+    def validate_verification_code(self, email: str, code: str) -> Dict[str, Any]:
+        """Validates a 6-digit confirmation or password reset code and its expiration."""
+        from datetime import datetime, timezone
+        norm_email = (email or "").strip().lower()
+        user = self.get_user_by_email(norm_email)
+        if not user:
+            return {"valid": False, "error": "user_not_found"}
+
+        stored_code = (user.get("verification_code") or "").strip()
+        input_code = (code or "").strip()
+
+        if not stored_code or stored_code != input_code:
+            return {"valid": False, "error": "invalid_code", "user": user}
+
+        now = datetime.now(timezone.utc)
+        expires_str = user.get("verification_code_expires_at")
+        if expires_str:
+            try:
+                expires_at = datetime.fromisoformat(expires_str.replace("Z", "+00:00"))
+                if now > expires_at:
+                    return {"valid": False, "error": "code_expired", "user": user}
+            except Exception:
+                pass
+
+        return {"valid": True, "user": user}
+
     def verify_user_email(self, email: str, code: str, trial_days: int = 14) -> Dict[str, Any]:
         """Validates confirmation code and activates 14-day free trial upon confirmation."""
         from datetime import datetime, timezone, timedelta
@@ -954,22 +980,11 @@ class Repository:
         if user.get("is_verified", 0) == 1:
             return {"success": True, "already_verified": True, "user": user}
 
-        stored_code = (user.get("verification_code") or "").strip()
-        input_code = (code or "").strip()
-
-        if not stored_code or stored_code != input_code:
-            return {"success": False, "error": "invalid_code"}
+        val = self.validate_verification_code(email, code)
+        if not val.get("valid"):
+            return {"success": False, "error": val.get("error")}
 
         now = datetime.now(timezone.utc)
-        expires_str = user.get("verification_code_expires_at")
-        if expires_str:
-            try:
-                expires_at = datetime.fromisoformat(expires_str.replace("Z", "+00:00"))
-                if now > expires_at:
-                    return {"success": False, "error": "code_expired"}
-            except Exception:
-                pass
-
         now_iso = now.isoformat()
         trial_ends_iso = (now + timedelta(days=trial_days)).isoformat()
 
@@ -1005,6 +1020,40 @@ class Repository:
 
         updated_user = self.get_user_by_email(norm_email)
         return {"success": True, "user": updated_user}
+
+    def update_user_password(self, email: str, password_hash: str) -> bool:
+        """Updates user password and clears verification code so it cannot be replayed."""
+        from datetime import datetime, timezone
+        norm_email = (email or "").strip().lower()
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        if self.supabase:
+            try:
+                res = self.supabase.table("users").update({
+                    "password_hash": password_hash,
+                    "is_verified": 1,
+                    "verification_code": None,
+                    "verification_code_expires_at": None,
+                    "updated_at": now_iso,
+                }).eq("email", norm_email).execute()
+                return bool(res.data)
+            except Exception as e:
+                logger.error(f"Supabase update_user_password error: {e}")
+                return False
+
+        with self._connect() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                UPDATE users SET
+                    password_hash = ?,
+                    is_verified = 1,
+                    verification_code = NULL,
+                    verification_code_expires_at = NULL,
+                    updated_at = ?
+                WHERE LOWER(email) = LOWER(?)
+            """, (password_hash, now_iso, norm_email))
+            conn.commit()
+            return cur.rowcount > 0
 
     def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
         """Retrieves a customer user by email address."""

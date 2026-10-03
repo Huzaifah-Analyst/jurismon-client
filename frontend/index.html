@@ -843,6 +843,16 @@
     margin-bottom: 14px;
     display: none;
   }
+  .form-notice {
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+    padding: 10px 12px;
+    border-radius: var(--r-md);
+    font-size: 13px;
+    margin-bottom: 14px;
+    display: none;
+  }
 
   /* Plan card selector in Paywall */
   .plan-card {
@@ -995,6 +1005,7 @@
       <button type="button" class="modal-tab" id="tab-login">Log In</button>
     </div>
     <div id="auth-error" class="form-error"></div>
+    <div id="auth-notice" class="form-notice"></div>
 
     <!-- Register Form -->
     <form id="form-register">
@@ -1021,7 +1032,10 @@
         <input type="email" id="login-email" required placeholder="name@firm.com">
       </div>
       <div class="form-group">
-        <label for="login-password">Password</label>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;">
+          <label for="login-password">Password</label>
+          <a href="#" id="link-forgot-password" style="font-size:12.5px; color:#154DA8; text-decoration:underline;">Forgot password?</a>
+        </div>
         <input type="password" id="login-password" required placeholder="••••••••">
       </div>
       <button type="submit" class="btn-submit" id="btn-submit-login">Log In</button>
@@ -1030,12 +1044,16 @@
     <!-- Verification Code Form -->
     <form id="form-verify" style="display:none;">
       <div style="margin-bottom:16px;">
-        <h3 style="margin:0 0 6px; font-size:17px; font-weight:600; color:var(--ink);">Confirm your email</h3>
-        <p style="margin:0; font-size:13.5px; color:var(--muted);">We sent a 6-digit confirmation code to <strong id="verify-email-display" style="color:var(--ink);"></strong>. Please enter it below:</p>
+        <h3 id="verify-modal-title" style="margin:0 0 6px; font-size:17px; font-weight:600; color:var(--ink);">Confirm your email</h3>
+        <p id="verify-modal-subtitle" style="margin:0; font-size:13.5px; color:var(--muted);">We sent a 6-digit confirmation code to <strong id="verify-email-display" style="color:var(--ink);"></strong>. Please enter it below:</p>
       </div>
       <div class="form-group">
         <label for="verify-code">6-Digit Confirmation Code</label>
         <input type="text" id="verify-code" required maxlength="6" pattern="[0-9]{6}" placeholder="123456" style="font-size:24px; letter-spacing:6px; text-align:center; font-family:monospace; font-weight:600;">
+      </div>
+      <div class="form-group" id="verify-new-password-group" style="display:none;">
+        <label for="reset-new-password">New Password (min 8 characters)</label>
+        <input type="password" id="reset-new-password" minlength="8" placeholder="••••••••">
       </div>
       <button type="submit" class="btn-submit" id="btn-submit-verify">Confirm &amp; Start 14-Day Free Trial</button>
       <div style="margin-top:14px; text-align:center; font-size:13px; color:var(--muted);">
@@ -1555,27 +1573,62 @@
   const authModal = $("#auth-modal");
   const paywallModal = $("#paywall-modal");
   const authError = $("#auth-error");
+  const authNotice = $("#auth-notice");
   const paywallError = $("#paywall-error");
 
   let pendingEmail = "";
+  let verifyMode = "signup"; // "signup" or "reset"
 
   function openAuthModal(tab = "register") {
     authError.style.display = "none";
     authError.textContent = "";
+    if (authNotice) {
+      authNotice.style.display = "none";
+      authNotice.textContent = "";
+    }
     $(".modal-tabs").style.display = "flex";
     $("#form-verify").style.display = "none";
     setAuthTab(tab);
     authModal.classList.add("is-active");
   }
 
-  function showVerifyScreen(email) {
+  function showVerifyScreen(email, mode = "signup") {
     pendingEmail = email;
+    verifyMode = mode;
     authError.style.display = "none";
+    if (authNotice) authNotice.style.display = "none";
     $(".modal-tabs").style.display = "none";
     $("#form-register").style.display = "none";
     $("#form-login").style.display = "none";
     $("#form-verify").style.display = "block";
     $("#verify-email-display").textContent = email;
+
+    const pwdGroup = $("#verify-new-password-group");
+    const pwdInput = $("#reset-new-password");
+    const btn = $("#btn-submit-verify");
+    const title = $("#verify-modal-title");
+    const subtitle = $("#verify-modal-subtitle");
+
+    if (mode === "reset") {
+      if (title) title.textContent = "Reset your password";
+      if (subtitle) subtitle.innerHTML = "Enter the code sent to your email and your new password.";
+      if (pwdGroup) pwdGroup.style.display = "block";
+      if (pwdInput) {
+        pwdInput.required = true;
+        pwdInput.value = "";
+      }
+      btn.textContent = "Update Password";
+    } else {
+      if (title) title.textContent = "Confirm your email";
+      if (subtitle) subtitle.innerHTML = 'We sent a 6-digit confirmation code to <strong id="verify-email-display" style="color:var(--ink);">' + esc(email) + '</strong>. Please enter it below:';
+      if (pwdGroup) pwdGroup.style.display = "none";
+      if (pwdInput) {
+        pwdInput.required = false;
+        pwdInput.value = "";
+      }
+      btn.textContent = "Confirm & Start 14-Day Free Trial";
+    }
+
     const codeInput = $("#verify-code");
     codeInput.value = "";
     codeInput.focus();
@@ -1615,8 +1668,14 @@
     $(".modal-tabs").style.display = "flex";
   }
 
-  $("#tab-register").addEventListener("click", () => setAuthTab("register"));
-  $("#tab-login").addEventListener("click", () => setAuthTab("login"));
+  $("#tab-register").addEventListener("click", () => {
+    if (authNotice) authNotice.style.display = "none";
+    setAuthTab("register");
+  });
+  $("#tab-login").addEventListener("click", () => {
+    if (authNotice) authNotice.style.display = "none";
+    setAuthTab("login");
+  });
   $("#auth-modal-close").addEventListener("click", closeAuthModal);
   $("#paywall-modal-close").addEventListener("click", closePaywallModal);
 
@@ -1675,16 +1734,51 @@
     }
   });
 
-  // Verification Code submit
+  // Verification / Reset Code submit
   $("#form-verify").addEventListener("submit", async e => {
     e.preventDefault();
     authError.style.display = "none";
     const btn = $("#btn-submit-verify");
     btn.disabled = true;
-    btn.textContent = "Verifying Code...";
 
     const code = $("#verify-code").value.trim();
 
+    if (verifyMode === "reset") {
+      btn.textContent = "Updating Password...";
+      const newPassword = $("#reset-new-password").value;
+      try {
+        const res = await fetch("/api/auth/reset-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: pendingEmail, code, new_password: newPassword }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          authError.textContent = data.detail || "Password reset failed.";
+          authError.style.display = "block";
+          btn.disabled = false;
+          btn.textContent = "Update Password";
+          return;
+        }
+        setAuthTab("login");
+        $("#login-email").value = pendingEmail;
+        $("#login-password").value = "";
+        if (authNotice) {
+          authNotice.textContent = "Password updated. Please log in.";
+          authNotice.style.display = "block";
+        }
+        $("#login-password").focus();
+      } catch (err) {
+        authError.textContent = "Network error resetting password. Please try again.";
+        authError.style.display = "block";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Update Password";
+      }
+      return;
+    }
+
+    btn.textContent = "Verifying Code...";
     try {
       const res = await fetch("/api/auth/verify-code", {
         method: "POST",
@@ -1719,14 +1813,15 @@
     if (!pendingEmail) return;
     authError.style.display = "none";
     try {
-      const res = await fetch("/api/auth/resend-code", {
+      const url = verifyMode === "reset" ? "/api/auth/forgot-password" : "/api/auth/resend-code";
+      const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: pendingEmail }),
       });
       const data = await res.json();
       if (res.ok) {
-        alert("A new confirmation code has been sent to " + pendingEmail);
+        alert(verifyMode === "reset" ? "A new password reset code has been sent to " + pendingEmail : "A new confirmation code has been sent to " + pendingEmail);
         const codeInput = $("#verify-code");
         codeInput.value = "";
         codeInput.focus();
@@ -1737,6 +1832,43 @@
     } catch (err) {
       authError.textContent = "Error connecting to server.";
       authError.style.display = "block";
+    }
+  });
+
+  // Forgot password link click
+  $("#link-forgot-password").addEventListener("click", async e => {
+    e.preventDefault();
+    authError.style.display = "none";
+    if (authNotice) authNotice.style.display = "none";
+    const email = $("#login-email").value.trim();
+    if (!email) {
+      authError.textContent = "Please enter your work email first so we can send your reset code.";
+      authError.style.display = "block";
+      $("#login-email").focus();
+      return;
+    }
+    const link = $("#link-forgot-password");
+    const origText = link.textContent;
+    link.textContent = "Sending code...";
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        authError.textContent = data.detail || "Unable to send reset code. Please try again.";
+        authError.style.display = "block";
+        link.textContent = origText;
+        return;
+      }
+      showVerifyScreen(email, "reset");
+    } catch (err) {
+      authError.textContent = "Network error. Please try again.";
+      authError.style.display = "block";
+    } finally {
+      link.textContent = origText;
     }
   });
 
