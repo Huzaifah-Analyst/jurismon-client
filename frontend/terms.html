@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Terms of Service — JurisMon</title>
+<link rel="icon" href="/static/assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/assets/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/static/assets/favicon-16.png">
+<link rel="apple-touch-icon" href="/static/assets/apple-touch-icon.png">
+<link rel="manifest" href="/static/assets/site.webmanifest">
+<link rel="canonical" href="https://jurismon.com/terms">
+<meta name="description" content="JurisMon Terms of Service. Automated statutory and regulatory monitoring conditions, subscription terms, and accuracy disclaimers.">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#154DA8">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --ink: #0f172a;
+    --text: #334155;
+    --muted: #64748b;
+    --line: #e2e8f0;
+    --line-strong: #cbd5e1;
+    --hover: #f1f5f9;
+    --r-sm: 4px;
+    --r-md: 6px;
+    --r-lg: 10px;
+    --ease: cubic-bezier(.2, .7, .2, 1);
+    --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.65;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: #154DA8; text-decoration: underline; text-underline-offset: 2px; }
+  a:hover { color: var(--ink); }
+
+  .wrap { max-width: 840px; margin: 0 auto; padding: 0 24px; width: 100%; }
+
+  /* Top bar */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .topbar-inner {
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: inherit;
+  }
+  .brand-mark {
+    width: 24px;
+    height: 24px;
+    border-radius: var(--r-md);
+    background: var(--ink);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .brand-name {
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .nav-back {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--muted);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: var(--r-md);
+    transition: background-color .15s var(--ease), color .15s var(--ease);
+  }
+  .nav-back:hover {
+    background: var(--hover);
+    color: var(--ink);
+  }
+
+  /* Main Document */
+  main {
+    flex: 1 0 auto;
+    padding: 40px 0 64px;
+  }
+
+  .draft-badge {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: var(--r-md);
+    padding: 10px 14px;
+    margin-bottom: 24px;
+    font-size: 13px;
+    color: #92400e;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .draft-badge strong { font-weight: 600; }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    margin: 0 0 8px;
+    line-height: 1.25;
+  }
+  .meta-sub {
+    font-size: 13.5px;
+    color: var(--muted);
+    margin: 0 0 32px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 32px;
+    margin-bottom: 24px;
+  }
+
+  h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    margin: 28px 0 12px;
+    line-height: 1.35;
+  }
+  h2:first-of-type { margin-top: 0; }
+
+  p { margin: 0 0 16px; font-size: 14.5px; line-height: 1.7; }
+  ul { margin: 0 0 18px; padding-left: 22px; font-size: 14.5px; line-height: 1.7; }
+  li { margin-bottom: 8px; }
+
+  .callout-disclaimer {
+    background: #fff1f2;
+    border: 1px solid #fda4af;
+    border-left: 4px solid #e11d48;
+    border-radius: var(--r-md);
+    padding: 16px 18px;
+    margin: 24px 0;
+  }
+  .callout-disclaimer h3 {
+    margin: 0 0 8px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #9f1239;
+  }
+  .callout-disclaimer p {
+    margin: 0;
+    font-size: 13.5px;
+    color: #881337;
+    line-height: 1.6;
+  }
+
+  /* Site Footer */
+  .site-footer {
+    margin-top: 56px;
+    border-top: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--muted);
+    font-size: 13px;
+    padding: 24px 0 env(safe-area-inset-bottom, 24px);
+    width: 100%;
+  }
+  .site-footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .site-footer-copy { color: var(--muted); }
+  .site-footer-links {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .site-footer-link {
+    color: var(--text);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color .15s var(--ease);
+  }
+  .site-footer-link:hover { color: var(--ink); }
+  .site-footer-sep { color: var(--line-strong); user-select: none; }
+  .site-footer-placeholder { font-size: 11px; color: var(--muted); font-style: italic; }
+
+  @media (max-width: 640px) {
+    .card { padding: 22px 18px; }
+    h1 { font-size: 24px; }
+    .site-footer-inner { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .site-footer-links { gap: 8px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="/" aria-label="JurisMon home">
+      <span class="brand-mark">§</span>
+      <span class="brand-name">JurisMon</span>
+    </a>
+    <a class="nav-back" href="/">← Back to Search</a>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="draft-badge">
+      <span><strong>Working draft</strong> pending formal legal review.</span>
+      <span>Last updated: October 3, 2026</span>
+    </div>
+
+    <h1>Terms of Service</h1>
+    <p class="meta-sub">Please review these terms carefully before accessing or subscribing to JurisMon.</p>
+
+    <div class="card">
+      <h2>1. The JurisMon Service</h2>
+      <p>
+        JurisMon provides automated computational monitoring and change detection across publicly available municipal, statutory, and zoning portals. The platform regularly surveys municipal ordinances, code repositories, zoning bylaws, and meeting proceedings across indexed jurisdictions in the United States and international jurisdictions, detects statutory text deltas (including additions, amendments, and repeals), and makes full-text search and historical version snapshots accessible to registered subscribers.
+      </p>
+
+      <h2>2. Free Trial &amp; Search Access</h2>
+      <p>
+        JurisMon provides a complimentary 14-day free trial upon initial registration and verification of a valid work email address. No credit card or upfront billing credential is required to activate the trial.
+      </p>
+      <ul>
+        <li>During the 14-day trial period, the account receives full, unmasked access to all indexed statutory diffs, clause amendments, and historical municipal snapshots.</li>
+        <li>Upon expiration of the 14-day trial, access automatically transitions into gated teaser mode (restricting search results to introductory excerpts) unless an active paid subscription is established.</li>
+        <li>Submitting a password reset or modifying credentials does not extend, reset, or restart the 14-day trial window.</li>
+      </ul>
+
+      <h2>3. Subscription Terms &amp; Billing</h2>
+      <p>
+        Continued full access following the trial period requires an active subscription to JurisMon Professional. Subscriptions are billed through PayPal Subscriptions under the following plan structures:
+      </p>
+      <ul>
+        <li><strong>Professional Monthly:</strong> $49.00 USD per month, billed recurringly in advance every 30 days.</li>
+        <li><strong>Professional Annual:</strong> $468.00 USD per year ($39.00 USD per month equivalent), billed recurringly in advance every 365 days.</li>
+      </ul>
+      <p>
+        All billing transactions, recurring payment authorisations, and payment card details are handled directly by PayPal Inc. JurisMon does not receive or store credit card numbers. Subscriptions renew automatically at the conclusion of each billing period unless cancelled. You may cancel your subscription at any time directly through your PayPal account management dashboard or by submitting a written cancellation request. Cancellations take effect at the conclusion of the paid billing period.
+      </p>
+
+      <div class="callout-disclaimer">
+        <h3>4. Accuracy Notice &amp; Legal Disclaimer</h3>
+        <p>
+          <strong>JurisMon is NOT legal advice.</strong> JurisMon is an automated computational indexer that aggregates publicly available municipal documents. The software does not provide legal advice, legal opinions, or certified statutory analysis. Automated text extractions and difference algorithms may be affected by municipal document formatting, optical character recognition limits, or publication timing.
+        </p>
+        <p style="margin-top: 8px;">
+          <strong>Mandatory Source Verification:</strong> You must independently verify all statutory sections, zoning definitions, and municipal clauses against certified official government records and municipal clerks before taking any legal, commercial, permitting, or developmental action.
+        </p>
+        <p style="margin-top: 8px;">
+          <strong>Third-Party Portal Availability:</strong> Ongoing monitoring depends entirely on external government websites, municipal servers, and content management platforms remaining reachable. Municipalities may alter website structures, experience portal downtime, or implement intermediary bot-blocking measures without notice, which may cause specific sources to become temporarily unavailable.
+        </p>
+      </div>
+
+      <h2>5. Acceptable Use Policy</h2>
+      <p>
+        Access to JurisMon is provided solely for internal professional research, planning, compliance, and legal diligence. You agree not to:
+      </p>
+      <ul>
+        <li>Conduct automated bulk extraction, bulk downloading, or scraping of the JurisMon corpus or delta database;</li>
+        <li>Redistribute, resell, sublicense, or publish indexed snapshots or structured deltas to third parties as a standalone dataset;</li>
+        <li>Share account credentials or session authentication tokens among multiple concurrent individuals;</li>
+        <li>Interfere with, bypass, or circumvent rate-limiting mechanisms or search gating security controls.</li>
+      </ul>
+
+      <h2>6. Limitation of Liability</h2>
+      <p>
+        To the maximum extent permitted by applicable law, JurisMon and its operators provide the service on an "as is" and "as available" basis without warranties of any kind, whether express, implied, or statutory. In no event shall JurisMon be liable for any indirect, incidental, consequential, special, or punitive damages, or for loss of profits, permits, regulatory compliance penalties, or business opportunities arising out of your use of, or inability to use, the platform. Total aggregate liability for any claims under these terms is strictly capped at the total amount paid by you to JurisMon during the twelve (12) months preceding the incident giving rise to liability.
+      </p>
+
+      <h2>7. Termination</h2>
+      <p>
+        We reserve the right to suspend or terminate account access immediately and without prior notice in the event of any violation of the Acceptable Use Policy, abusive request volume, or fraudulent payment activity.
+      </p>
+
+      <h2>8. Contact &amp; Inquiries</h2>
+      <p>
+        If you have questions regarding these Terms of Service or require subscription assistance, please contact:
+        <br>
+        <strong>Email:</strong> <a href="mailto:support@jurismon.com">support@jurismon.com</a> <span class="site-footer-placeholder">(placeholder pending final administrative address)</span>
+      </p>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap site-footer-inner">
+    <div class="site-footer-copy">
+      &copy; 2026 JurisMon. All rights reserved.
+    </div>
+    <nav class="site-footer-links" aria-label="Legal and contact links">
+      <a href="/terms" class="site-footer-link">Terms of Service</a>
+      <span class="site-footer-sep">&bull;</span>
+      <a href="/privacy" class="site-footer-link">Privacy Policy</a>
+      <span class="site-footer-sep">&bull;</span>
+      <span class="site-footer-contact">Contact: <a href="mailto:support@jurismon.com" class="site-footer-link">support@jurismon.com</a> <small class="site-footer-placeholder">(placeholder)</small></span>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>

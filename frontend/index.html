@@ -124,6 +124,18 @@
 
     padding-bottom: env(safe-area-inset-bottom, 0px);
 
+    min-height: 100vh;
+
+    display: flex;
+
+    flex-direction: column;
+
+  }
+
+  main.wrap {
+    flex: 1 0 auto;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   a { color: inherit; }
@@ -630,7 +642,7 @@
 
   .hints {
 
-    margin: 28px 0 56px; font-size: 12.5px; color: var(--muted);
+    margin: 28px 0 24px; font-size: 12.5px; color: var(--muted);
 
     display: flex; flex-wrap: wrap; gap: 8px 18px;
 
@@ -647,6 +659,60 @@
   .results.intro .result { animation: rise .45s var(--ease) both; animation-delay: calc(var(--i) * 40ms + 80ms); }
 
   @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+
+
+  /* ---------- Site Footer ---------- */
+  .site-footer {
+    margin-top: 56px;
+    border-top: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--muted);
+    font-size: 13px;
+    padding: 24px 0 env(safe-area-inset-bottom, 24px);
+    width: 100%;
+  }
+
+  .site-footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .site-footer-copy {
+    color: var(--muted);
+  }
+
+  .site-footer-links {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .site-footer-link {
+    color: var(--text);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color .15s var(--ease);
+  }
+
+  .site-footer-link:hover {
+    color: var(--ink);
+  }
+
+  .site-footer-sep {
+    color: var(--line-strong);
+    user-select: none;
+  }
+
+  .site-footer-placeholder {
+    font-size: 11px;
+    color: var(--muted);
+    font-style: italic;
+  }
 
 
 
@@ -685,6 +751,16 @@
     .when .rel, .when .abs { display: inline; }
 
     .hints { display: none; }
+
+    .site-footer-inner {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .site-footer-links {
+      gap: 8px 12px;
+    }
 
   }
 
@@ -995,6 +1071,21 @@
   </footer>
 
 </main>
+
+<footer class="site-footer">
+  <div class="wrap site-footer-inner">
+    <div class="site-footer-copy">
+      &copy; 2026 JurisMon. All rights reserved.
+    </div>
+    <nav class="site-footer-links" aria-label="Legal and contact links">
+      <a href="/terms" class="site-footer-link">Terms of Service</a>
+      <span class="site-footer-sep">&bull;</span>
+      <a href="/privacy" class="site-footer-link">Privacy Policy</a>
+      <span class="site-footer-sep">&bull;</span>
+      <span class="site-footer-contact">Contact: <a href="mailto:support@jurismon.com" class="site-footer-link">support@jurismon.com</a> <small class="site-footer-placeholder">(placeholder)</small></span>
+    </nav>
+  </div>
+</footer>
 
 <!-- AUTH MODAL -->
 <div id="auth-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">

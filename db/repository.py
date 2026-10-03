@@ -969,21 +969,10 @@ class Repository:
 
         return {"valid": True, "user": user}
 
-    def verify_user_email(self, email: str, code: str, trial_days: int = 14) -> Dict[str, Any]:
-        """Validates confirmation code and activates 14-day free trial upon confirmation."""
+    def activate_user_trial(self, email: str, trial_days: int = 14) -> Dict[str, Any]:
+        """Marks user as verified and activates 14-day free trial. Clears verification code."""
         from datetime import datetime, timezone, timedelta
         norm_email = (email or "").strip().lower()
-        user = self.get_user_by_email(norm_email)
-        if not user:
-            return {"success": False, "error": "user_not_found"}
-
-        if user.get("is_verified", 0) == 1:
-            return {"success": True, "already_verified": True, "user": user}
-
-        val = self.validate_verification_code(email, code)
-        if not val.get("valid"):
-            return {"success": False, "error": val.get("error")}
-
         now = datetime.now(timezone.utc)
         now_iso = now.isoformat()
         trial_ends_iso = (now + timedelta(days=trial_days)).isoformat()
@@ -1001,7 +990,7 @@ class Repository:
                 updated_user = self.get_user_by_email(norm_email)
                 return {"success": True, "user": updated_user}
             except Exception as e:
-                logger.error(f"Supabase verify_user_email error: {e}")
+                logger.error(f"Supabase activate_user_trial error: {e}")
                 return {"success": False, "error": str(e)}
 
         with self._connect() as conn:
@@ -1021,6 +1010,22 @@ class Repository:
         updated_user = self.get_user_by_email(norm_email)
         return {"success": True, "user": updated_user}
 
+    def verify_user_email(self, email: str, code: str, trial_days: int = 14) -> Dict[str, Any]:
+        """Validates confirmation code and activates 14-day free trial upon confirmation."""
+        norm_email = (email or "").strip().lower()
+        user = self.get_user_by_email(norm_email)
+        if not user:
+            return {"success": False, "error": "user_not_found"}
+
+        if user.get("is_verified", 0) == 1:
+            return {"success": True, "already_verified": True, "user": user}
+
+        val = self.validate_verification_code(email, code)
+        if not val.get("valid"):
+            return {"success": False, "error": val.get("error")}
+
+        return self.activate_user_trial(norm_email, trial_days=trial_days)
+
     def update_user_password(self, email: str, password_hash: str) -> bool:
         """Updates user password and clears verification code so it cannot be replayed."""
         from datetime import datetime, timezone
@@ -1031,7 +1036,6 @@ class Repository:
             try:
                 res = self.supabase.table("users").update({
                     "password_hash": password_hash,
-                    "is_verified": 1,
                     "verification_code": None,
                     "verification_code_expires_at": None,
                     "updated_at": now_iso,
@@ -1046,7 +1050,6 @@ class Repository:
             cur.execute("""
                 UPDATE users SET
                     password_hash = ?,
-                    is_verified = 1,
                     verification_code = NULL,
                     verification_code_expires_at = NULL,
                     updated_at = ?

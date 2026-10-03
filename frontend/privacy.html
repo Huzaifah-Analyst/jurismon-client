@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Privacy Policy — JurisMon</title>
+<link rel="icon" href="/static/assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/assets/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/static/assets/favicon-16.png">
+<link rel="apple-touch-icon" href="/static/assets/apple-touch-icon.png">
+<link rel="manifest" href="/static/assets/site.webmanifest">
+<link rel="canonical" href="https://jurismon.com/privacy">
+<meta name="description" content="JurisMon Privacy Policy. Data collection practices, named processors (PayPal, Supabase, Resend), GDPR rights, and storage policies.">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#154DA8">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --ink: #0f172a;
+    --text: #334155;
+    --muted: #64748b;
+    --line: #e2e8f0;
+    --line-strong: #cbd5e1;
+    --hover: #f1f5f9;
+    --r-sm: 4px;
+    --r-md: 6px;
+    --r-lg: 10px;
+    --ease: cubic-bezier(.2, .7, .2, 1);
+    --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.65;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: #154DA8; text-decoration: underline; text-underline-offset: 2px; }
+  a:hover { color: var(--ink); }
+
+  .wrap { max-width: 840px; margin: 0 auto; padding: 0 24px; width: 100%; }
+
+  /* Top bar */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .topbar-inner {
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: inherit;
+  }
+  .brand-mark {
+    width: 24px;
+    height: 24px;
+    border-radius: var(--r-md);
+    background: var(--ink);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .brand-name {
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .nav-back {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--muted);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: var(--r-md);
+    transition: background-color .15s var(--ease), color .15s var(--ease);
+  }
+  .nav-back:hover {
+    background: var(--hover);
+    color: var(--ink);
+  }
+
+  /* Main Document */
+  main {
+    flex: 1 0 auto;
+    padding: 40px 0 64px;
+  }
+
+  .draft-badge {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: var(--r-md);
+    padding: 10px 14px;
+    margin-bottom: 24px;
+    font-size: 13px;
+    color: #92400e;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .draft-badge strong { font-weight: 600; }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    margin: 0 0 8px;
+    line-height: 1.25;
+  }
+  .meta-sub {
+    font-size: 13.5px;
+    color: var(--muted);
+    margin: 0 0 32px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 32px;
+    margin-bottom: 24px;
+  }
+
+  h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    margin: 28px 0 12px;
+    line-height: 1.35;
+  }
+  h2:first-of-type { margin-top: 0; }
+
+  p { margin: 0 0 16px; font-size: 14.5px; line-height: 1.7; }
+  ul { margin: 0 0 18px; padding-left: 22px; font-size: 14.5px; line-height: 1.7; }
+  li { margin-bottom: 8px; }
+
+  .processor-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0 24px;
+    font-size: 13.5px;
+  }
+  .processor-table th, .processor-table td {
+    border: 1px solid var(--line);
+    padding: 10px 12px;
+    text-align: left;
+  }
+  .processor-table th {
+    background: var(--hover);
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  /* Site Footer */
+  .site-footer {
+    margin-top: 56px;
+    border-top: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--muted);
+    font-size: 13px;
+    padding: 24px 0 env(safe-area-inset-bottom, 24px);
+    width: 100%;
+  }
+  .site-footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .site-footer-copy { color: var(--muted); }
+  .site-footer-links {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .site-footer-link {
+    color: var(--text);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color .15s var(--ease);
+  }
+  .site-footer-link:hover { color: var(--ink); }
+  .site-footer-sep { color: var(--line-strong); user-select: none; }
+  .site-footer-placeholder { font-size: 11px; color: var(--muted); font-style: italic; }
+
+  @media (max-width: 640px) {
+    .card { padding: 22px 18px; }
+    h1 { font-size: 24px; }
+    .site-footer-inner { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .site-footer-links { gap: 8px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="/" aria-label="JurisMon home">
+      <span class="brand-mark">§</span>
+      <span class="brand-name">JurisMon</span>
+    </a>
+    <a class="nav-back" href="/">← Back to Search</a>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="draft-badge">
+      <span><strong>Working draft</strong> pending formal legal review.</span>
+      <span>Last updated: October 3, 2026</span>
+    </div>
+
+    <h1>Privacy Policy</h1>
+    <p class="meta-sub">How JurisMon collects, stores, processes, and protects your account information.</p>
+
+    <div class="card">
+      <h2>1. Information We Collect</h2>
+      <p>JurisMon collects only the minimal data necessary to provide and secure your regulatory monitoring account:</p>
+      <ul>
+        <li><strong>Account Identifiers:</strong> Your work email address, and optionally your name or firm identifier when provided at registration.</li>
+        <li><strong>Authentication Credentials:</strong> Your password, which is hashed immediately using the salted bcrypt cryptographic hashing algorithm. Your plain-text password is never stored on disk, never written to log files, and never accessible to JurisMon administrators.</li>
+        <li><strong>Subscription Status:</strong> External subscription reference numbers issued by PayPal, subscription plan identifier, subscription state (such as <code>active</code>, <code>cancelled</code>, or <code>expired</code>), and billing cycle timestamps.</li>
+      </ul>
+
+      <h2>2. Information We Do NOT Collect</h2>
+      <p>
+        <strong>Zero Payment Card Data:</strong> JurisMon does not collect, receive, process, or store credit card numbers, debit card details, bank account numbers, or CVVs. When you subscribe, all transaction details are entered directly on PayPal's secure, PCI-compliant infrastructure. PayPal only transmits back a subscription identifier, status indicator, and payer email for entitlement verification.
+      </p>
+
+      <h2>3. Named Third-Party Processors</h2>
+      <p>
+        To deliver the monitoring service, JurisMon utilizes trusted infrastructure providers under strict operational boundaries:
+      </p>
+      <table class="processor-table">
+        <thead>
+          <tr>
+            <th>Processor</th>
+            <th>Role</th>
+            <th>Data Received</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>PayPal Inc.</strong></td>
+            <td>Payment processing &amp; recurring subscription lifecycle</td>
+            <td>Payer email, plan ID, external subscription tokens, transaction events</td>
+          </tr>
+          <tr>
+            <td><strong>Supabase Inc.</strong></td>
+            <td>PostgreSQL cloud database hosting &amp; persistence</td>
+            <td>Encrypted/hashed user records, crawl records, subscription statuses</td>
+          </tr>
+          <tr>
+            <td><strong>Resend</strong></td>
+            <td>Transactional email delivery</td>
+            <td>Recipient email address, 6-digit confirmation and password reset codes</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>4. Verification &amp; Password Reset Codes</h2>
+      <p>
+        During registration and password recovery, the system generates temporary 6-digit confirmation codes using a cryptographically secure random number generator. These codes:
+      </p>
+      <ul>
+        <li>Carry a strict 15-minute expiration window;</li>
+        <li>Are automatically purged and set to <code>NULL</code> upon successful verification or password reset to prevent code replay attacks;</li>
+        <li>Are never stored alongside plaintext passwords.</li>
+      </ul>
+
+      <h2>5. Cookies &amp; Local Storage</h2>
+      <p>
+        JurisMon maintains a strict privacy footprint:
+      </p>
+      <ul>
+        <li><strong>No Third-Party Analytics:</strong> We do not deploy Google Analytics, tracking pixels, or marketing beacons.</li>
+        <li><strong>No Advertising Cookies:</strong> We do not track users across external websites or sell behavioral data.</li>
+        <li><strong>Local Storage:</strong> When you log in, your browser stores a standard JSON Web Token (JWT) and basic profile metadata in <code>localStorage</code> under <code>jurismon_token</code> and <code>jurismon_user</code>. This is used solely to authenticate API requests and maintain your active session. You can clear this at any time by logging out or clearing your browser storage.</li>
+      </ul>
+
+      <h2>6. Data Retention</h2>
+      <p>
+        We retain user profile data and subscription entitlement records only as long as your account remains open or as required by applicable commercial accounting laws. If an account is closed or deleted upon request, personal identifiers are permanently removed from production databases.
+      </p>
+
+      <h2>7. UK &amp; EU GDPR Rights</h2>
+      <p>
+        If you are located in the United Kingdom or the European Economic Area, you hold statutory rights under the UK GDPR and EU General Data Protection Regulation regarding your personal data:
+      </p>
+      <ul>
+        <li><strong>Right of Access:</strong> You may request a copy of the personal information JurisMon holds about you;</li>
+        <li><strong>Right to Rectification:</strong> You may request correction of inaccurate or incomplete personal details;</li>
+        <li><strong>Right to Erasure:</strong> You may request deletion of your personal account data ("Right to be Forgotten");</li>
+        <li><strong>Right to Restrict Processing:</strong> You may request temporary suspension of data processing;</li>
+        <li><strong>Right to Data Portability:</strong> You may request an export of your account data in a structured, machine-readable format.</li>
+      </ul>
+      <p>
+        To exercise any of these rights, please contact our privacy coordinator using the contact details below. We respond to all verified requests within thirty (30) days without charge.
+      </p>
+
+      <h2>8. Privacy Contact Route</h2>
+      <p>
+        For questions about this policy, data subject requests, or privacy concerns, please contact:
+        <br>
+        <strong>Email:</strong> <a href="mailto:support@jurismon.com">support@jurismon.com</a> <span class="site-footer-placeholder">(placeholder pending final administrative address)</span>
+      </p>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap site-footer-inner">
+    <div class="site-footer-copy">
+      &copy; 2026 JurisMon. All rights reserved.
+    </div>
+    <nav class="site-footer-links" aria-label="Legal and contact links">
+      <a href="/terms" class="site-footer-link">Terms of Service</a>
+      <span class="site-footer-sep">&bull;</span>
+      <a href="/privacy" class="site-footer-link">Privacy Policy</a>
+      <span class="site-footer-sep">&bull;</span>
+      <span class="site-footer-contact">Contact: <a href="mailto:support@jurismon.com" class="site-footer-link">support@jurismon.com</a> <small class="site-footer-placeholder">(placeholder)</small></span>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>

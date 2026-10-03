@@ -154,6 +154,22 @@ async def serve_admin_page():
     return "<h1>JurisMon Admin Panel</h1>"
 
 
+@app.get("/terms", response_class=HTMLResponse)
+async def serve_terms_page():
+    terms_path = os.path.join(frontend_dir, "terms.html")
+    if os.path.exists(terms_path):
+        return FileResponse(terms_path)
+    return "<h1>JurisMon Terms of Service</h1>"
+
+
+@app.get("/privacy", response_class=HTMLResponse)
+async def serve_privacy_page():
+    privacy_path = os.path.join(frontend_dir, "privacy.html")
+    if os.path.exists(privacy_path):
+        return FileResponse(privacy_path)
+    return "<h1>JurisMon Privacy Policy</h1>"
+
+
 @app.get("/favicon.ico", include_in_schema=False)
 async def serve_favicon():
     favicon_path = os.path.join(frontend_dir, "assets", "favicon.ico")
@@ -191,6 +207,16 @@ async def serve_sitemap_xml():
         "    <loc>https://jurismon.com/</loc>\n"
         "    <changefreq>daily</changefreq>\n"
         "    <priority>1.0</priority>\n"
+        "  </url>\n"
+        "  <url>\n"
+        "    <loc>https://jurismon.com/terms</loc>\n"
+        "    <changefreq>monthly</changefreq>\n"
+        "    <priority>0.5</priority>\n"
+        "  </url>\n"
+        "  <url>\n"
+        "    <loc>https://jurismon.com/privacy</loc>\n"
+        "    <changefreq>monthly</changefreq>\n"
+        "    <priority>0.5</priority>\n"
         "  </url>\n"
         "</urlset>\n"
     )
@@ -840,6 +866,9 @@ async def customer_reset_password(req: ResetPasswordRequest):
                 detail="Invalid confirmation code. Please check your email and try again.",
             )
 
+    user = val.get("user") or repo.get_user_by_email(email)
+    was_verified = bool(user and user.get("is_verified", 0) == 1)
+
     pwd_hash = get_password_hash(new_password)
     updated = repo.update_user_password(email, pwd_hash)
     if not updated:
@@ -847,6 +876,11 @@ async def customer_reset_password(req: ResetPasswordRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update password. Please try again.",
         )
+
+    # If the user was not yet verified, activate their trial now using the exact same activation path
+    if not was_verified:
+        repo.activate_user_trial(email, trial_days=14)
+        logger.info("Unverified user %s verified and 14-day trial activated via password reset", email)
 
     logger.info("Password successfully reset for %s", email)
     return {

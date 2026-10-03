@@ -802,10 +802,12 @@ class TestForgotPasswordAndReset(unittest.TestCase):
         for email in self.created_emails:
             if repo.supabase:
                 try:
+                    repo.supabase.table("subscriptions").delete().eq("user_email", email).execute()
                     repo.supabase.table("users").delete().eq("email", email).execute()
                 except Exception:
                     pass
             with repo._connect() as conn:
+                conn.cursor().execute("DELETE FROM subscriptions WHERE LOWER(user_email) = LOWER(?)", (email,))
                 conn.cursor().execute("DELETE FROM users WHERE LOWER(email) = LOWER(?)", (email,))
                 conn.commit()
 
@@ -881,6 +883,117 @@ class TestForgotPasswordAndReset(unittest.TestCase):
         })
         self.assertEqual(login_res.status_code, 200)
         self.assertIn("access_token", login_res.json())
+
+    def test_unverified_user_reset_password_activates_trial_and_allows_login(self):
+        """Unverified user resets password -> is_verified becomes 1 AND trial_ends_at is set 14 days out AND login succeeds."""
+        from api.main import repo
+        from api.auth import get_password_hash
+        from datetime import datetime, timezone, timedelta
+        test_email = self._unique_email("unverified_reset")
+        new_pw = "BrandNewPassword789!"
+        repo.create_user(
+            email=test_email,
+            password_hash=get_password_hash("OldPassword123!"),
+            is_verified=0,
+            verification_code="234567",
+            verification_code_expires_at="2099-01-01T00:00:00+00:00",
+        )
+
+        res = self.client.post("/api/auth/reset-password", json={
+            "email": test_email,
+            "code": "234567",
+            "new_password": new_pw,
+        })
+        self.assertEqual(res.status_code, 200)
+
+        user = repo.get_user_by_email(test_email)
+        self.assertEqual(user.get("is_verified"), 1)
+        self.assertIsNotNone(user.get("trial_started_at"))
+        self.assertIsNotNone(user.get("trial_ends_at"))
+        trial_end = datetime.fromisoformat(user["trial_ends_at"].replace("Z", "+00:00"))
+        now = datetime.now(timezone.utc)
+        self.assertTrue(trial_end > now + timedelta(days=13))
+
+        login_res = self.client.post("/api/auth/login", json={
+            "email": test_email,
+            "password": new_pw,
+        })
+        self.assertEqual(login_res.status_code, 200)
+        self.assertIn("access_token", login_res.json())
+
+    def test_verified_user_mid_trial_reset_password_trial_ends_at_unchanged(self):
+        """Verified user mid-trial resets password -> trial_ends_at is UNCHANGED (not extended, not reset)."""
+        from api.main import repo
+        from api.auth import get_password_hash
+        test_email = self._unique_email("mid_trial")
+        fixed_trial_end = "2026-10-15T12:00:00+00:00"
+        fixed_trial_start = "2026-10-01T12:00:00+00:00"
+        user = repo.create_user(
+            email=test_email,
+            password_hash=get_password_hash("InitialPass123!"),
+            is_verified=1,
+            verification_code="345678",
+            verification_code_expires_at="2099-01-01T00:00:00+00:00",
+        )
+        # Explicitly set fixed trial start and end in DB
+        with repo._connect() as conn:
+            conn.cursor().execute("""
+                UPDATE users SET trial_started_at = ?, trial_ends_at = ? WHERE LOWER(email) = LOWER(?)
+            """, (fixed_trial_start, fixed_trial_end, test_email))
+            conn.commit()
+        if repo.supabase:
+            try:
+                repo.supabase.table("users").update({
+                    "trial_started_at": fixed_trial_start,
+                    "trial_ends_at": fixed_trial_end,
+                }).eq("email", test_email).execute()
+            except Exception:
+                pass
+
+        res = self.client.post("/api/auth/reset-password", json={
+            "email": test_email,
+            "code": "345678",
+            "new_password": "NewMidTrialPass123!",
+        })
+        self.assertEqual(res.status_code, 200)
+
+        updated_user = repo.get_user_by_email(test_email)
+        self.assertEqual(updated_user.get("trial_ends_at"), fixed_trial_end)
+        self.assertEqual(updated_user.get("trial_started_at"), fixed_trial_start)
+
+    def test_paid_subscriber_reset_password_subscription_status_unaffected(self):
+        """User with active paid subscription resets password -> subscription status unaffected."""
+        from api.main import repo
+        from api.auth import get_password_hash
+        test_email = self._unique_email("subscriber_reset")
+        user = repo.create_user(
+            email=test_email,
+            password_hash=get_password_hash("SubPass123!"),
+            is_verified=1,
+            trial_days=0,
+            verification_code="456789",
+            verification_code_expires_at="2099-01-01T00:00:00+00:00",
+        )
+        sub_id = f"I-SUB-{user['id'][:8]}"
+        repo.record_subscription(
+            external_sub_id=sub_id,
+            plan_id="professional_monthly",
+            status="active",
+            user_email=test_email,
+            user_id=user["id"],
+        )
+
+        res = self.client.post("/api/auth/reset-password", json={
+            "email": test_email,
+            "code": "456789",
+            "new_password": "NewSubPass456!",
+        })
+        self.assertEqual(res.status_code, 200)
+
+        access = repo.get_user_access_status(user["id"])
+        self.assertTrue(access["has_access"])
+        self.assertEqual(access["reason"], "active_subscription")
+        self.assertEqual(access["plan_id"], "professional_monthly")
 
     def test_reset_password_with_expired_code_returns_400(self):
         """reset-password with expired code returns 400."""
@@ -1013,6 +1126,54 @@ class TestForgotPasswordAndReset(unittest.TestCase):
         self.assertIn("invalid", res2.json()["detail"].lower())
 
 
+class TestTermsAndPrivacyPages(unittest.TestCase):
+    def setUp(self):
+        from api.main import app
+        self.client = TestClient(app)
+
+    def test_terms_endpoint_unauthenticated_and_contains_disclaimer(self):
+        """GET /terms returns 200 without auth and contains the accuracy disclaimer."""
+        res = self.client.get("/terms")
+        self.assertEqual(res.status_code, 200)
+        self.assertIn("text/html", res.headers.get("content-type", ""))
+        content = res.text
+        self.assertIn("NOT legal advice", content)
+        self.assertIn("verify", content.lower())
+        self.assertIn("accuracy", content.lower())
+        self.assertIn("working draft", content.lower())
+        self.assertIn("october 3, 2026", content.lower())
+
+    def test_privacy_endpoint_unauthenticated_and_names_processors(self):
+        """GET /privacy returns 200 without auth and names PayPal, Supabase, and Resend."""
+        res = self.client.get("/privacy")
+        self.assertEqual(res.status_code, 200)
+        self.assertIn("text/html", res.headers.get("content-type", ""))
+        content = res.text
+        self.assertIn("PayPal", content)
+        self.assertIn("Supabase", content)
+        self.assertIn("Resend", content)
+        self.assertIn("15-minute", content)
+        self.assertIn("localStorage", content)
+        self.assertIn("working draft", content.lower())
+        self.assertIn("october 3, 2026", content.lower())
+
+    def test_sitemap_includes_terms_and_privacy(self):
+        """GET /sitemap.xml includes /terms and /privacy URLs."""
+        res = self.client.get("/sitemap.xml")
+        self.assertEqual(res.status_code, 200)
+        self.assertIn("https://jurismon.com/terms", res.text)
+        self.assertIn("https://jurismon.com/privacy", res.text)
+
+    def test_robots_txt_allows_root_and_does_not_block_terms_privacy(self):
+        """GET /robots.txt allows root and does not block terms or privacy."""
+        res = self.client.get("/robots.txt")
+        self.assertEqual(res.status_code, 200)
+        self.assertIn("Allow: /", res.text)
+        self.assertNotIn("Disallow: /terms", res.text)
+        self.assertNotIn("Disallow: /privacy", res.text)
+
+
 if __name__ == "__main__":
     unittest.main()
+
 

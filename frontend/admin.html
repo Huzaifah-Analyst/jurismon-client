@@ -79,6 +79,18 @@
 
     padding-bottom: env(safe-area-inset-bottom, 0px);
 
+    min-height: 100vh;
+
+    display: flex;
+
+    flex-direction: column;
+
+  }
+
+  main.wrap {
+    flex: 1 0 auto;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   button, input, select { font: inherit; color: inherit; }
@@ -1017,6 +1029,10 @@
 
 
   <p class="foot">Showing sample data. Connect Supabase and PayPal to load live records.</p>
+
+  <footer class="admin-footer" style="margin-top: 32px; padding: 24px 0 env(safe-area-inset-bottom, 24px); border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; text-align: center;">
+    &copy; 2026 JurisMon. All rights reserved.
+  </footer>
 
 </main>
 
