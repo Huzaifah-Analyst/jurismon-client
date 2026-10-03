@@ -101,6 +101,13 @@ systemctl enable jurismon
 systemctl enable --now jurismon-crawl.timer
 
 # --------------------------------------------------------------------
+log "Configuring sudoers permissions for crawl service"
+cat > /etc/sudoers.d/jurismon-crawl << 'EOF'
+jurismon ALL=(root) NOPASSWD: /bin/systemctl start jurismon-crawl.service, /usr/bin/systemctl start jurismon-crawl.service, /bin/systemctl start --no-block jurismon-crawl.service, /usr/bin/systemctl start --no-block jurismon-crawl.service
+EOF
+chmod 0440 /etc/sudoers.d/jurismon-crawl
+
+# --------------------------------------------------------------------
 log "Installing Nginx site"
 cp "$APP_DIR/deploy/nginx.conf" /etc/nginx/sites-available/jurismon
 ln -sf /etc/nginx/sites-available/jurismon /etc/nginx/sites-enabled/jurismon

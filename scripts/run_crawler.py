@@ -83,7 +83,12 @@ def main(run_id: Optional[str] = None):
     active_sources = [s for s in sources if s.get("is_active", True)]
     total_sources = len(active_sources)
 
-    run_id = run_id or repo.start_crawl_run()
+    if not run_id:
+        active = repo.get_active_crawl_run()
+        if active and active.get("id"):
+            run_id = active["id"]
+        else:
+            run_id = repo.start_crawl_run()
     run_status = "failed"
 
     try:

@@ -9,7 +9,10 @@ Provides:
 """
 
 import os
+import sys
 import json
+import shutil
+import subprocess
 import logging
 from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, Request, HTTPException, Query, Depends, status, BackgroundTasks
@@ -145,6 +148,14 @@ async def serve_favicon():
     favicon_path = os.path.join(frontend_dir, "assets", "favicon.ico")
     if os.path.exists(favicon_path):
         return FileResponse(favicon_path, media_type="image/x-icon")
+    return Response(status_code=404)
+
+
+@app.get("/site.webmanifest", include_in_schema=False)
+async def serve_site_webmanifest():
+    manifest_path = os.path.join(frontend_dir, "assets", "site.webmanifest")
+    if os.path.exists(manifest_path):
+        return FileResponse(manifest_path, media_type="application/manifest+json")
     return Response(status_code=404)
 
 
@@ -796,6 +807,34 @@ async def trigger_admin_crawl(
         )
 
     run_id = repo.start_crawl_run()
+
+    # In production on Linux with systemctl, trigger jurismon-crawl.service out-of-process
+    is_systemd = (
+        sys.platform.startswith("linux")
+        and shutil.which("systemctl") is not None
+        and os.path.exists("/etc/systemd")
+    )
+    if is_systemd:
+        try:
+            subprocess.Popen(
+                ["sudo", "systemctl", "start", "jurismon-crawl.service"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            return {
+                "status": "started",
+                "crawl_run_id": run_id,
+                "message": "Crawl run triggered via jurismon-crawl.service.",
+            }
+        except Exception as e:
+            logger.error(f"Failed to start jurismon-crawl.service via systemctl: {e}")
+            background_tasks.add_task(_run_background_crawl, run_id)
+            return {
+                "status": "started",
+                "crawl_run_id": run_id,
+                "message": "Crawl run kicked off in background (systemctl fallback).",
+            }
+
     background_tasks.add_task(_run_background_crawl, run_id)
 
     return {

@@ -14,6 +14,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/static/assets/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/static/assets/favicon-16.png">
 <link rel="apple-touch-icon" href="/static/assets/apple-touch-icon.png">
+<link rel="manifest" href="/static/assets/site.webmanifest">
 <link rel="canonical" href="https://jurismon.com/">
 <meta name="description" content="JurisMon tracks municipal and statutory sources daily and shows exactly what changed. Search zoning amendments, ordinances and meeting minutes across government portals in the US, UK, Canada, Australia and the EU.">
 <meta name="robots" content="index, follow">
@@ -1547,35 +1548,6 @@
   const authError = $("#auth-error");
   const paywallError = $("#paywall-error");
 
-  function openAuthModal(tab = "register") {
-    authError.style.display = "none";
-    authError.textContent = "";
-    setAuthTab(tab);
-    authModal.classList.add("is-active");
-  }
-
-  function closeAuthModal() {
-    authModal.classList.remove("is-active");
-  }
-
-  function openPaywallModal() {
-    paywallError.style.display = "none";
-    paywallError.textContent = "";
-    paywallModal.classList.add("is-active");
-  }
-
-  function closePaywallModal() {
-    paywallModal.classList.remove("is-active");
-  }
-
-  window.triggerAuthOrPaywall = () => {
-    if (searchGateReason === "trial_expired") {
-      openPaywallModal();
-    } else {
-      openAuthModal("register");
-    }
-  };
-
   let pendingEmail = "";
 
   function openAuthModal(tab = "register") {
@@ -1926,6 +1898,7 @@
   if (params.get("subscribed") === "1") {
     alert("Subscription activated! Your JurisMon Professional account is now fully active.");
     window.history.replaceState({}, document.title, window.location.pathname);
+    fetchLiveSearch(state.q);
   } else if (params.get("subscribe_cancelled") === "1") {
     alert("PayPal subscription checkout was cancelled.");
     window.history.replaceState({}, document.title, window.location.pathname);

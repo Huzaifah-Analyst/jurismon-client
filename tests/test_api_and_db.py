@@ -589,6 +589,59 @@ class TestFastAPIEndpoints(unittest.TestCase):
                 diffs_created=0,
             )
 
+    def test_stale_crawl_run_auto_heals_and_allows_new_run(self):
+        """B1 test: a stale 'running' row (>2 hours) does not block a new run; a fresh one returns 409."""
+        from datetime import datetime, timezone, timedelta
+        from api.main import repo
+        from api.auth import create_access_token, ADMIN_EMAIL
+        from unittest.mock import patch
+
+        admin_token = create_access_token({"sub": ADMIN_EMAIL})
+
+        # Insert a stale run that started 3 hours ago
+        stale_started = (datetime.now(timezone.utc) - timedelta(hours=3)).isoformat()
+        stale_run_id = "test-stale-run-uuid"
+        with repo._connect() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT OR REPLACE INTO crawl_runs (id, started_at, status)
+                VALUES (?, ?, 'running')
+            """, (stale_run_id, stale_started))
+            conn.commit()
+
+        # 1. repo.get_active_crawl_run() should detect stale run, mark it failed, and return None
+        active = repo.get_active_crawl_run(max_age_hours=2.0)
+        self.assertIsNone(active)
+
+        # Confirm the stale row was updated to 'failed' with abandonment error note
+        with repo._connect() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT status, error_logs FROM crawl_runs WHERE id = ?", (stale_run_id,))
+            row = cur.fetchone()
+            self.assertEqual(row[0], "failed")
+            self.assertIn("abandoned", row[1])
+
+        # 2. Since stale run is auto-healed, /api/admin/crawl/run must NOT return 409
+        with patch("api.main._run_background_crawl"):
+            res_new = self.client.post(
+                "/api/admin/crawl/run",
+                headers={"Authorization": f"Bearer {admin_token}"},
+            )
+            self.assertEqual(res_new.status_code, 200)
+            new_run_id = res_new.json()["crawl_run_id"]
+
+            # 3. Fresh run is now active (< 2h), so a concurrent run must return 409 Conflict
+            res_concurrent = self.client.post(
+                "/api/admin/crawl/run",
+                headers={"Authorization": f"Bearer {admin_token}"},
+            )
+            self.assertEqual(res_concurrent.status_code, 409)
+            self.assertIn("already running", res_concurrent.json()["detail"])
+
+            # Clean up new test run
+            repo.finish_crawl_run(new_run_id, status="completed")
+
 
 if __name__ == "__main__":
     unittest.main()
+

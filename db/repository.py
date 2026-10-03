@@ -679,11 +679,11 @@ class Repository:
         self,
         run_id: str,
         status: str,
-        total_sources: int,
-        sources_succeeded: int,
-        sources_failed: int,
-        documents_found: int,
-        diffs_created: int,
+        total_sources: int = 0,
+        sources_succeeded: int = 0,
+        sources_failed: int = 0,
+        documents_found: int = 0,
+        diffs_created: int = 0,
         error_logs: Optional[Any] = None,
     ) -> None:
         """Updates a crawl run row with finished_at=now and the given counts.
@@ -737,23 +737,60 @@ class Repository:
             ))
             conn.commit()
 
-    def get_active_crawl_run(self) -> Optional[Dict[str, Any]]:
-        """Returns the currently active crawl run with status='running', if any."""
+    def get_active_crawl_run(self, max_age_hours: float = 2.0) -> Optional[Dict[str, Any]]:
+        """Returns the currently active crawl run with status='running', if any.
+
+        If a running crawl is older than max_age_hours (default 2.0 hours), it is treated
+        as dead/abandoned and automatically marked as 'failed' so it does not permanently
+        block subsequent runs with 409.
+        """
+        now = datetime.now(timezone.utc)
+        candidate: Optional[Dict[str, Any]] = None
+
         if self.supabase:
             try:
                 res = self.supabase.table("crawl_runs").select("*").eq("status", "running").order("started_at", desc=True).limit(1).execute()
                 if res.data:
-                    return res.data[0]
-                return None
+                    candidate = res.data[0]
             except Exception as e:
                 logger.error(f"Supabase get_active_crawl_run error: {e}")
 
-        with self._connect() as conn:
-            conn.row_factory = sqlite3.Row
-            cur = conn.cursor()
-            cur.execute("SELECT * FROM crawl_runs WHERE status = 'running' ORDER BY started_at DESC LIMIT 1")
-            row = cur.fetchone()
-            return dict(row) if row else None
+        if candidate is None:
+            with self._connect() as conn:
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+                cur.execute("SELECT * FROM crawl_runs WHERE status = 'running' ORDER BY started_at DESC LIMIT 1")
+                row = cur.fetchone()
+                if row:
+                    candidate = dict(row)
+
+        if not candidate:
+            return None
+
+        # Check for stale / abandoned run
+        started_at_str = candidate.get("started_at")
+        if started_at_str:
+            try:
+                started_dt = datetime.fromisoformat(started_at_str.replace("Z", "+00:00"))
+                if started_dt.tzinfo is None:
+                    started_dt = started_dt.replace(tzinfo=timezone.utc)
+                age_seconds = (now - started_dt).total_seconds()
+                if age_seconds > max_age_hours * 3600:
+                    age_h = round(age_seconds / 3600, 2)
+                    logger.warning(
+                        f"Active crawl run {candidate.get('id')} has been running for {age_h}h "
+                        f"(threshold {max_age_hours}h). Marking as abandoned/failed."
+                    )
+                    self.finish_crawl_run(
+                        run_id=candidate["id"],
+                        status="failed",
+                        error_logs=[{"error": f"Crawl abandoned: process did not complete within {max_age_hours} hours."}],
+                    )
+                    return None
+            except Exception as parse_err:
+                logger.warning(f"Error parsing started_at '{started_at_str}' for crawl run: {parse_err}")
+
+        return candidate
 
     def get_latest_crawl_run(self) -> Optional[Dict[str, Any]]:
         """Returns the most recent crawl run."""

@@ -310,7 +310,7 @@ Malok Mading
 
 Sep 26, 7:18 PM
 ssh root@2.25.250.77
-Password: Burhanreaders@2024
+Password: [REDACTED]
 
 Which detail do you need apart from these?
 
