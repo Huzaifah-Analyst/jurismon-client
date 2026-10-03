@@ -1172,6 +1172,14 @@ class TestTermsAndPrivacyPages(unittest.TestCase):
         self.assertNotIn("Disallow: /terms", res.text)
         self.assertNotIn("Disallow: /privacy", res.text)
 
+    def test_contact_email_present_and_no_placeholder(self):
+        """Official contact address is present across legal pages and home without placeholder."""
+        for path in ["/", "/terms", "/privacy", "/admin"]:
+            res = self.client.get(path)
+            self.assertEqual(res.status_code, 200)
+            self.assertIn("support@jurismon.com", res.text)
+            self.assertNotIn("(placeholder", res.text.lower())
+
 
 if __name__ == "__main__":
     unittest.main()
