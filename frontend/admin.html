@@ -451,9 +451,6 @@
 
   .btn:disabled { opacity: .45; cursor: not-allowed; border-color: var(--line); }
 
-  .btn.ghost { border-color: transparent; background: transparent; color: var(--muted); }
-
-  .btn.ghost:hover:not(:disabled) { background: var(--hover); color: var(--ink); }
 
   .btn.danger-ghost { border-color: transparent; background: transparent; color: var(--bad-ink); }
 
@@ -467,9 +464,6 @@
 
   .btn:focus-visible, .cell:focus-visible, .seg button:focus-visible, .tabs button:focus-visible, .sortbtn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
-  .spin { width: 12px; height: 12px; border: 1.5px solid var(--line-strong); border-top-color: var(--ink); border-radius: 50%; animation: rot .7s linear infinite; }
-
-  @keyframes rot { to { transform: rotate(360deg); } }
 
 
 
@@ -683,7 +677,7 @@
 
     </a>
 
-    <a class="chip" href="#subscriptions" title="Webhook signature verified on the last event">
+    <a class="chip" href="#subscriptions">
 
       <span class="dot"></span>
 
@@ -858,7 +852,6 @@
 
               <th data-key="health"><button class="sortbtn" type="button">Health <svg viewBox="0 0 10 10"><path d="M5 2v6M2.5 5.5L5 8l2.5-2.5" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg></button></th>
 
-              <th class="num"><span class="sr">Actions</span></th>
 
             </tr>
 
@@ -1452,7 +1445,7 @@
     if (!localStorage.getItem("jurismon_admin_token")) {
       document.querySelectorAll("#src-seg [data-n]").forEach(el => el.textContent = "—");
       const srcBody = $("#src-body");
-      if (srcBody) srcBody.innerHTML = '<tr class="empty-row"><td colspan="6">Authentication required. Sign in to view sources.</td></tr>';
+      if (srcBody) srcBody.innerHTML = '<tr class="empty-row"><td colspan="5">Authentication required. Sign in to view sources.</td></tr>';
       const srcRange = $("#src-range");
       if (srcRange) srcRange.textContent = "Sign in to view";
       const prev = $("#prev");
@@ -1484,6 +1477,15 @@
 
       if (key === "health") { va = healthRank[va]; vb = healthRank[vb]; }
 
+      if (key === "ts") {
+        const ta = a.ts || 0;
+        const tb = b.ts || 0;
+        if (!ta && !tb) return a.jurisdiction.localeCompare(b.jurisdiction);
+        if (!ta) return 1;
+        if (!tb) return -1;
+        return (ta - tb) * dir || a.jurisdiction.localeCompare(b.jurisdiction);
+      }
+
       if (typeof va === "string") return va.localeCompare(vb) * dir || a.jurisdiction.localeCompare(b.jurisdiction);
 
       return (va - vb) * dir || a.jurisdiction.localeCompare(b.jurisdiction);
@@ -1506,7 +1508,9 @@
 
       const [cls, label] = healthBadge(s.health);
 
-      const running = s.health === "running";
+      const lastCrawled = s.ts
+        ? `${rel(s.ts)}<span class="second">${dateShort(s.ts)}, ${clock(s.ts)}</span>`
+        : "Never";
 
       return `<tr data-id="${s.id}">
 
@@ -1516,17 +1520,13 @@
 
         <td><span class="adapter${s.adapter === "Custom" ? " custom" : ""}">${esc(s.adapter)}</span></td>
 
-        <td>${rel(s.ts)}<span class="second">${dateShort(s.ts)}, ${clock(s.ts)}</span></td>
+        <td>${lastCrawled}</td>
 
         <td><span class="badge ${cls}">${label}</span>${s.note ? `<span class="note">${esc(s.note)}</span>` : ""}</td>
 
-        <td class="num"><button class="btn ghost" type="button" data-run="${s.id}" ${running ? "disabled" : ""}>
-
-          ${running ? '<span class="spin"></span> Running' : "Run now"}</button></td>
-
       </tr>`;
 
-    }).join("") : `<tr class="empty-row"><td colspan="6">No sources match this filter. Clear the search or choose All.</td></tr>`;
+    }).join("") : `<tr class="empty-row"><td colspan="5">No sources match this filter. Clear the search or choose All.</td></tr>`;
 
 
 
@@ -1608,37 +1608,6 @@
 
 
 
-  // Manual re-crawl (simulated). Real version: POST to backend, which triggers the job on the VPS.
-
-  $("#src-body").addEventListener("click", e => {
-
-    const b = e.target.closest("[data-run]"); if (!b) return;
-
-    const s = sources.find(x => x.id === b.dataset.run);
-
-    const prev = { health: s.health, note: s.note };
-
-    s.health = "running"; s.note = "";
-
-    refreshSources();
-
-    setTimeout(() => {
-
-      const fixed = prev.health !== "failing";   // simulation: failing portal still down, others recover
-
-      s.ts = Date.now();
-
-      s.health = fixed ? "healthy" : "failing";
-
-      s.note = fixed ? "" : prev.note;
-
-      refreshSources();
-
-      toast(fixed ? `${s.jurisdiction} crawled successfully` : `${s.jurisdiction} still failing: ${prev.note}`);
-
-    }, 1800);
-
-  });
 
 
 
@@ -2067,7 +2036,7 @@
     const strip = $("#strip");
     if (strip) strip.innerHTML = "";
     const srcBody = $("#src-body");
-    if (srcBody) srcBody.innerHTML = '<tr class="empty-row"><td colspan="6">Authentication required. Sign in to view sources.</td></tr>';
+    if (srcBody) srcBody.innerHTML = '<tr class="empty-row"><td colspan="5">Authentication required. Sign in to view sources.</td></tr>';
     const srcRange = $("#src-range");
     if (srcRange) srcRange.textContent = "Sign in to view";
     const prev = $("#prev");
@@ -2124,7 +2093,7 @@
     if (btnRun) btnRun.disabled = true;
 
     const srcBody = $("#src-body");
-    if (srcBody && !sources.length) srcBody.innerHTML = '<tr class="empty-row"><td colspan="6">Loading sources...</td></tr>';
+    if (srcBody && !sources.length) srcBody.innerHTML = '<tr class="empty-row"><td colspan="5">Loading sources...</td></tr>';
     const srcRange = $("#src-range");
     if (srcRange && !sources.length) srcRange.textContent = "Loading...";
 
@@ -2206,6 +2175,12 @@
           sources.length = 0;
           sData.sources.forEach((s, idx) => {
             const hStatus = s.health_status || (s.is_active ? "operational" : "dead_link");
+            const rawTs = s.last_crawled_at || s.crawled_at || s.created_at;
+            let ts = null;
+            if (rawTs) {
+              const parsed = new Date(rawTs).getTime();
+              if (!isNaN(parsed)) ts = parsed;
+            }
             sources.push({
               id: s.id || ("src-" + idx),
               name: s.name,
@@ -2213,7 +2188,7 @@
               adapter: (s.adapter_type || "Custom").charAt(0).toUpperCase() + (s.adapter_type || "Custom").slice(1),
               health: hStatus,
               note: s.status_detail || s.base_url || "",
-              ts: s.created_at ? new Date(s.created_at).getTime() : NOW - (idx * 3600e3 * 0.5)
+              ts: ts
             });
           });
           sourceCounts = {
