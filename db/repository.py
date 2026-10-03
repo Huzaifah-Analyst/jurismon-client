@@ -716,6 +716,7 @@ class Repository:
                     "total_sources": total_sources,
                     "sources_succeeded": sources_succeeded,
                     "sources_failed": sources_failed,
+                    "sources_skipped": sources_skipped,
                     "documents_found": documents_found,
                     "diffs_created": diffs_created,
                     "error_logs": logs_payload,

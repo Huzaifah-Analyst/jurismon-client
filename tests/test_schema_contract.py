@@ -125,5 +125,76 @@ class TestFullTextSearchColumns(unittest.TestCase):
                                  f"{table}.{col} is selected in repository.py but absent from the schema")
 
 
+class TestSQLitePostgresSchemaParity(unittest.TestCase):
+    """Guards against adding columns to SQLite that have no corresponding Postgres migration.
+    
+    The pattern had failed three times:
+    1. Users auth columns
+    2. is_active boolean vs integer
+    3. sources_skipped on crawl_runs
+    
+    This test verifies that every column created in SQLite across all tables
+    is declared in at least one migration in db/migrations/*.sql, unless explicitly
+    allow-listed with a documented reason.
+    """
+
+    SQLITE_ONLY_ALLOWLIST = {
+        # subscriptions.user_email: SQLite stores user_email denormalized directly on
+        # the subscriptions table for local standalone lookups and backwards compatibility,
+        # whereas PostgreSQL normalizes this via subscriptions.user_id -> users.email.
+        ("subscriptions", "user_email"): "Denormalized email in SQLite for local queries without joins",
+    }
+
+    def test_every_sqlite_column_has_postgres_migration(self):
+        import glob
+        from db.repository import Repository
+        from unittest.mock import patch
+
+        tmp_dir = tempfile.mkdtemp(prefix="jurismon_schema_parity_")
+        db_path = os.path.join(tmp_dir, "parity_check.db")
+        try:
+            with patch("db.repository.DatabaseClient.get_supabase", return_value=None):
+                Repository(db_path=db_path)
+
+            with sqlite3.connect(db_path) as conn:
+                cur = conn.cursor()
+                cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+                tables = [r[0] for r in cur.fetchall()]
+                sqlite_schema = {}
+                for t in tables:
+                    cur.execute(f"PRAGMA table_info({t})")
+                    sqlite_schema[t] = [row[1] for row in cur.fetchall()]
+        finally:
+            import gc
+            gc.collect()
+            try:
+                os.remove(db_path)
+                os.rmdir(tmp_dir)
+            except Exception:
+                pass
+
+        mig_dir = os.path.join(os.path.dirname(__file__), "..", "db", "migrations")
+        all_sql = ""
+        for f in sorted(glob.glob(os.path.join(mig_dir, "*.sql"))):
+            with open(f, "r", encoding="utf-8") as fp:
+                all_sql += "\n" + fp.read()
+
+        missing = []
+        for table, cols in sqlite_schema.items():
+            for col in cols:
+                if (table, col) in self.SQLITE_ONLY_ALLOWLIST:
+                    continue
+                pattern = rf"\b{col}\b"
+                if not re.search(pattern, all_sql, re.IGNORECASE):
+                    missing.append(f"{table}.{col}")
+
+        self.assertEqual(
+            missing,
+            [],
+            f"SQLite columns missing from db/migrations/*.sql: {missing}. "
+            "Write a PostgreSQL migration in db/migrations/ or add to SQLITE_ONLY_ALLOWLIST if deliberately local.",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
