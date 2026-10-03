@@ -2137,36 +2137,6 @@
   const btnRun = $("#btn-run-crawl");
   if (btnRun) btnRun.addEventListener("click", triggerCrawlNow);
 
-  /* ---------- Boot ---------- */
-  (async function boot() {
-    checkAuth();
-    const token = localStorage.getItem("jurismon_admin_token");
-    if (token) {
-      await loadLiveAdminData();
-    } else {
-      renderSystem();
-      renderKpis();
-      renderSubs();
-      renderPlans();
-      renderHooks();
-    }
-
-    moveTabLine();
-
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveTabLine);
-
-    window.addEventListener("resize", moveTabLine);
-  })();
-
-  // Keep relative times fresh
-  setInterval(() => {
-    if (localStorage.getItem("jurismon_admin_token")) {
-      renderSources();
-      renderSystem();
-      checkCrawlStatus();
-    }
-  }, 60e3);
-
   /* ---------- Authentication Gate Logic ---------- */
   const authGate = document.getElementById("auth-gate");
   const loginForm = document.getElementById("login-form");
@@ -2203,6 +2173,36 @@
     checkAuth();
     toast("Logged out of Admin Session");
   }
+
+  /* ---------- Boot ---------- */
+  (async function boot() {
+    checkAuth();
+    const token = localStorage.getItem("jurismon_admin_token");
+    if (token) {
+      await loadLiveAdminData();
+    } else {
+      renderSystem();
+      renderKpis();
+      renderSubs();
+      renderPlans();
+      renderHooks();
+    }
+
+    moveTabLine();
+
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveTabLine);
+
+    window.addEventListener("resize", moveTabLine);
+  })();
+
+  // Keep relative times fresh
+  setInterval(() => {
+    if (localStorage.getItem("jurismon_admin_token")) {
+      renderSources();
+      renderSystem();
+      checkCrawlStatus();
+    }
+  }, 60e3);
 
   if (loginForm) {
     loginForm.addEventListener("submit", async (e) => {
