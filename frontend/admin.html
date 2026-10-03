@@ -671,7 +671,7 @@
 
     <a class="brand" href="#" aria-label="JurisMon admin home">
 
-      <img src="/static/assets/logo.png" alt="JurisMon Admin" style="height:28px; width:auto; border-radius:4px; object-fit:contain; border:1px solid var(--line);">
+      <img src="/static/assets/logo.png" alt="JurisMon Admin" style="height:28px; width:auto; display:block; object-fit:contain;">
 
       <span class="brand-area">Admin</span>
 
@@ -697,9 +697,9 @@
 
     </a>
 
-    <span class="avatar" aria-label="Signed in as admin">MM</span>
+    <span class="avatar" id="admin-avatar" aria-label="Signed in as admin" style="display:none;">MM</span>
 
-    <button id="btn-logout" class="chip" style="cursor:pointer; background:#fff; color:var(--bad-ink); font-weight:500; border-color:var(--line);" title="Sign out of Admin Session">
+    <button id="btn-logout" class="chip" style="display:none; cursor:pointer; background:#fff; color:var(--bad-ink); font-weight:500; border-color:var(--line);" title="Sign out of Admin Session">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
       Log out
     </button>
@@ -1066,7 +1066,47 @@
 
 <style>.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}</style>
 
+<!-- Admin Password & Auth Gate Modal -->
+<div id="auth-gate" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(15,23,42,0.75); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:20px;">
+  <div style="background:#ffffff; border:1px solid var(--line); border-radius:12px; max-width:420px; width:100%; padding:32px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.15), 0 10px 10px -5px rgba(0,0,0,0.08);">
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+      <img src="/static/assets/logo.png" alt="JurisMon Admin" style="height:36px; width:auto; display:block; object-fit:contain;">
+      <div>
+        <h2 style="font-size:17px; font-weight:600; color:var(--ink); margin:0;">JurisMon Admin Access</h2>
+        <p style="font-size:13px; color:var(--muted); margin:2px 0 0;">Protected administrative console</p>
+      </div>
+    </div>
 
+    <form id="login-form" onsubmit="return false;" style="display:flex; flex-direction:column; gap:14px;">
+      <div>
+        <label style="display:block; font-size:12.5px; font-weight:500; color:var(--ink); margin-bottom:6px;">Admin Email</label>
+        <input type="email" id="login-email" value="admin@jurismon.com" required style="width:100%; height:40px; padding:0 12px; border:1px solid var(--line-strong); border-radius:6px; font-size:14px; background:#f8fafc;">
+      </div>
+
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <label style="font-size:12.5px; font-weight:500; color:var(--ink); margin:0;">Password</label>
+          <a href="#" id="link-forgot-pw" style="font-size:12px; color:var(--muted); text-decoration:underline;">Forgot password?</a>
+        </div>
+        <input type="password" id="login-password" placeholder="Enter admin password" required autofocus style="width:100%; height:40px; padding:0 12px; border:1px solid var(--line-strong); border-radius:6px; font-size:14px;">
+      </div>
+
+      <div id="login-error" style="display:none; color:var(--bad-ink); background:var(--bad-bg); border:1px solid var(--bad-cell); padding:8px 12px; border-radius:6px; font-size:12.5px;"></div>
+
+      <button type="submit" id="btn-submit-login" style="height:42px; background:var(--ink); color:#ffffff; font-weight:600; font-size:14px; border:0; border-radius:6px; cursor:pointer; margin-top:4px;">
+        Sign In to Console
+      </button>
+    </form>
+
+    <div id="forgot-pw-box" style="display:none; margin-top:16px; padding:12px; background:#f1f5f9; border-radius:6px; font-size:12.5px; color:var(--text); line-height:1.45;">
+      <strong>Password Recovery:</strong><br>
+      The admin password is stored only as a bcrypt hash in the server environment variable <code>ADMIN_PASSWORD_HASH</code>. To reset it, generate a new hash with <code>python scripts/generate_admin_hash.py</code> and update <code>ADMIN_PASSWORD_HASH</code> in your <code>.env</code> file, then restart the service.
+      <div style="margin-top:8px; text-align:right;">
+        <button type="button" id="btn-close-forgot" style="background:none; border:none; color:var(--ink); font-weight:600; cursor:pointer; text-decoration:underline; font-size:12px;">Back to Login</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
 
@@ -1204,6 +1244,11 @@
 
   function renderSystem() {
 
+    if (!localStorage.getItem("jurismon_admin_token")) {
+      setSignedOutUI();
+      return;
+    }
+
     if (!sourceCounts && sources.length === 0) {
 
       $("#sys-text").textContent = "Loading portal status...";
@@ -1297,6 +1342,19 @@
 
   function renderKpis() {
 
+    if (!localStorage.getItem("jurismon_admin_token")) {
+      $("#k-subs").textContent = "—";
+      $("#k-subs-foot").textContent = "Sign in to view";
+      $("#k-mrr").textContent = "—";
+      const modeTag = $("#paypal-mode");
+      if (modeTag) {
+        modeTag.textContent = "—";
+        modeTag.style.background = "";
+        modeTag.style.color = "";
+      }
+      return;
+    }
+
     const active = subscribers.filter(s => s.status === "active").length;
 
     const pastDue = subscribers.filter(s => s.status === "past_due" || s.status === "suspended").length;
@@ -1384,7 +1442,14 @@
 
   function renderStrip() {
 
-    $("#strip").innerHTML = sources.map(s =>
+    const stripEl = $("#strip");
+    if (!stripEl) return;
+    if (!localStorage.getItem("jurismon_admin_token")) {
+      stripEl.innerHTML = "";
+      return;
+    }
+
+    stripEl.innerHTML = sources.map(s =>
 
       `<button class="cell ${bucketOf(s.health) === "healthy" ? "" : bucketOf(s.health)}" type="button" role="listitem"
 
@@ -1397,6 +1462,19 @@
 
 
   function renderSources() {
+
+    if (!localStorage.getItem("jurismon_admin_token")) {
+      document.querySelectorAll("#src-seg [data-n]").forEach(el => el.textContent = "—");
+      const srcBody = $("#src-body");
+      if (srcBody) srcBody.innerHTML = '<tr class="empty-row"><td colspan="6">Authentication required. Sign in to view sources.</td></tr>';
+      const srcRange = $("#src-range");
+      if (srcRange) srcRange.textContent = "Sign in to view";
+      const prev = $("#prev");
+      if (prev) prev.disabled = true;
+      const next = $("#next");
+      if (next) next.disabled = true;
+      return;
+    }
 
     const q = srcState.q.toLowerCase();
 
@@ -1588,6 +1666,14 @@
 
   function renderSubs() {
 
+    if (!localStorage.getItem("jurismon_admin_token")) {
+      const subBody = $("#sub-body");
+      if (subBody) subBody.innerHTML = '<tr class="empty-row"><td colspan="7">Authentication required. Sign in to view subscribers.</td></tr>';
+      const nSubs = $("#n-subs");
+      if (nSubs) nSubs.textContent = "—";
+      return;
+    }
+
     const q = subState.q.toLowerCase();
 
     const rows = subscribers.filter(s =>
@@ -1733,6 +1819,14 @@
 
   function renderPlans() {
 
+    if (!localStorage.getItem("jurismon_admin_token")) {
+      const plansEl = $("#plans");
+      if (plansEl) plansEl.innerHTML = '<div style="grid-column: 1/-1; padding: 24px; text-align: center; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);">Authentication required. Sign in to view plans.</div>';
+      const nPlans = $("#n-plans");
+      if (nPlans) nPlans.textContent = "—";
+      return;
+    }
+
     $("#plans").innerHTML = PLANS.map(p => {
 
       const subs = p.subscribers != null ? p.subscribers
@@ -1789,6 +1883,16 @@
 
 
   function renderHooks() {
+
+    if (!localStorage.getItem("jurismon_admin_token")) {
+      const hookBody = $("#hook-body");
+      if (hookBody) hookBody.innerHTML = '<tr class="empty-row"><td colspan="5">Authentication required. Sign in to view webhooks.</td></tr>';
+      const nFailed = $("#n-failed");
+      if (nFailed) nFailed.textContent = "—";
+      const nHooks = $("#n-hooks");
+      if (nHooks) nHooks.textContent = "—";
+      return;
+    }
 
     const failed = webhooks.filter(h => h.result === "failed").length;
 
@@ -1917,6 +2021,164 @@
 
 
   
+  /* ---------- Authentication Gate Elements & State Handlers ---------- */
+  const authGate = document.getElementById("auth-gate");
+  if (!authGate) console.error("Required element #auth-gate not found in DOM");
+  const loginForm = document.getElementById("login-form");
+  if (!loginForm) console.error("Required element #login-form not found in DOM");
+  const loginEmail = document.getElementById("login-email");
+  if (!loginEmail) console.error("Required element #login-email not found in DOM");
+  const loginPass = document.getElementById("login-password");
+  if (!loginPass) console.error("Required element #login-password not found in DOM");
+  const loginErr = document.getElementById("login-error");
+  if (!loginErr) console.error("Required element #login-error not found in DOM");
+  const forgotLink = document.getElementById("link-forgot-pw");
+  if (!forgotLink) console.error("Required element #link-forgot-pw not found in DOM");
+  const forgotBox = document.getElementById("forgot-pw-box");
+  if (!forgotBox) console.error("Required element #forgot-pw-box not found in DOM");
+  const closeForgot = document.getElementById("btn-close-forgot");
+  if (!closeForgot) console.error("Required element #btn-close-forgot not found in DOM");
+  const logoutBtn = document.getElementById("btn-logout");
+  if (!logoutBtn) console.error("Required element #btn-logout not found in DOM");
+  const adminAvatar = document.getElementById("admin-avatar") || document.querySelector(".avatar");
+  if (!adminAvatar) console.error("Required element #admin-avatar not found in DOM");
+
+  function setSignedOutUI() {
+    if (adminAvatar) adminAvatar.style.display = "none";
+    if (logoutBtn) logoutBtn.style.display = "none";
+
+    const sysText = $("#sys-text");
+    if (sysText) sysText.textContent = "Sign in to view status";
+    const sysDot = $("#sys-dot");
+    if (sysDot) sysDot.className = "dot";
+    const paypalMode = $("#paypal-mode");
+    if (paypalMode) {
+      paypalMode.textContent = "—";
+      paypalMode.style.background = "";
+      paypalMode.style.color = "";
+    }
+    const runMeta = $("#run-meta");
+    if (runMeta) runMeta.textContent = "Sign in to view run status.";
+    const kRuns = $("#k-runs");
+    if (kRuns) kRuns.innerHTML = "—<small>/—</small>";
+    const kRunsFoot = $("#k-runs-foot");
+    if (kRunsFoot) kRunsFoot.textContent = "Sign in to view";
+    const kBars = $("#k-bars");
+    if (kBars) kBars.innerHTML = "";
+    const kSubs = $("#k-subs");
+    if (kSubs) kSubs.textContent = "—";
+    const kSubsFoot = $("#k-subs-foot");
+    if (kSubsFoot) kSubsFoot.textContent = "Sign in to view";
+    const kMrr = $("#k-mrr");
+    if (kMrr) kMrr.textContent = "—";
+
+    const crawlStatus = $("#crawl-status-line");
+    if (crawlStatus) crawlStatus.textContent = "Sign in to view crawl status";
+    const btnRun = $("#btn-run-crawl");
+    if (btnRun) btnRun.disabled = true;
+
+    document.querySelectorAll("#src-seg [data-n]").forEach(el => el.textContent = "—");
+    const strip = $("#strip");
+    if (strip) strip.innerHTML = "";
+    const srcBody = $("#src-body");
+    if (srcBody) srcBody.innerHTML = '<tr class="empty-row"><td colspan="6">Authentication required. Sign in to view sources.</td></tr>';
+    const srcRange = $("#src-range");
+    if (srcRange) srcRange.textContent = "Sign in to view";
+    const prev = $("#prev");
+    if (prev) prev.disabled = true;
+    const next = $("#next");
+    if (next) next.disabled = true;
+
+    const subBody = $("#sub-body");
+    if (subBody) subBody.innerHTML = '<tr class="empty-row"><td colspan="7">Authentication required. Sign in to view subscribers.</td></tr>';
+    const nSubs = $("#n-subs");
+    if (nSubs) nSubs.textContent = "—";
+
+    const plansEl = $("#plans");
+    if (plansEl) plansEl.innerHTML = '<div style="grid-column: 1/-1; padding: 24px; text-align: center; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);">Authentication required. Sign in to view plans.</div>';
+    const nPlans = $("#n-plans");
+    if (nPlans) nPlans.textContent = "—";
+
+    const hookBody = $("#hook-body");
+    if (hookBody) hookBody.innerHTML = '<tr class="empty-row"><td colspan="5">Authentication required. Sign in to view webhooks.</td></tr>';
+    const nFailed = $("#n-failed");
+    if (nFailed) nFailed.textContent = "—";
+    const nHooks = $("#n-hooks");
+    if (nHooks) nHooks.textContent = "—";
+  }
+
+  function setSignedInUI() {
+    if (adminAvatar) adminAvatar.style.display = "grid";
+    if (logoutBtn) logoutBtn.style.display = "inline-flex";
+  }
+
+  function setLoadingUI() {
+    setSignedInUI();
+
+    const sysText = $("#sys-text");
+    if (sysText) sysText.textContent = "Loading portal status...";
+    const sysDot = $("#sys-dot");
+    if (sysDot) sysDot.className = "dot live warn";
+    const runMeta = $("#run-meta");
+    if (runMeta) runMeta.textContent = "Loading run status...";
+    const kRuns = $("#k-runs");
+    if (kRuns) kRuns.innerHTML = "—<small>/—</small>";
+    const kRunsFoot = $("#k-runs-foot");
+    if (kRunsFoot) kRunsFoot.textContent = "Checking sources...";
+    const kSubs = $("#k-subs");
+    if (kSubs) kSubs.textContent = "—";
+    const kSubsFoot = $("#k-subs-foot");
+    if (kSubsFoot) kSubsFoot.textContent = "Loading subscribers...";
+    const kMrr = $("#k-mrr");
+    if (kMrr) kMrr.textContent = "—";
+
+    const crawlStatus = $("#crawl-status-line");
+    if (crawlStatus) crawlStatus.textContent = "Checking crawl status...";
+    const btnRun = $("#btn-run-crawl");
+    if (btnRun) btnRun.disabled = true;
+
+    const srcBody = $("#src-body");
+    if (srcBody && !sources.length) srcBody.innerHTML = '<tr class="empty-row"><td colspan="6">Loading sources...</td></tr>';
+    const srcRange = $("#src-range");
+    if (srcRange && !sources.length) srcRange.textContent = "Loading...";
+
+    const subBody = $("#sub-body");
+    if (subBody && !subscribers.length) subBody.innerHTML = '<tr class="empty-row"><td colspan="7">Loading subscribers...</td></tr>';
+
+    const hookBody = $("#hook-body");
+    if (hookBody && !webhooks.length) hookBody.innerHTML = '<tr class="empty-row"><td colspan="5">Loading webhooks...</td></tr>';
+  }
+
+  function checkAuth() {
+    const token = localStorage.getItem("jurismon_admin_token");
+    if (!authGate) {
+      console.error("Required element #auth-gate not found in DOM");
+      return;
+    }
+    if (!token) {
+      authGate.style.display = "flex";
+      setSignedOutUI();
+    } else {
+      authGate.style.display = "none";
+      setSignedInUI();
+    }
+  }
+
+  function logout() {
+    localStorage.removeItem("jurismon_admin_token");
+    sources.length = 0;
+    subscribers.length = 0;
+    PLANS.length = 0;
+    webhooks.length = 0;
+    overview = null;
+    sourceCounts = null;
+    checkAuth();
+    if (loginPass) {
+      loginPass.value = "";
+    }
+    toast("Logged out of Admin Session");
+  }
+
   function handleExpiredSession() {
     localStorage.removeItem("jurismon_admin_token");
     sources.length = 0;
@@ -1925,15 +2187,14 @@
     webhooks.length = 0;
     overview = null;
     sourceCounts = null;
-    refreshSources();
-    renderKpis();
-    renderSubs();
-    renderPlans();
-    renderHooks();
-    if (authGate) authGate.style.display = "flex";
+    checkAuth();
     if (loginErr) {
       loginErr.textContent = "Your admin session has expired. Please sign in again.";
       loginErr.style.display = "block";
+    }
+    if (loginPass) {
+      loginPass.value = "";
+      loginPass.focus();
     }
   }
 
@@ -1944,6 +2205,7 @@
       checkAuth();
       return;
     }
+    setLoadingUI();
     const auth = { "Authorization": "Bearer " + token };
 
     try {
@@ -2063,10 +2325,19 @@
 
   /* ---------- Crawl Run Management ---------- */
   async function checkCrawlStatus() {
-    const auth = { "Authorization": "Bearer " + (localStorage.getItem("jurismon_admin_token") || "") };
+    const token = localStorage.getItem("jurismon_admin_token");
     const btn = $("#btn-run-crawl");
     const statusLine = $("#crawl-status-line");
-    if (!statusLine) return;
+    if (!statusLine) {
+      console.error("Required element #crawl-status-line not found in DOM");
+      return;
+    }
+    if (!token) {
+      statusLine.textContent = "Sign in to view crawl status";
+      if (btn) btn.disabled = true;
+      return;
+    }
+    const auth = { "Authorization": "Bearer " + token };
 
     try {
       const controller = new AbortController();
@@ -2137,55 +2408,12 @@
   const btnRun = $("#btn-run-crawl");
   if (btnRun) btnRun.addEventListener("click", triggerCrawlNow);
 
-  /* ---------- Authentication Gate Logic ---------- */
-  const authGate = document.getElementById("auth-gate");
-  const loginForm = document.getElementById("login-form");
-  const loginEmail = document.getElementById("login-email");
-  const loginPass = document.getElementById("login-password");
-  const loginErr = document.getElementById("login-error");
-  const forgotLink = document.getElementById("link-forgot-pw");
-  const forgotBox = document.getElementById("forgot-pw-box");
-  const closeForgot = document.getElementById("btn-close-forgot");
-  const logoutBtn = document.getElementById("btn-logout");
-
-  function checkAuth() {
-    const token = localStorage.getItem("jurismon_admin_token");
-    if (!token) {
-      if (authGate) authGate.style.display = "flex";
-    } else {
-      if (authGate) authGate.style.display = "none";
-    }
-  }
-
-  function logout() {
-    localStorage.removeItem("jurismon_admin_token");
-    sources.length = 0;
-    subscribers.length = 0;
-    PLANS.length = 0;
-    webhooks.length = 0;
-    overview = null;
-    sourceCounts = null;
-    refreshSources();
-    renderKpis();
-    renderSubs();
-    renderPlans();
-    renderHooks();
-    checkAuth();
-    toast("Logged out of Admin Session");
-  }
-
   /* ---------- Boot ---------- */
   (async function boot() {
     checkAuth();
     const token = localStorage.getItem("jurismon_admin_token");
     if (token) {
       await loadLiveAdminData();
-    } else {
-      renderSystem();
-      renderKpis();
-      renderSubs();
-      renderPlans();
-      renderHooks();
     }
 
     moveTabLine();
@@ -2217,7 +2445,7 @@
         if (res.ok) {
           const data = await res.json();
           localStorage.setItem("jurismon_admin_token", data.access_token);
-          if (authGate) authGate.style.display = "none";
+          checkAuth();
           loginPass.value = "";
           toast("Authenticated successfully.");
           await loadLiveAdminData();
@@ -2249,54 +2477,9 @@
     logoutBtn.addEventListener("click", logout);
   }
 
-  checkAuth();
-
   })();
 
 </script>
-
-
-<!-- Admin Password & Auth Gate Modal -->
-<div id="auth-gate" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(15,23,42,0.75); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:20px;">
-  <div style="background:#ffffff; border:1px solid var(--line); border-radius:12px; max-width:420px; width:100%; padding:32px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.15), 0 10px 10px -5px rgba(0,0,0,0.08);">
-    <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
-      <img src="/static/assets/logo.png" alt="JurisMon Admin" style="height:36px; border-radius:6px; border:1px solid var(--line);">
-      <div>
-        <h2 style="font-size:17px; font-weight:600; color:var(--ink); margin:0;">JurisMon Admin Access</h2>
-        <p style="font-size:13px; color:var(--muted); margin:2px 0 0;">Protected administrative console</p>
-      </div>
-    </div>
-
-    <form id="login-form" onsubmit="return false;" style="display:flex; flex-direction:column; gap:14px;">
-      <div>
-        <label style="display:block; font-size:12.5px; font-weight:500; color:var(--ink); margin-bottom:6px;">Admin Email</label>
-        <input type="email" id="login-email" value="admin@jurismon.com" required style="width:100%; height:40px; padding:0 12px; border:1px solid var(--line-strong); border-radius:6px; font-size:14px; background:#f8fafc;">
-      </div>
-
-      <div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-          <label style="font-size:12.5px; font-weight:500; color:var(--ink); margin:0;">Password</label>
-          <a href="#" id="link-forgot-pw" style="font-size:12px; color:var(--muted); text-decoration:underline;">Forgot password?</a>
-        </div>
-        <input type="password" id="login-password" placeholder="Enter admin password" required autofocus style="width:100%; height:40px; padding:0 12px; border:1px solid var(--line-strong); border-radius:6px; font-size:14px;">
-      </div>
-
-      <div id="login-error" style="display:none; color:var(--bad-ink); background:var(--bad-bg); border:1px solid var(--bad-cell); padding:8px 12px; border-radius:6px; font-size:12.5px;"></div>
-
-      <button type="submit" id="btn-submit-login" style="height:42px; background:var(--ink); color:#ffffff; font-weight:600; font-size:14px; border:0; border-radius:6px; cursor:pointer; margin-top:4px;">
-        Sign In to Console
-      </button>
-    </form>
-
-    <div id="forgot-pw-box" style="display:none; margin-top:16px; padding:12px; background:#f1f5f9; border-radius:6px; font-size:12.5px; color:var(--text); line-height:1.45;">
-      <strong>Password Recovery:</strong><br>
-      The admin password is stored only as a bcrypt hash in the server environment variable <code>ADMIN_PASSWORD_HASH</code>. To reset it, generate a new hash with <code>python scripts/generate_admin_hash.py</code> and update <code>ADMIN_PASSWORD_HASH</code> in your <code>.env</code> file, then restart the service.
-      <div style="margin-top:8px; text-align:right;">
-        <button type="button" id="btn-close-forgot" style="background:none; border:none; color:var(--ink); font-weight:600; cursor:pointer; text-decoration:underline; font-size:12px;">Back to Login</button>
-      </div>
-    </div>
-  </div>
-</div>
 
 </body>
 

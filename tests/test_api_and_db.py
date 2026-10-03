@@ -1222,6 +1222,17 @@ class TestTermsAndPrivacyPages(unittest.TestCase):
         # Header status starts with loading indicator
         self.assertIn('id="sys-text">Loading portal status...<', html)
 
+    def test_admin_html_auth_gate_precedes_script(self):
+        """admin.html defines id='auth-gate' before the opening <script> tag."""
+        res = self.client.get("/admin")
+        self.assertEqual(res.status_code, 200)
+        html = res.text
+        gate_pos = html.find('id="auth-gate"')
+        script_pos = html.find("<script")
+        self.assertNotEqual(gate_pos, -1, "id='auth-gate' must exist in admin.html")
+        self.assertNotEqual(script_pos, -1, "<script> tag must exist in admin.html")
+        self.assertLess(gate_pos, script_pos, "id='auth-gate' must appear earlier in the document than <script>")
+
 
 if __name__ == "__main__":
     unittest.main()
