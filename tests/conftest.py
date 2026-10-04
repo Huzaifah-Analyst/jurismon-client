@@ -33,6 +33,11 @@ def _isolate_from_real_databases():
     client_module.DATABASE_URL = None
     client_module.DatabaseClient._supabase_instance = None
 
+    import sys
+    if "api.main" in sys.modules:
+        import api.main as api_main
+        api_main.repo.supabase = None
+
     yield
 
     for name, value in saved.items():
