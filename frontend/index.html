@@ -972,6 +972,7 @@
       <div id="auth-authed" style="display:none; align-items:center; gap:8px;">
         <span id="nav-user-badge" style="font-size:12px; padding:2px 8px; border-radius:12px; font-weight:500; background:var(--add-bg); color:var(--add-ink); border:1px solid var(--add-bar);">Trial</span>
         <span id="nav-user-email" style="font-size:13.5px; color:var(--ink); font-weight:500; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
+        <a href="/account" id="btn-nav-account" class="btn-outline" style="cursor:pointer; height:32px; line-height:30px; font-size:12.5px; text-decoration:none; padding:0 10px; color:var(--ink); display:inline-flex; align-items:center;">Account</a>
         <button type="button" class="btn-outline" id="btn-nav-logout" style="cursor:pointer; height:32px; font-size:12.5px;">Sign Out</button>
       </div>
     </nav>
@@ -2078,12 +2079,26 @@
         badgeEl.style.background = "#dcfce7";
         badgeEl.style.color = "#166534";
         badgeEl.style.borderColor = "#86efac";
+        badgeEl.onclick = () => { window.location.href = "/account"; };
+      } else if (acc.reason === "paused_access_until") {
+        badgeEl.textContent = "Pro (Paused)";
+        badgeEl.style.background = "#fef3c7";
+        badgeEl.style.color = "#92400e";
+        badgeEl.style.borderColor = "#fcd34d";
+        badgeEl.onclick = () => { window.location.href = "/account"; };
+      } else if (acc.reason === "cancelled_access_until") {
+        badgeEl.textContent = "Pro (Cancelled)";
+        badgeEl.style.background = "#fee2e2";
+        badgeEl.style.color = "#991b1b";
+        badgeEl.style.borderColor = "#fca5a5";
+        badgeEl.onclick = () => { window.location.href = "/account"; };
       } else if (acc.reason === "trial") {
         const days = acc.trial_days_remaining ?? 14;
         badgeEl.textContent = `${days}d Trial`;
         badgeEl.style.background = "#eff6ff";
         badgeEl.style.color = "#1e40af";
         badgeEl.style.borderColor = "#bfdbfe";
+        badgeEl.onclick = null;
       } else {
         badgeEl.textContent = "Trial Expired";
         badgeEl.style.background = "#fee2e2";

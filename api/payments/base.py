@@ -63,3 +63,13 @@ class PaymentProvider(abc.ABC):
     def cancel_subscription(self, subscription_id: str, reason: str = "Client requested") -> bool:
         """Cancels an active subscription."""
         pass
+
+    @abc.abstractmethod
+    def suspend_subscription(self, subscription_id: str, reason: str = "Customer requested pause") -> bool:
+        """Suspends (pauses) an active subscription."""
+        pass
+
+    @abc.abstractmethod
+    def activate_subscription(self, subscription_id: str, reason: str = "Customer requested resume") -> bool:
+        """Activates (resumes) a suspended subscription."""
+        pass

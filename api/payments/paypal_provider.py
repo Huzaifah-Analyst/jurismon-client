@@ -230,7 +230,40 @@ class PayPalProvider(PaymentProvider):
                 json={"reason": reason},
                 timeout=10,
             )
-            return res.status_code == 204
+            return res.status_code in (200, 204)
         except Exception as e:
             logger.error(f"Error cancelling PayPal subscription {subscription_id}: {e}")
             return False
+
+    def suspend_subscription(self, subscription_id: str, reason: str = "Customer requested pause") -> bool:
+        """Suspends (pauses) subscription on PayPal."""
+        try:
+            token = self._get_access_token()
+            url = f"{self.base_url}/v1/billing/subscriptions/{subscription_id}/suspend"
+            res = requests.post(
+                url,
+                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+                json={"reason": reason},
+                timeout=10,
+            )
+            return res.status_code in (200, 204)
+        except Exception as e:
+            logger.error(f"Error suspending PayPal subscription {subscription_id}: {e}")
+            return False
+
+    def activate_subscription(self, subscription_id: str, reason: str = "Customer requested resume") -> bool:
+        """Activates (resumes) a suspended subscription on PayPal."""
+        try:
+            token = self._get_access_token()
+            url = f"{self.base_url}/v1/billing/subscriptions/{subscription_id}/activate"
+            res = requests.post(
+                url,
+                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+                json={"reason": reason},
+                timeout=10,
+            )
+            return res.status_code in (200, 204)
+        except Exception as e:
+            logger.error(f"Error activating PayPal subscription {subscription_id}: {e}")
+            return False
+

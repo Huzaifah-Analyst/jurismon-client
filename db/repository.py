@@ -114,6 +114,11 @@ class Repository:
                     plan_id TEXT,
                     status TEXT DEFAULT 'active',
                     next_billing_at TEXT,
+                    paused_at TEXT,
+                    resumed_at TEXT,
+                    cancelled_at TEXT,
+                    access_until TEXT,
+                    cancel_reason TEXT,
                     created_at TEXT,
                     updated_at TEXT
                 )
@@ -156,6 +161,15 @@ class Repository:
                 cur.execute("ALTER TABLE subscriptions ADD COLUMN user_id TEXT")
             except Exception:
                 pass
+            cur.execute("PRAGMA table_info(subscriptions)")
+            existing_sub_cols = {row[1] for row in cur.fetchall()}
+            for col in ("paused_at", "resumed_at", "cancelled_at", "access_until", "cancel_reason"):
+                if col not in existing_sub_cols:
+                    try:
+                        cur.execute(f"ALTER TABLE subscriptions ADD COLUMN {col} TEXT")
+                    except Exception:
+                        pass
+
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                     id TEXT PRIMARY KEY,
@@ -592,6 +606,35 @@ class Repository:
                   plan_id, status, next_billing_at, now_iso, now_iso))
             conn.commit()
 
+        if self.supabase:
+            try:
+                sub_data: Dict[str, Any] = {
+                    "external_subscription_id": external_sub_id,
+                    "plan_id": plan_id or "",
+                    "status": status,
+                    "updated_at": now_iso,
+                }
+                if user_id:
+                    sub_data["user_id"] = user_id
+                elif user_email:
+                    u = self.get_user_by_email(user_email)
+                    if u:
+                        sub_data["user_id"] = u.get("id")
+                if subscriber_name:
+                    sub_data["subscriber_name"] = subscriber_name
+                if next_billing_at:
+                    sub_data["next_billing_at"] = next_billing_at
+
+                existing = self.supabase.table("subscriptions").select("id").eq("external_subscription_id", external_sub_id).limit(1).execute()
+                if existing.data:
+                    self.supabase.table("subscriptions").update(sub_data).eq("external_subscription_id", external_sub_id).execute()
+                elif sub_data.get("user_id"):
+                    sub_data["id"] = sub_id
+                    sub_data["created_at"] = now_iso
+                    self.supabase.table("subscriptions").insert(sub_data).execute()
+            except Exception as e:
+                logger.error(f"Supabase record_subscription error: {e}")
+
         return {"id": sub_id, "external_subscription_id": external_sub_id, "status": status}
 
     def list_subscriptions(self) -> List[Dict[str, Any]]:
@@ -602,6 +645,179 @@ class Repository:
             cur.execute("SELECT * FROM subscriptions ORDER BY created_at DESC")
             rows = cur.fetchall()
             return [dict(r) for r in rows]
+
+    def get_subscription_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+        """Retrieves active or most relevant subscription for a given customer email."""
+        norm_email = (email or "").strip().lower()
+        if not norm_email:
+            return None
+
+        if self.supabase:
+            try:
+                u_res = self.supabase.table("users").select("id").eq("email", norm_email).limit(1).execute()
+                user_id = u_res.data[0]["id"] if u_res.data else None
+
+                subs = []
+                if user_id:
+                    s_res = self.supabase.table("subscriptions").select("*").eq("user_id", user_id).order("updated_at", desc=True).limit(5).execute()
+                    if s_res.data:
+                        subs = s_res.data
+
+                if not subs:
+                    try:
+                        s_res_email = self.supabase.table("subscriptions").select("*").eq("user_email", norm_email).order("updated_at", desc=True).limit(5).execute()
+                        if s_res_email.data:
+                            subs = s_res_email.data
+                    except Exception:
+                        pass
+
+                if subs:
+                    status_prio = {"active": 1, "completed": 1, "paused": 2, "suspended": 2, "cancelled": 3}
+                    subs.sort(key=lambda s: (status_prio.get(str(s.get("status", "")).lower(), 4), s.get("updated_at") or ""), reverse=False)
+                    return subs[0]
+                return None
+            except Exception as e:
+                logger.error(f"Supabase get_subscription_by_email error: {e}")
+
+        with self._connect() as conn:
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            cur.execute("SELECT id FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1", (norm_email,))
+            u_row = cur.fetchone()
+            user_id = u_row["id"] if u_row else None
+
+            cur.execute("""
+                SELECT * FROM subscriptions
+                WHERE (LOWER(user_email) = LOWER(?) OR (user_id IS NOT NULL AND user_id = ?))
+                ORDER BY 
+                    CASE 
+                        WHEN LOWER(status) IN ('active', 'completed') THEN 1
+                        WHEN LOWER(status) IN ('paused', 'suspended') THEN 2
+                        WHEN LOWER(status) = 'cancelled' THEN 3
+                        ELSE 4
+                    END ASC,
+                    updated_at DESC,
+                    created_at DESC
+                LIMIT 1
+            """, (norm_email, user_id or ""))
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+    def get_subscription_by_external_id(self, external_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieves subscription by external provider ID (e.g. PayPal subscription ID)."""
+        if not external_id:
+            return None
+
+        if self.supabase:
+            try:
+                res = self.supabase.table("subscriptions").select("*").eq("external_subscription_id", external_id).limit(1).execute()
+                if res.data:
+                    return res.data[0]
+                return None
+            except Exception as e:
+                logger.error(f"Supabase get_subscription_by_external_id error: {e}")
+
+        with self._connect() as conn:
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM subscriptions WHERE external_subscription_id = ? LIMIT 1", (external_id,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+    def set_subscription_paused(self, external_id: str, paused_at: str, access_until: str) -> bool:
+        """Sets subscription status to paused with timestamp and paid-period access deadline."""
+        if not external_id:
+            return False
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        if self.supabase:
+            try:
+                res = self.supabase.table("subscriptions").update({
+                    "status": "paused",
+                    "paused_at": paused_at,
+                    "access_until": access_until,
+                    "updated_at": now_iso,
+                }).eq("external_subscription_id", external_id).execute()
+                return bool(res.data)
+            except Exception as e:
+                logger.error(f"Supabase set_subscription_paused error: {e}")
+
+        with self._connect() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                UPDATE subscriptions SET
+                    status = 'paused',
+                    paused_at = ?,
+                    access_until = ?,
+                    updated_at = ?
+                WHERE external_subscription_id = ?
+            """, (paused_at, access_until, now_iso, external_id))
+            conn.commit()
+            return cur.rowcount > 0
+
+    def set_subscription_resumed(self, external_id: str, resumed_at: str) -> bool:
+        """Reactivates subscription and records resumption timestamp."""
+        if not external_id:
+            return False
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        if self.supabase:
+            try:
+                res = self.supabase.table("subscriptions").update({
+                    "status": "active",
+                    "resumed_at": resumed_at,
+                    "updated_at": now_iso,
+                }).eq("external_subscription_id", external_id).execute()
+                return bool(res.data)
+            except Exception as e:
+                logger.error(f"Supabase set_subscription_resumed error: {e}")
+
+        with self._connect() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                UPDATE subscriptions SET
+                    status = 'active',
+                    resumed_at = ?,
+                    updated_at = ?
+                WHERE external_subscription_id = ?
+            """, (resumed_at, now_iso, external_id))
+            conn.commit()
+            return cur.rowcount > 0
+
+    def set_subscription_cancelled(
+        self, external_id: str, cancelled_at: str, access_until: str, reason: str = ""
+    ) -> bool:
+        """Cancels subscription, retaining access until access_until date with reason logged."""
+        if not external_id:
+            return False
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        if self.supabase:
+            try:
+                res = self.supabase.table("subscriptions").update({
+                    "status": "cancelled",
+                    "cancelled_at": cancelled_at,
+                    "access_until": access_until,
+                    "cancel_reason": reason,
+                    "updated_at": now_iso,
+                }).eq("external_subscription_id", external_id).execute()
+                return bool(res.data)
+            except Exception as e:
+                logger.error(f"Supabase set_subscription_cancelled error: {e}")
+
+        with self._connect() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                UPDATE subscriptions SET
+                    status = 'cancelled',
+                    cancelled_at = ?,
+                    access_until = ?,
+                    cancel_reason = ?,
+                    updated_at = ?
+                WHERE external_subscription_id = ?
+            """, (cancelled_at, access_until, reason, now_iso, external_id))
+            conn.commit()
+            return cur.rowcount > 0
 
     def record_webhook_event(
         self,
@@ -1123,6 +1339,93 @@ class Repository:
             return {"has_access": False, "reason": "unverified", "user_email": user.get("email"), "user_id": user.get("id")}
 
         now = datetime.now(timezone.utc)
+
+        # 1. Check subscriptions in DB first
+        norm_email = user.get("email", "").strip().lower()
+        sub = self.get_subscription_by_email(norm_email)
+
+        if sub:
+            sub_status = str(sub.get("status") or "").lower()
+            if sub_status in ("active", "completed"):
+                next_bill_str = sub.get("next_billing_at")
+                sub_active = True
+                if next_bill_str:
+                    try:
+                        next_bill = datetime.fromisoformat(next_bill_str.replace("Z", "+00:00"))
+                        # If current time is after next billing, consider grace period
+                        if now > next_bill and (now - next_bill).total_seconds() > 172800:
+                            sub_active = False
+                    except Exception as e:
+                        logger.warning(f"Error parsing next_billing_at for {norm_email}: {e}")
+
+                if sub_active:
+                    return {
+                        "has_access": True,
+                        "reason": "active_subscription",
+                        "plan_id": sub.get("plan_id"),
+                        "external_subscription_id": sub.get("external_subscription_id"),
+                        "next_billing_at": next_bill_str,
+                        "user_email": user.get("email"),
+                        "user_id": user.get("id"),
+                    }
+
+            elif sub_status in ("paused", "suspended"):
+                access_until = sub.get("access_until") or sub.get("next_billing_at")
+                if access_until:
+                    try:
+                        acc_dt = datetime.fromisoformat(access_until.replace("Z", "+00:00"))
+                        if now < acc_dt:
+                            return {
+                                "has_access": True,
+                                "reason": "paused_access_until",
+                                "plan_id": sub.get("plan_id"),
+                                "external_subscription_id": sub.get("external_subscription_id"),
+                                "access_until": access_until,
+                                "next_billing_at": sub.get("next_billing_at"),
+                                "user_email": user.get("email"),
+                                "user_id": user.get("id"),
+                            }
+                    except Exception as e:
+                        logger.warning(f"Error parsing access_until for paused sub {norm_email}: {e}")
+                return {
+                    "has_access": False,
+                    "reason": "paused_expired",
+                    "plan_id": sub.get("plan_id"),
+                    "external_subscription_id": sub.get("external_subscription_id"),
+                    "access_until": access_until,
+                    "user_email": user.get("email"),
+                    "user_id": user.get("id"),
+                }
+
+            elif sub_status == "cancelled":
+                access_until = sub.get("access_until") or sub.get("next_billing_at")
+                if access_until:
+                    try:
+                        acc_dt = datetime.fromisoformat(access_until.replace("Z", "+00:00"))
+                        if now < acc_dt:
+                            return {
+                                "has_access": True,
+                                "reason": "cancelled_access_until",
+                                "plan_id": sub.get("plan_id"),
+                                "external_subscription_id": sub.get("external_subscription_id"),
+                                "access_until": access_until,
+                                "next_billing_at": sub.get("next_billing_at"),
+                                "user_email": user.get("email"),
+                                "user_id": user.get("id"),
+                            }
+                    except Exception as e:
+                        logger.warning(f"Error parsing access_until for cancelled sub {norm_email}: {e}")
+                return {
+                    "has_access": False,
+                    "reason": "cancelled_expired",
+                    "plan_id": sub.get("plan_id"),
+                    "external_subscription_id": sub.get("external_subscription_id"),
+                    "access_until": access_until,
+                    "user_email": user.get("email"),
+                    "user_id": user.get("id"),
+                }
+
+        # 2. Check active trial in DB if no subscription exists
         trial_ends_str = user.get("trial_ends_at")
         trial_active = False
         days_remaining = 0
@@ -1147,46 +1450,6 @@ class Repository:
                 "user_email": user.get("email"),
                 "user_id": user.get("id"),
             }
-
-        # Check active subscriptions in DB
-        norm_email = user.get("email", "").strip().lower()
-        sub = None
-
-        with self._connect() as conn:
-            conn.row_factory = sqlite3.Row
-            cur = conn.cursor()
-            cur.execute("""
-                SELECT * FROM subscriptions
-                WHERE (LOWER(user_email) = LOWER(?) OR (user_id IS NOT NULL AND user_id = ?))
-                  AND status IN ('active', 'completed')
-                ORDER BY updated_at DESC LIMIT 1
-            """, (norm_email, str(user.get("id"))))
-            row = cur.fetchone()
-            if row:
-                sub = dict(row)
-
-        if sub:
-            next_bill_str = sub.get("next_billing_at")
-            sub_active = True
-            if next_bill_str:
-                try:
-                    next_bill = datetime.fromisoformat(next_bill_str.replace("Z", "+00:00"))
-                    # If current time is after next billing, consider grace period
-                    if now > next_bill and (now - next_bill).total_seconds() > 172800:
-                        sub_active = False
-                except Exception as e:
-                    logger.warning(f"Error parsing next_billing_at for {norm_email}: {e}")
-
-            if sub_active:
-                return {
-                    "has_access": True,
-                    "reason": "active_subscription",
-                    "plan_id": sub.get("plan_id"),
-                    "external_subscription_id": sub.get("external_subscription_id"),
-                    "next_billing_at": next_bill_str,
-                    "user_email": user.get("email"),
-                    "user_id": user.get("id"),
-                }
 
         return {
             "has_access": False,

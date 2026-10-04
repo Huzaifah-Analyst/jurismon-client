@@ -15,6 +15,8 @@ import time
 import shutil
 import subprocess
 import logging
+import asyncio
+from collections import defaultdict
 from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, Request, HTTPException, Query, Depends, status, BackgroundTasks
 from fastapi.responses import HTMLResponse, FileResponse, PlainTextResponse, Response
@@ -42,6 +44,7 @@ from notifications.mailer import Mailer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("jurismon.api")
+_subscription_locks: Dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
 
 app = FastAPI(
     title="JurisMon Regulatory Drift API",
@@ -168,6 +171,14 @@ async def serve_privacy_page():
     if os.path.exists(privacy_path):
         return FileResponse(privacy_path)
     return "<h1>JurisMon Privacy Policy</h1>"
+
+
+@app.get("/account", response_class=HTMLResponse)
+async def serve_account_page():
+    account_path = os.path.join(frontend_dir, "account.html")
+    if os.path.exists(account_path):
+        return FileResponse(account_path)
+    return "<h1>JurisMon Customer Account</h1>"
 
 
 @app.get("/favicon.ico", include_in_schema=False)
@@ -544,22 +555,85 @@ async def paypal_webhook(request: Request):
             logger.info("Resolved subscription %s to user_id %s via payer email fallback", sub_id, resolved_user_id)
 
     if sub_id:
-        next_billing = event_data.get("next_billing_at")
-        if not next_billing and status_str in ("active", "completed"):
-            plan_str = str(event_data.get("plan_id") or payload.get("resource", {}).get("plan_id") or "").lower()
-            days = 365 if ("annual" in plan_str or "4ks" in plan_str) else 30
-            next_billing = (datetime.now(timezone.utc) + timedelta(days=days)).isoformat()
+        existing_sub = repo.get_subscription_by_external_id(sub_id)
+        now_iso = datetime.now(timezone.utc).isoformat()
 
-        repo.record_subscription(
-            external_sub_id=sub_id,
-            plan_id=event_data.get("plan_id") or payload.get("resource", {}).get("plan_id"),
-            status=status_str,
-            user_email=resolved_email,
-            subscriber_name=event_data.get("subscriber_name"),
-            next_billing_at=next_billing,
-            user_id=resolved_user_id,
-        )
-        logger.info(f"Updated subscription {sub_id} to status '{status_str}' for user {resolved_user_id or resolved_email} via webhook ({event_type})")
+        if event_type == "BILLING.SUBSCRIPTION.SUSPENDED":
+            access_until = None
+            if existing_sub:
+                access_until = existing_sub.get("access_until") or existing_sub.get("next_billing_at")
+            if not access_until:
+                access_until = event_data.get("next_billing_at") or (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+
+            if existing_sub:
+                repo.set_subscription_paused(sub_id, paused_at=now_iso, access_until=access_until)
+            else:
+                repo.record_subscription(
+                    external_sub_id=sub_id,
+                    plan_id=event_data.get("plan_id") or payload.get("resource", {}).get("plan_id"),
+                    status="paused",
+                    user_email=resolved_email,
+                    subscriber_name=event_data.get("subscriber_name"),
+                    next_billing_at=event_data.get("next_billing_at"),
+                    user_id=resolved_user_id,
+                )
+                repo.set_subscription_paused(sub_id, paused_at=now_iso, access_until=access_until)
+            logger.info("Updated subscription %s to paused via BILLING.SUBSCRIPTION.SUSPENDED webhook", sub_id)
+
+        elif event_type == "BILLING.SUBSCRIPTION.CANCELLED":
+            access_until = None
+            if existing_sub:
+                access_until = existing_sub.get("access_until") or existing_sub.get("next_billing_at")
+            if not access_until:
+                access_until = now_iso
+
+            if existing_sub:
+                repo.set_subscription_cancelled(sub_id, cancelled_at=now_iso, access_until=access_until, reason="Cancelled via PayPal webhook")
+            else:
+                repo.record_subscription(
+                    external_sub_id=sub_id,
+                    plan_id=event_data.get("plan_id") or payload.get("resource", {}).get("plan_id"),
+                    status="cancelled",
+                    user_email=resolved_email,
+                    subscriber_name=event_data.get("subscriber_name"),
+                    next_billing_at=None,
+                    user_id=resolved_user_id,
+                )
+                repo.set_subscription_cancelled(sub_id, cancelled_at=now_iso, access_until=access_until, reason="Cancelled via PayPal webhook")
+            logger.info("Updated subscription %s to cancelled via BILLING.SUBSCRIPTION.CANCELLED webhook", sub_id)
+
+        elif event_type == "BILLING.SUBSCRIPTION.ACTIVATED" and existing_sub and str(existing_sub.get("status", "")).lower() in ("paused", "suspended"):
+            # Resumed subscription: do NOT treat as new signup, do NOT re-grant or reset trial!
+            repo.set_subscription_resumed(sub_id, resumed_at=now_iso)
+            if event_data.get("next_billing_at"):
+                repo.record_subscription(
+                    external_sub_id=sub_id,
+                    plan_id=existing_sub.get("plan_id") or event_data.get("plan_id"),
+                    status="active",
+                    user_email=resolved_email or existing_sub.get("user_email"),
+                    subscriber_name=event_data.get("subscriber_name") or existing_sub.get("subscriber_name"),
+                    next_billing_at=event_data.get("next_billing_at"),
+                    user_id=resolved_user_id or existing_sub.get("user_id"),
+                )
+            logger.info("Resumed subscription %s via BILLING.SUBSCRIPTION.ACTIVATED webhook (was %s)", sub_id, existing_sub.get("status"))
+
+        else:
+            next_billing = event_data.get("next_billing_at")
+            if not next_billing and status_str in ("active", "completed"):
+                plan_str = str(event_data.get("plan_id") or payload.get("resource", {}).get("plan_id") or "").lower()
+                days = 365 if ("annual" in plan_str or "4ks" in plan_str) else 30
+                next_billing = (datetime.now(timezone.utc) + timedelta(days=days)).isoformat()
+
+            repo.record_subscription(
+                external_sub_id=sub_id,
+                plan_id=event_data.get("plan_id") or payload.get("resource", {}).get("plan_id"),
+                status=status_str,
+                user_email=resolved_email,
+                subscriber_name=event_data.get("subscriber_name"),
+                next_billing_at=next_billing,
+                user_id=resolved_user_id,
+            )
+            logger.info(f"Updated subscription {sub_id} to status '{status_str}' for user {resolved_user_id or resolved_email} via webhook ({event_type})")
 
     resource = payload.get("resource", {}) or {}
     amount_block = resource.get("amount") or {}
@@ -970,6 +1044,267 @@ async def get_current_customer_profile(
 
 
 # ==========================================
+# CUSTOMER SUBSCRIPTION LIFECYCLE ROUTES
+# ==========================================
+
+class CustomerCancelRequest(BaseModel):
+    reason: Optional[str] = "Customer requested cancellation"
+
+
+@app.get("/api/account/subscription")
+async def get_account_subscription(auth_user: dict = Depends(require_customer)):
+    """Returns current subscription details and access status for authenticated customer."""
+    user_email = (auth_user.get("sub") or "").strip().lower()
+    user_id = auth_user.get("user_id")
+
+    sub = repo.get_subscription_by_email(user_email)
+    access_status = repo.get_user_access_status(user_id or user_email)
+
+    if not sub:
+        return {
+            "has_subscription": False,
+            "status": "none",
+            "plan": None,
+            "plan_id": None,
+            "next_billing_at": None,
+            "access_until": None,
+            "paused_at": None,
+            "resumed_at": None,
+            "cancelled_at": None,
+            "cancel_reason": None,
+            "external_subscription_id": None,
+            "access": access_status,
+        }
+
+    return {
+        "has_subscription": True,
+        "status": sub.get("status"),
+        "plan": sub.get("plan_id"),
+        "plan_id": sub.get("plan_id"),
+        "next_billing_at": sub.get("next_billing_at"),
+        "access_until": sub.get("access_until"),
+        "paused_at": sub.get("paused_at"),
+        "resumed_at": sub.get("resumed_at"),
+        "cancelled_at": sub.get("cancelled_at"),
+        "cancel_reason": sub.get("cancel_reason"),
+        "external_subscription_id": sub.get("external_subscription_id"),
+        "access": access_status,
+    }
+
+
+@app.post("/api/account/subscription/pause")
+async def pause_customer_subscription(auth_user: dict = Depends(require_customer)):
+    """Pauses (suspends) subscription billing with access retained through the paid period."""
+    user_email = (auth_user.get("sub") or "").strip().lower()
+    sub = repo.get_subscription_by_email(user_email)
+    if not sub or not sub.get("external_subscription_id"):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No active subscription found to pause.",
+        )
+
+    ext_id = sub["external_subscription_id"]
+    sub_lock = _subscription_locks[ext_id]
+    async with sub_lock:
+        fresh_sub = repo.get_subscription_by_external_id(ext_id) or sub
+        current_status = str(fresh_sub.get("status") or "").lower()
+
+        if current_status in ("paused", "suspended"):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Subscription is already paused.",
+            )
+        if current_status == "cancelled":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Cannot pause a cancelled subscription.",
+            )
+        if current_status not in ("active", "completed"):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Cannot pause subscription with status '{current_status}'.",
+            )
+
+        now = datetime.now(timezone.utc)
+        now_iso = now.isoformat()
+        access_until = fresh_sub.get("next_billing_at")
+        if not access_until:
+            access_until = (now + timedelta(days=30)).isoformat()
+
+        # Call PayPal FIRST
+        success = paypal_provider.suspend_subscription(
+            ext_id, reason="Customer requested pause via self-service portal"
+        )
+        if not success:
+            logger.error("PayPal failed to suspend subscription %s for %s", ext_id, user_email)
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="PayPal did not accept the pause request. Please try again or contact support.",
+            )
+
+        # Mutate local database state only upon PayPal success
+        repo.set_subscription_paused(ext_id, paused_at=now_iso, access_until=access_until)
+        repo.record_webhook_event(
+            event_type="CUSTOMER.SUBSCRIPTION.PAUSED",
+            payload={
+                "subscription_id": ext_id,
+                "action": "pause",
+                "user_email": user_email,
+                "access_until": access_until,
+            },
+            result="processed",
+            subscription_id=ext_id,
+        )
+        logger.info("Customer %s paused subscription %s (access until %s)", user_email, ext_id, access_until)
+
+        return {
+            "status": "paused",
+            "subscription_id": ext_id,
+            "paused_at": now_iso,
+            "access_until": access_until,
+            "message": f"Billing paused. Your access continues until {access_until[:10]}.",
+        }
+
+
+@app.post("/api/account/subscription/resume")
+async def resume_customer_subscription(auth_user: dict = Depends(require_customer)):
+    """Resumes a paused customer subscription."""
+    user_email = (auth_user.get("sub") or "").strip().lower()
+    sub = repo.get_subscription_by_email(user_email)
+    if not sub or not sub.get("external_subscription_id"):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No paused subscription found to resume.",
+        )
+
+    ext_id = sub["external_subscription_id"]
+    sub_lock = _subscription_locks[ext_id]
+    async with sub_lock:
+        fresh_sub = repo.get_subscription_by_external_id(ext_id) or sub
+        current_status = str(fresh_sub.get("status") or "").lower()
+
+        if current_status in ("active", "completed"):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Subscription is already active.",
+            )
+        if current_status == "cancelled":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Cannot resume a cancelled subscription. Please subscribe to a new plan.",
+            )
+        if current_status not in ("paused", "suspended"):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Cannot resume subscription with status '{current_status}'.",
+            )
+
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        # Call PayPal FIRST
+        success = paypal_provider.activate_subscription(
+            ext_id, reason="Customer requested resume via self-service portal"
+        )
+        if not success:
+            logger.error("PayPal failed to activate subscription %s for %s", ext_id, user_email)
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="PayPal did not accept the resume request. Please try again or contact support.",
+            )
+
+        # Mutate local database state only upon PayPal success
+        repo.set_subscription_resumed(ext_id, resumed_at=now_iso)
+        repo.record_webhook_event(
+            event_type="CUSTOMER.SUBSCRIPTION.RESUMED",
+            payload={
+                "subscription_id": ext_id,
+                "action": "resume",
+                "user_email": user_email,
+            },
+            result="processed",
+            subscription_id=ext_id,
+        )
+        logger.info("Customer %s resumed subscription %s", user_email, ext_id)
+
+        return {
+            "status": "active",
+            "subscription_id": ext_id,
+            "resumed_at": now_iso,
+            "message": "Subscription reactivated successfully.",
+        }
+
+
+@app.post("/api/account/subscription/cancel")
+async def cancel_customer_subscription(
+    req: CustomerCancelRequest = CustomerCancelRequest(),
+    auth_user: dict = Depends(require_customer),
+):
+    """Cancels customer subscription with access retained through the paid period."""
+    user_email = (auth_user.get("sub") or "").strip().lower()
+    sub = repo.get_subscription_by_email(user_email)
+    if not sub or not sub.get("external_subscription_id"):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No subscription found to cancel.",
+        )
+
+    ext_id = sub["external_subscription_id"]
+    sub_lock = _subscription_locks[ext_id]
+    async with sub_lock:
+        fresh_sub = repo.get_subscription_by_external_id(ext_id) or sub
+        current_status = str(fresh_sub.get("status") or "").lower()
+
+        if current_status == "cancelled":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Subscription is already cancelled.",
+            )
+
+        now = datetime.now(timezone.utc)
+        now_iso = now.isoformat()
+        access_until = fresh_sub.get("access_until") or fresh_sub.get("next_billing_at")
+        if not access_until:
+            access_until = now_iso
+
+        cancel_reason = (req.reason or "Customer requested cancellation").strip()
+
+        # Call PayPal FIRST
+        success = paypal_provider.cancel_subscription(ext_id, reason=cancel_reason)
+        if not success:
+            logger.error("PayPal failed to cancel subscription %s for %s", ext_id, user_email)
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="PayPal did not accept the cancellation. The subscription is still active.",
+            )
+
+        # Mutate local database state only upon PayPal success
+        repo.set_subscription_cancelled(
+            ext_id, cancelled_at=now_iso, access_until=access_until, reason=cancel_reason
+        )
+        repo.record_webhook_event(
+            event_type="CUSTOMER.SUBSCRIPTION.CANCELLED",
+            payload={
+                "subscription_id": ext_id,
+                "action": "cancel",
+                "user_email": user_email,
+                "access_until": access_until,
+                "reason": cancel_reason,
+            },
+            result="processed",
+            subscription_id=ext_id,
+        )
+        logger.info("Customer %s cancelled subscription %s (access retained until %s)", user_email, ext_id, access_until)
+
+        return {
+            "status": "cancelled",
+            "subscription_id": ext_id,
+            "cancelled_at": now_iso,
+            "access_until": access_until,
+            "message": f"Subscription cancelled. Your access continues until {access_until[:10]}.",
+        }
+
+
+# ==========================================
 # ADMIN AUTH & MANAGEMENT ROUTES
 # ==========================================
 
@@ -1095,7 +1430,7 @@ async def admin_overview(admin: dict = Depends(require_admin)):
         "dead_links": len(dead),
         "total_subscribers": len(subs),
         "active_subscribers": len(active),
-        "past_due_subscribers": sum(1 for s in subs if s.get("status") in ("past_due", "suspended")),
+        "past_due_subscribers": sum(1 for s in subs if s.get("status") in ("past_due", "suspended", "paused")),
         "cancelled_subscribers": sum(1 for s in subs if s.get("status") in ("cancelled", "expired")),
         "mrr": round(mrr, 2),
         "arr": round(mrr * 12, 2),

@@ -30,3 +30,9 @@ class StripeProvider(PaymentProvider):
 
     def cancel_subscription(self, subscription_id: str, reason: str = "Client requested") -> bool:
         return False
+
+    def suspend_subscription(self, subscription_id: str, reason: str = "Customer requested pause") -> bool:
+        raise NotImplementedError("Stripe provider suspend_subscription is not implemented")
+
+    def activate_subscription(self, subscription_id: str, reason: str = "Customer requested resume") -> bool:
+        raise NotImplementedError("Stripe provider activate_subscription is not implemented")
