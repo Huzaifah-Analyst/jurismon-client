@@ -447,6 +447,10 @@ class TestCustomerSubscriptionControls(unittest.TestCase):
         self.assertFalse(data_bob["has_subscription"])
         self.assertEqual(data_bob["status"], "none")
         self.assertIsNone(data_bob["external_subscription_id"])
+        self.assertIsNone(data_bob["plan_name"])
+        self.assertIsNone(data_bob["billing_amount"])
+        self.assertIsNone(data_bob["billing_currency"])
+        self.assertIsNone(data_bob["billing_interval"])
 
         # 13b. For user WITH active subscription
         self._setup_alice_subscription(status="active", next_billing_days=25)
@@ -456,6 +460,10 @@ class TestCustomerSubscriptionControls(unittest.TestCase):
         self.assertTrue(data_alice["has_subscription"])
         self.assertEqual(data_alice["status"], "active")
         self.assertEqual(data_alice["external_subscription_id"], "I-ALICE-12345")
+        self.assertEqual(data_alice["plan_name"], "Professional")
+        self.assertEqual(data_alice["billing_amount"], 49.0)
+        self.assertEqual(data_alice["billing_currency"], "USD")
+        self.assertEqual(data_alice["billing_interval"], "month")
         self.assertTrue(data_alice["access"]["has_access"])
 
     # 14. Customer Account HTML Page Route

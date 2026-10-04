@@ -21,9 +21,12 @@ logger = logging.getLogger("jurismon.repository")
 class Repository:
     """Production data access repository with Supabase and SQLite fallback."""
 
-    def __init__(self, db_path: str = "jurismon_local.db"):
-        self.supabase = DatabaseClient.get_supabase()
-        self.db_path = db_path
+    def __init__(self, db_path: Optional[str] = None):
+        if os.getenv("JURISMON_NO_SUPABASE") == "1":
+            self.supabase = None
+        else:
+            self.supabase = DatabaseClient.get_supabase()
+        self.db_path = db_path or os.getenv("JURISMON_DB_PATH", "jurismon_local.db")
         self._init_sqlite_schema()
 
     @contextmanager

@@ -440,7 +440,7 @@
     </div>
 
     <div class="actions-bar">
-      <a href="/?subscribe=1" class="btn btn-primary" id="btn-no-sub-upgrade">Subscribe to Professional ($49/mo)</a>
+      <a href="/?subscribe=1" class="btn btn-primary" id="btn-no-sub-upgrade">Subscribe to Professional</a>
       <a href="/" class="btn btn-outline">Explore Search</a>
     </div>
   </div>
@@ -449,7 +449,7 @@
   <div id="state-active" class="card" style="display:none;">
     <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
       <div>
-        <h2 class="card-title" id="active-plan-title">JurisMon Professional</h2>
+        <h2 class="card-title" id="active-plan-title">Subscription Details</h2>
         <p class="card-desc">Your subscription is active and renews automatically.</p>
       </div>
       <span class="badge badge-active" id="active-badge">Active</span>
@@ -462,7 +462,7 @@
       </div>
       <div class="prop-item">
         <span class="prop-label">Billing Amount</span>
-        <span class="prop-val" id="active-plan-price">$49.00 / month</span>
+        <span class="prop-val" id="active-plan-price">—</span>
       </div>
       <div class="prop-item">
         <span class="prop-label">Next Billing Date</span>
@@ -484,7 +484,7 @@
   <div id="state-paused" class="card" style="display:none;">
     <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
       <div>
-        <h2 class="card-title" id="paused-plan-title">JurisMon Professional</h2>
+        <h2 class="card-title" id="paused-plan-title">Subscription Details</h2>
         <p class="card-desc">Billing is suspended. You will not be charged while paused.</p>
       </div>
       <span class="badge badge-paused">Paused</span>
@@ -525,7 +525,7 @@
   <div id="state-cancelled-in-period" class="card" style="display:none;">
     <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
       <div>
-        <h2 class="card-title">JurisMon Professional</h2>
+        <h2 class="card-title" id="cancelled-in-period-title">Subscription Details</h2>
         <p class="card-desc">Recurring billing has been cancelled.</p>
       </div>
       <span class="badge badge-cancelled">Cancelled</span>
@@ -563,7 +563,7 @@
   <div id="state-cancelled-expired" class="card" style="display:none;">
     <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
       <div>
-        <h2 class="card-title">JurisMon Professional</h2>
+        <h2 class="card-title" id="cancelled-expired-title">Subscription Details</h2>
         <p class="card-desc">Your subscription has expired.</p>
       </div>
       <span class="badge badge-expired">Expired</span>
@@ -577,7 +577,7 @@
     </div>
 
     <div class="actions-bar">
-      <a href="/?subscribe=1" class="btn btn-primary">Subscribe to Professional ($49/mo)</a>
+      <a href="/?subscribe=1" class="btn btn-primary">Subscribe to Professional</a>
       <a href="/" class="btn btn-outline">Back to Search</a>
     </div>
   </div>
@@ -658,6 +658,7 @@
   const noSubExpires = document.getElementById("no-sub-expires");
 
   // Active sub elements
+  const activePlanTitle = document.getElementById("active-plan-title");
   const activePlanName = document.getElementById("active-plan-name");
   const activePlanPrice = document.getElementById("active-plan-price");
   const activeNextBill = document.getElementById("active-next-bill");
@@ -666,6 +667,7 @@
   const btnCancel = document.getElementById("btn-cancel");
 
   // Paused elements
+  const pausedPlanTitle = document.getElementById("paused-plan-title");
   const pausedAccessDate = document.getElementById("paused-access-date");
   const pausedAccessVal = document.getElementById("paused-access-val");
   const pausedSinceVal = document.getElementById("paused-since-val");
@@ -673,9 +675,13 @@
   const btnResume = document.getElementById("btn-resume");
 
   // Cancelled in period elements
+  const cancelledInPeriodTitle = document.getElementById("cancelled-in-period-title");
   const cancelledAccessDate = document.getElementById("cancelled-access-date");
   const cancelledInPeriodAccessVal = document.getElementById("cancelled-in-period-access-val");
   const cancelledInPeriodDate = document.getElementById("cancelled-in-period-date");
+
+  // Cancelled expired elements
+  const cancelledExpiredTitle = document.getElementById("cancelled-expired-title");
 
   // Error elements
   const errorMessage = document.getElementById("error-message");
@@ -702,6 +708,14 @@
     } catch (e) {
       return isoStr;
     }
+  }
+
+  function formatPrice(amount, currency, interval) {
+    if (amount == null) return "—";
+    const curr = currency || "USD";
+    const sym = curr === "USD" ? "$" : curr + " ";
+    const amtStr = typeof amount === "number" ? amount.toFixed(2) : amount;
+    return interval ? `${sym}${amtStr} / ${interval}` : `${sym}${amtStr}`;
   }
 
   function showToast(msg) {
@@ -737,14 +751,6 @@
 
   // Check auth and load subscription
   async function init() {
-    // Check URL parameters for explicit test state preview
-    const params = new URLSearchParams(window.location.search);
-    const previewState = params.get("preview_state");
-    if (previewState) {
-      renderPreviewState(previewState);
-      return;
-    }
-
     const token = localStorage.getItem("jurismon_token");
     if (!token) {
       updateNav(null);
@@ -801,6 +807,7 @@
     hideAllStates();
     const status = (data.status || "none").toLowerCase();
     const access = data.access || {};
+    const planDisplay = data.plan_name || "Subscription Details";
 
     // 1. No subscription
     if (!data.has_subscription || status === "none") {
@@ -808,9 +815,10 @@
       noSubEmail.textContent = currentUser ? currentUser.email : "—";
 
       if (access.has_access && access.reason === "trial") {
-        noSubBadge.textContent = (access.trial_days_remaining || "14") + "d Trial Active";
+        const days = access.trial_days_remaining != null ? access.trial_days_remaining : null;
+        noSubBadge.textContent = days !== null ? `${days}d Trial Active` : "Trial Active";
         noSubBadge.className = "badge badge-trial";
-        noSubTrialHeadline.textContent = "14-Day Free Trial Active";
+        noSubTrialHeadline.textContent = "Free Trial Active";
         noSubTrialDesc.textContent = "You have full unrestricted access to all statutory zoning records.";
         noSubExpires.textContent = formatDate(access.trial_ends_at || (currentUser && currentUser.trial_ends_at));
       } else {
@@ -826,7 +834,9 @@
     // 2. Active subscription
     if (status === "active" || status === "completed") {
       stateActive.style.display = "block";
-      activePlanName.textContent = data.plan || "JurisMon Professional";
+      if (activePlanTitle) activePlanTitle.textContent = planDisplay;
+      activePlanName.textContent = data.plan_name || "—";
+      activePlanPrice.textContent = formatPrice(data.billing_amount, data.billing_currency, data.billing_interval);
       activeNextBill.textContent = formatDate(data.next_billing_at);
       activeSubId.textContent = data.external_subscription_id || "—";
       return;
@@ -835,6 +845,7 @@
     // 3. Paused subscription
     if (status === "paused" || status === "suspended") {
       statePaused.style.display = "block";
+      if (pausedPlanTitle) pausedPlanTitle.textContent = planDisplay;
       const accessDate = formatDate(data.access_until || data.next_billing_at);
       pausedAccessDate.textContent = accessDate;
       pausedAccessVal.textContent = accessDate;
@@ -857,70 +868,21 @@
 
       if (inPeriod || access.reason === "cancelled_access_until") {
         stateCancelledInPeriod.style.display = "block";
+        if (cancelledInPeriodTitle) cancelledInPeriodTitle.textContent = planDisplay;
         const accessFormatted = formatDate(accessUntilIso);
         cancelledAccessDate.textContent = accessFormatted;
         cancelledInPeriodAccessVal.textContent = accessFormatted;
         cancelledInPeriodDate.textContent = formatDate(data.cancelled_at);
       } else {
         stateCancelledExpired.style.display = "block";
+        if (cancelledExpiredTitle) cancelledExpiredTitle.textContent = planDisplay;
       }
       return;
     }
 
     // Fallback expired / unknown
     stateCancelledExpired.style.display = "block";
-  }
-
-  // Preview renderer for visual tests & screenshot capture
-  function renderPreviewState(targetState) {
-    hideAllStates();
-    updateNav({ email: "subscriber@example.com" });
-
-    switch (targetState) {
-      case "signed_out":
-        updateNav(null);
-        stateSignedOut.style.display = "block";
-        break;
-      case "loading":
-        stateLoading.style.display = "block";
-        break;
-      case "no_subscription":
-        stateNoSub.style.display = "block";
-        noSubEmail.textContent = "user@example.com";
-        noSubExpires.textContent = formatDate(new Date(Date.now() + 7 * 86400000).toISOString());
-        noSubBadge.textContent = "7d Trial Active";
-        break;
-      case "active":
-        stateActive.style.display = "block";
-        activePlanName.textContent = "JurisMon Professional";
-        activeNextBill.textContent = formatDate(new Date(Date.now() + 25 * 86400000).toISOString());
-        activeSubId.textContent = "I-SUB-ACTIVE-PREVIEW";
-        break;
-      case "paused":
-        statePaused.style.display = "block";
-        const pausedDt = formatDate(new Date(Date.now() + 18 * 86400000).toISOString());
-        pausedAccessDate.textContent = pausedDt;
-        pausedAccessVal.textContent = pausedDt;
-        pausedSinceVal.textContent = formatDate(new Date().toISOString());
-        pausedSubId.textContent = "I-SUB-PAUSED-PREVIEW";
-        break;
-      case "cancelled_in_period":
-        stateCancelledInPeriod.style.display = "block";
-        const canDt = formatDate(new Date(Date.now() + 14 * 86400000).toISOString());
-        cancelledAccessDate.textContent = canDt;
-        cancelledInPeriodAccessVal.textContent = canDt;
-        cancelledInPeriodDate.textContent = formatDate(new Date().toISOString());
-        break;
-      case "cancelled_expired":
-        stateCancelledExpired.style.display = "block";
-        break;
-      case "api_error":
-        stateError.style.display = "block";
-        errorMessage.textContent = "Failed to communicate with billing service (503 Service Unavailable).";
-        break;
-      default:
-        stateActive.style.display = "block";
-    }
+    if (cancelledExpiredTitle) cancelledExpiredTitle.textContent = planDisplay;
   }
 
   // Form submit handler: login

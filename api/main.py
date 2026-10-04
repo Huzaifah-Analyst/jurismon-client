@@ -1051,6 +1051,33 @@ class CustomerCancelRequest(BaseModel):
     reason: Optional[str] = "Customer requested cancellation"
 
 
+def resolve_plan_info(plan_id: Optional[str]) -> Dict[str, Any]:
+    """Resolves human-readable plan name, price, interval and currency from PLAN_CATALOGUE."""
+    if not plan_id:
+        return {
+            "plan_name": None,
+            "billing_amount": None,
+            "billing_currency": None,
+            "billing_interval": None,
+        }
+
+    for p in PLAN_CATALOGUE.get("plans", []):
+        if p.get("paypal_plan_id") == plan_id or p.get("id") == plan_id:
+            return {
+                "plan_name": p.get("name"),
+                "billing_amount": float(p.get("price")) if p.get("price") is not None else None,
+                "billing_currency": PLAN_CATALOGUE.get("currency", "USD"),
+                "billing_interval": p.get("interval"),
+            }
+
+    return {
+        "plan_name": None,
+        "billing_amount": None,
+        "billing_currency": None,
+        "billing_interval": None,
+    }
+
+
 @app.get("/api/account/subscription")
 async def get_account_subscription(auth_user: dict = Depends(require_customer)):
     """Returns current subscription details and access status for authenticated customer."""
@@ -1066,6 +1093,10 @@ async def get_account_subscription(auth_user: dict = Depends(require_customer)):
             "status": "none",
             "plan": None,
             "plan_id": None,
+            "plan_name": None,
+            "billing_amount": None,
+            "billing_currency": None,
+            "billing_interval": None,
             "next_billing_at": None,
             "access_until": None,
             "paused_at": None,
@@ -1076,11 +1107,17 @@ async def get_account_subscription(auth_user: dict = Depends(require_customer)):
             "access": access_status,
         }
 
+    plan_info = resolve_plan_info(sub.get("plan_id"))
+
     return {
         "has_subscription": True,
         "status": sub.get("status"),
         "plan": sub.get("plan_id"),
         "plan_id": sub.get("plan_id"),
+        "plan_name": plan_info.get("plan_name"),
+        "billing_amount": plan_info.get("billing_amount"),
+        "billing_currency": plan_info.get("billing_currency"),
+        "billing_interval": plan_info.get("billing_interval"),
         "next_billing_at": sub.get("next_billing_at"),
         "access_until": sub.get("access_until"),
         "paused_at": sub.get("paused_at"),
