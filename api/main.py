@@ -389,15 +389,19 @@ async def list_sources(
     all_sources = repo.get_all_sources()
     total = len(all_sources)
 
-    if not is_admin_token(auth_user):
-        return {
-            "count": total,
-            "total_configured": total,
-        }
-
     # health_status is authoritative; falling back to is_active counted every
     # parked source as operational.
     operational = [s for s in all_sources if s.get("health_status") == "operational"]
+
+    if not is_admin_token(auth_user):
+        # Public visitors get the live count too, so the homepage can say
+        # "N live jurisdictions, M tracked" instead of claiming all M work.
+        return {
+            "count": total,
+            "total_configured": total,
+            "live_count": len(operational),
+        }
+
     cloudflare = [s for s in all_sources if s.get("health_status") == "cloudflare_blocked"]
     dead_links = [s for s in all_sources if s.get("health_status") == "dead_link"]
 
