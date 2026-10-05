@@ -32,7 +32,7 @@
 <meta name="twitter:description" content="Daily tracking of statutory and zoning changes across government sources.">
 <meta name="twitter:image" content="https://jurismon.com/static/assets/og-image.png">
 
-<script type="application/ld+json">
+<script type="application/ld+json" id="json-ld-app">
 {
   "@context": "https://schema.org",
   "@type": "WebApplication",
@@ -1173,7 +1173,7 @@
           <div style="font-size:13px; color:var(--muted);">Full regulatory monitoring, billed monthly</div>
         </div>
         <div style="text-align:right;">
-          <div class="plan-price">$49<span style="font-size:13.5px; font-weight:400; color:var(--muted);">/mo</span></div>
+          <div class="plan-price" id="price-plan-monthly">$49<span style="font-size:13.5px; font-weight:400; color:var(--muted);">/mo</span></div>
         </div>
       </div>
     </div>
@@ -1186,10 +1186,10 @@
             <span style="font-weight:600; color:var(--ink); font-size:15px;">Annual Billing</span>
             <span style="font-size:11px; font-weight:600; background:#dcfce7; color:#166534; padding:2px 6px; border-radius:4px;">SAVE 20%</span>
           </div>
-          <div style="font-size:13px; color:var(--muted);">$39/month, billed annually ($468/year)</div>
+          <div style="font-size:13px; color:var(--muted);" id="subtext-plan-annual">$39/month, billed annually ($468/year)</div>
         </div>
         <div style="text-align:right;">
-          <div class="plan-price">$468<span style="font-size:13.5px; font-weight:400; color:var(--muted);">/yr</span></div>
+          <div class="plan-price" id="price-plan-annual">$468<span style="font-size:13.5px; font-weight:400; color:var(--muted);">/yr</span></div>
         </div>
       </div>
     </div>
@@ -2212,6 +2212,58 @@
     target.focus();
     target.scrollIntoView({ block: "center" });
   }
+
+  async function loadDynamicPlans() {
+    try {
+      const res = await fetch("/api/plans");
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data || !Array.isArray(data.plans)) return;
+
+      const mPlan = data.plans.find(p => p.interval === "month" || (p.id && p.id.includes("monthly")));
+      const aPlan = data.plans.find(p => p.interval === "year" || (p.id && p.id.includes("annual")));
+
+      if (mPlan) {
+        const mPriceEl = document.getElementById("price-plan-monthly");
+        if (mPriceEl) {
+          const displayPrice = mPlan.price % 1 === 0 ? mPlan.price : mPlan.price.toFixed(2);
+          mPriceEl.innerHTML = `$${displayPrice}<span style="font-size:13.5px; font-weight:400; color:var(--muted);">/mo</span>`;
+        }
+      }
+
+      if (aPlan) {
+        const aPriceEl = document.getElementById("price-plan-annual");
+        if (aPriceEl) {
+          const displayPrice = aPlan.price % 1 === 0 ? aPlan.price : aPlan.price.toFixed(2);
+          aPriceEl.innerHTML = `$${displayPrice}<span style="font-size:13.5px; font-weight:400; color:var(--muted);">/yr</span>`;
+        }
+        const aSubtextEl = document.getElementById("subtext-plan-annual");
+        if (aSubtextEl) {
+          const mEq = Math.round(aPlan.price / 12);
+          const displayYear = aPlan.price % 1 === 0 ? aPlan.price : aPlan.price.toFixed(2);
+          aSubtextEl.textContent = `$${mEq}/month, billed annually ($${displayYear}/year)`;
+        }
+      }
+
+      const ldScript = document.getElementById("json-ld-app") || document.querySelector('script[type="application/ld+json"]');
+      if (ldScript && mPlan) {
+        try {
+          const ld = JSON.parse(ldScript.textContent);
+          if (ld && ld.offers) {
+            ld.offers.price = Number(mPlan.price).toFixed(2);
+            if (data.currency) ld.offers.priceCurrency = data.currency;
+            ldScript.textContent = JSON.stringify(ld, null, 2);
+          }
+        } catch (ldErr) {
+          console.warn("Could not update JSON-LD price:", ldErr);
+        }
+      }
+    } catch (err) {
+      console.warn("Could not load dynamic plan catalogue:", err);
+    }
+  }
+
+  loadDynamicPlans();
 })();
 </script>
 </body>

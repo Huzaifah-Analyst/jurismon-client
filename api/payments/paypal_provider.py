@@ -267,3 +267,43 @@ class PayPalProvider(PaymentProvider):
             logger.error(f"Error activating PayPal subscription {subscription_id}: {e}")
             return False
 
+    def get_plan_details(self, plan_id: str) -> Optional[Dict[str, Any]]:
+        """Fetches live billing plan details from PayPal (GET /v1/billing/plans/{plan_id})."""
+        try:
+            token = self._get_access_token()
+            url = f"{self.base_url}/v1/billing/plans/{plan_id}"
+            res = requests.get(
+                url,
+                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+                timeout=10,
+            )
+            res.raise_for_status()
+            data = res.json()
+            cycles = data.get("billing_cycles") or []
+            regular_cycle = next(
+                (c for c in cycles if c.get("tenure_type") == "REGULAR"),
+                cycles[-1] if cycles else {},
+            )
+            pricing_scheme = regular_cycle.get("pricing_scheme") or {}
+            fixed_price = pricing_scheme.get("fixed_price") or {}
+            frequency = regular_cycle.get("frequency") or {}
+
+            raw_val = fixed_price.get("value")
+            price_val = float(raw_val) if raw_val is not None else 0.0
+            currency = fixed_price.get("currency_code", "")
+            interval_unit = str(frequency.get("interval_unit", "")).lower()
+
+            return {
+                "id": data.get("id", plan_id),
+                "name": data.get("name"),
+                "status": data.get("status"),
+                "price": price_val,
+                "currency": currency,
+                "interval": interval_unit,
+                "raw": data,
+            }
+        except Exception as e:
+            logger.error(f"Error fetching PayPal plan {plan_id}: {e}")
+            return None
+
+

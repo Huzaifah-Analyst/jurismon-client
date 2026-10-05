@@ -967,6 +967,21 @@
 
     <div role="tabpanel" id="p-plans" aria-labelledby="t-plans" hidden>
 
+      <div class="panel" style="margin-bottom: 16px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+          <div style="font-size: 13.5px; font-weight: 600; color: var(--ink);">Catalogue Settings</div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <label for="plan-global-trial" style="font-size: 13px; color: var(--muted);">Trial days:</label>
+            <input type="number" id="plan-global-trial" min="0" max="90" style="width: 64px; height: 30px; padding: 0 8px; border: 1px solid var(--line-strong); border-radius: var(--r-md); background: var(--surface); color: var(--ink); font-size: 13px;">
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <label for="plan-global-currency" style="font-size: 13px; color: var(--muted);">Currency:</label>
+            <input type="text" id="plan-global-currency" maxlength="3" style="width: 58px; height: 30px; padding: 0 8px; border: 1px solid var(--line-strong); border-radius: var(--r-md); background: var(--surface); color: var(--ink); font-size: 13px; text-transform: uppercase;">
+          </div>
+        </div>
+        <button type="button" class="btn" id="btn-save-catalogue-settings">Save Settings</button>
+      </div>
+
       <div class="plans" id="plans"></div>
 
     </div>
@@ -1772,6 +1787,8 @@
 
   /* ---------- Plans ---------- */
 
+  let editingPlanId = null;
+
   function renderPlans() {
 
     if (!localStorage.getItem("jurismon_admin_token")) {
@@ -1782,16 +1799,74 @@
       return;
     }
 
+    if (PLANS.length === 0) {
+      const plansEl = $("#plans");
+      if (plansEl) plansEl.innerHTML = '<div style="grid-column: 1/-1; padding: 24px; text-align: center; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);">No plans found in catalogue.</div>';
+      const nPlans = $("#n-plans");
+      if (nPlans) nPlans.textContent = "0";
+      return;
+    }
+
     $("#plans").innerHTML = PLANS.map(p => {
 
       const subs = p.subscribers != null ? p.subscribers
         : subscribers.filter(s => s.plan === p.id && s.status !== "cancelled").length;
 
-      return `<article class="plan">
+      if (p.id === editingPlanId) {
+        return `<article class="plan" data-plan-id="${esc(p.id)}">
 
-        <div class="plan-top"><span class="plan-name">${esc(p.name)}</span><span class="badge b-ok">Active</span></div>
+          <div class="plan-top" style="margin-bottom: 12px; gap: 8px;">
+            <div style="flex: 1;">
+              <label style="display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 4px;">Plan Name</label>
+              <input type="text" id="edit-plan-name-${esc(p.id)}" value="${esc(p.name)}" maxlength="80" style="width: 100%; height: 28px; padding: 0 8px; font-size: 13.5px; font-weight: 600; color: var(--ink); border: 1px solid var(--line-strong); border-radius: var(--r-md); background: var(--surface);">
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 4px;">Status</label>
+              <select id="edit-plan-active-${esc(p.id)}" style="height: 28px; padding: 0 6px; font-size: 12.5px; color: var(--ink); border: 1px solid var(--line-strong); border-radius: var(--r-md); background: var(--surface);">
+                <option value="true" ${p.is_active !== false ? 'selected' : ''}>Active</option>
+                <option value="false" ${p.is_active === false ? 'selected' : ''}>Inactive</option>
+              </select>
+            </div>
+          </div>
 
-        <p class="plan-price">${money(p.price)} <small>per ${p.interval}</small></p>
+          <div style="margin-bottom: 12px;">
+            <label style="display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 4px;">Display Price (${esc(p.interval)})</label>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 16px; font-weight: 600; color: var(--ink);">$</span>
+              <input type="number" step="0.01" min="0.01" max="100000" id="edit-plan-price-${esc(p.id)}" value="${p.price}" style="width: 110px; height: 30px; padding: 0 8px; font-size: 15px; font-weight: 600; color: var(--ink); border: 1px solid var(--line-strong); border-radius: var(--r-md); background: var(--surface);">
+              <small style="color: var(--muted); font-size: 13px;">per ${esc(p.interval)}</small>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 14px;">
+            <label style="display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 4px;">PayPal Plan ID</label>
+            <input type="text" id="edit-plan-paypal-${esc(p.id)}" value="${esc(p.paypal || p.paypal_plan_id)}" style="width: 100%; height: 28px; padding: 0 8px; font-size: 12px; font-family: monospace; color: var(--ink); border: 1px solid var(--line-strong); border-radius: var(--r-md); background: var(--surface);">
+          </div>
+
+          <dl>
+            <dt>Subscribers</dt><dd>${subs}</dd>
+            <dt>Billing</dt><dd>${p.interval === "year" ? "Yearly" : "Monthly"}, automatic</dd>
+          </dl>
+
+          <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 8px;">
+            <button type="button" class="btn btn-cancel-plan" data-id="${esc(p.id)}" style="font-size: 12.5px;">Cancel</button>
+            <button type="button" class="btn btn-save-plan" data-id="${esc(p.id)}" style="font-size: 12.5px; background: var(--ink); color: #fff; border-color: var(--ink);">Save</button>
+          </div>
+
+        </article>`;
+      }
+
+      return `<article class="plan" data-plan-id="${esc(p.id)}">
+
+        <div class="plan-top">
+          <span class="plan-name">${esc(p.name)}</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="badge ${p.is_active !== false ? 'b-ok' : 'b-idle'}">${p.is_active !== false ? 'Active' : 'Inactive'}</span>
+            <button type="button" class="btn btn-edit-plan" data-id="${esc(p.id)}" style="height: 24px; padding: 0 8px; font-size: 12px;">Edit</button>
+          </div>
+        </div>
+
+        <p class="plan-price">${money(p.price)} <small>per ${esc(p.interval)}</small></p>
 
         <dl>
 
@@ -1799,7 +1874,7 @@
 
           <dt>Billing</dt><dd>${p.interval === "year" ? "Yearly" : "Monthly"}, automatic</dd>
 
-          <dt>PayPal plan</dt><dd class="id">${esc(p.paypal)}</dd>
+          <dt>PayPal plan</dt><dd class="id">${esc(p.paypal || p.paypal_plan_id)}</dd>
 
         </dl>
 
@@ -1809,6 +1884,172 @@
 
     $("#n-plans").textContent = PLANS.length;
 
+  }
+
+  async function handleSavePlan(id, btn) {
+    const token = localStorage.getItem("jurismon_admin_token");
+    if (!token) {
+      handleExpiredSession();
+      return;
+    }
+
+    const nameInput = document.getElementById("edit-plan-name-" + id);
+    const priceInput = document.getElementById("edit-plan-price-" + id);
+    const paypalInput = document.getElementById("edit-plan-paypal-" + id);
+    const activeInput = document.getElementById("edit-plan-active-" + id);
+
+    const nameVal = nameInput ? nameInput.value.trim() : "";
+    const priceVal = priceInput ? parseFloat(priceInput.value) : NaN;
+    const paypalVal = paypalInput ? paypalInput.value.trim() : "";
+    const activeVal = activeInput ? activeInput.value === "true" : true;
+
+    if (!nameVal) {
+      toast("Plan name is required");
+      return;
+    }
+    if (isNaN(priceVal) || priceVal <= 0) {
+      toast("Valid positive price is required");
+      return;
+    }
+    if (!paypalVal) {
+      toast("PayPal plan ID is required");
+      return;
+    }
+
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "Saving...";
+    }
+
+    try {
+      const res = await fetch(`/api/admin/plans/${encodeURIComponent(id)}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({
+          name: nameVal,
+          price: priceVal,
+          paypal_plan_id: paypalVal,
+          is_active: activeVal
+        })
+      });
+
+      if (res.status === 401 || res.status === 403) {
+        handleExpiredSession();
+        return;
+      }
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        toast(errData.detail || `Update failed (HTTP ${res.status})`);
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "Save";
+        }
+        return;
+      }
+
+      const resData = await res.json();
+      PLANS.length = 0;
+      resData.plans.forEach(p => PLANS.push(p));
+      planById = Object.fromEntries(PLANS.map(p => [p.id, p]));
+      if (resData.currency && $("#plan-global-currency")) {
+        $("#plan-global-currency").value = resData.currency;
+      }
+      if (resData.trial_days != null && $("#plan-global-trial")) {
+        $("#plan-global-trial").value = resData.trial_days;
+      }
+      editingPlanId = null;
+      renderPlans();
+      toast("Plan updated successfully");
+    } catch (err) {
+      toast("Connection error updating plan");
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Save";
+      }
+    }
+  }
+
+  async function saveCatalogueSettings() {
+    const token = localStorage.getItem("jurismon_admin_token");
+    if (!token) {
+      handleExpiredSession();
+      return;
+    }
+
+    const trialInput = $("#plan-global-trial");
+    const currInput = $("#plan-global-currency");
+    const btn = $("#btn-save-catalogue-settings");
+
+    const trialVal = trialInput ? parseInt(trialInput.value, 10) : NaN;
+    const currVal = currInput ? currInput.value.trim().toUpperCase() : "";
+
+    const payload = {};
+    if (!isNaN(trialVal)) {
+      if (trialVal < 0 || trialVal > 90) {
+        toast("Trial days must be between 0 and 90");
+        return;
+      }
+      payload.trial_days = trialVal;
+    }
+    if (currVal) {
+      if (!/^[A-Za-z]{3}$/.test(currVal)) {
+        toast("Currency must be 3 letters (e.g. USD)");
+        return;
+      }
+      payload.currency = currVal;
+    }
+
+    if (Object.keys(payload).length === 0) {
+      toast("No settings to update");
+      return;
+    }
+
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "Saving...";
+    }
+
+    try {
+      const res = await fetch("/api/admin/plans", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.status === 401 || res.status === 403) {
+        handleExpiredSession();
+        return;
+      }
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        toast(errData.detail || `Update failed (HTTP ${res.status})`);
+        return;
+      }
+
+      const resData = await res.json();
+      PLANS.length = 0;
+      resData.plans.forEach(p => PLANS.push(p));
+      planById = Object.fromEntries(PLANS.map(p => [p.id, p]));
+      if (resData.currency && currInput) currInput.value = resData.currency;
+      if (resData.trial_days != null && trialInput) trialInput.value = resData.trial_days;
+      renderPlans();
+      toast("Catalogue settings updated successfully");
+    } catch (err) {
+      toast("Connection error updating catalogue settings");
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Save Settings";
+      }
+    }
   }
 
 
@@ -2053,6 +2294,10 @@
     if (plansEl) plansEl.innerHTML = '<div style="grid-column: 1/-1; padding: 24px; text-align: center; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);">Authentication required. Sign in to view plans.</div>';
     const nPlans = $("#n-plans");
     if (nPlans) nPlans.textContent = "—";
+    const trialInput = $("#plan-global-trial");
+    if (trialInput) trialInput.value = "";
+    const currInput = $("#plan-global-currency");
+    if (currInput) currInput.value = "";
 
     const hookBody = $("#hook-body");
     if (hookBody) hookBody.innerHTML = '<tr class="empty-row"><td colspan="5">Authentication required. Sign in to view webhooks.</td></tr>';
@@ -2231,6 +2476,10 @@
         PLANS.length = 0;
         pData.plans.forEach(p => PLANS.push(p));
         planById = Object.fromEntries(PLANS.map(p => [p.id, p]));
+        const trialInput = $("#plan-global-trial");
+        if (trialInput && pData.trial_days != null) trialInput.value = pData.trial_days;
+        const currInput = $("#plan-global-currency");
+        if (currInput && pData.currency) currInput.value = pData.currency;
       }
     } catch (err) {
       console.warn("Could not load plans:", err);
@@ -2436,6 +2685,34 @@
 
   if (logoutBtn) {
     logoutBtn.addEventListener("click", logout);
+  }
+
+  const plansContainer = $("#plans");
+  if (plansContainer) {
+    plansContainer.addEventListener("click", async (e) => {
+      const editBtn = e.target.closest(".btn-edit-plan");
+      if (editBtn) {
+        editingPlanId = editBtn.getAttribute("data-id");
+        renderPlans();
+        return;
+      }
+      const cancelBtn = e.target.closest(".btn-cancel-plan");
+      if (cancelBtn) {
+        editingPlanId = null;
+        renderPlans();
+        return;
+      }
+      const saveBtn = e.target.closest(".btn-save-plan");
+      if (saveBtn) {
+        const id = saveBtn.getAttribute("data-id");
+        await handleSavePlan(id, saveBtn);
+      }
+    });
+  }
+
+  const btnSaveSettings = $("#btn-save-catalogue-settings");
+  if (btnSaveSettings) {
+    btnSaveSettings.addEventListener("click", saveCatalogueSettings);
   }
 
   })();

@@ -53,6 +53,12 @@ class AdminTestCase(unittest.TestCase):
         self._saved_hash = auth.ADMIN_PASSWORD_HASH
         auth.ADMIN_PASSWORD_HASH = get_password_hash("admin-pass")
 
+        self._plans_path = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "config", "plans.json")
+        )
+        with open(self._plans_path, "rb") as fh:
+            self._saved_plans_bytes = fh.read()
+
         self.client = TestClient(main.app)
         token = self.client.post(
             "/api/admin/login",
@@ -64,6 +70,9 @@ class AdminTestCase(unittest.TestCase):
         main.repo = self._saved_repo
         auth.ADMIN_PASSWORD_HASH = self._saved_hash
         shutil.rmtree(self._tmp, ignore_errors=True)
+        with open(self._plans_path, "wb") as fh:
+            fh.write(self._saved_plans_bytes)
+        main.invalidate_plan_catalogue_cache()
 
     def send(self, payload, verified=True):
         with patch.object(main.paypal_provider, "verify_webhook", return_value=verified):
@@ -325,6 +334,237 @@ class TestPlanCatalogueFile(unittest.TestCase):
         self.assertEqual(len(ids), len(set(ids)))
         for pid in ids:
             self.assertTrue(pid.startswith("P-"), pid)
+
+
+class TestPlanCatalogueManagement(AdminTestCase):
+
+    def test_plan_write_requires_admin_authentication(self):
+        # 401 unauthenticated
+        res = self.client.put("/api/admin/plans/professional_monthly", json={"name": "New Name"})
+        self.assertEqual(res.status_code, 401)
+
+        patch_res = self.client.patch("/api/admin/plans", json={"trial_days": 7})
+        self.assertEqual(patch_res.status_code, 401)
+
+        # 403 with customer token
+        cust_token = auth.create_customer_token("cust_1", "cust@example.com")
+        cust_auth = {"Authorization": f"Bearer {cust_token}"}
+
+        res_cust = self.client.put(
+            "/api/admin/plans/professional_monthly",
+            json={"name": "New Name"},
+            headers=cust_auth,
+        )
+        self.assertEqual(res_cust.status_code, 403)
+
+        patch_cust = self.client.patch(
+            "/api/admin/plans",
+            json={"trial_days": 7},
+            headers=cust_auth,
+        )
+        self.assertEqual(patch_cust.status_code, 403)
+
+    def test_successful_plan_name_edit(self):
+        with patch.object(main.paypal_provider, "client_id", "test_id"), \
+             patch.object(main.paypal_provider, "client_secret", "test_secret"), \
+             patch.object(main.paypal_provider, "get_plan_details", return_value={"price": 49.0, "currency": "USD", "interval": "month"}):
+            res = self.client.put(
+                "/api/admin/plans/professional_monthly",
+                json={"name": "JurisMon Pro Monthly"},
+                headers=self.auth,
+            )
+            self.assertEqual(res.status_code, 200)
+            data = res.json()
+            monthly = next(p for p in data["plans"] if p["id"] == "professional_monthly")
+            self.assertEqual(monthly["name"], "JurisMon Pro Monthly")
+
+            # Check GET /api/admin/plans returns the updated name
+            get_res = self.client.get("/api/admin/plans", headers=self.auth)
+            get_monthly = next(p for p in get_res.json()["plans"] if p["id"] == "professional_monthly")
+            self.assertEqual(get_monthly["name"], "JurisMon Pro Monthly")
+
+    def test_successful_price_edit_when_paypal_agrees(self):
+        with patch.object(main.paypal_provider, "client_id", "test_id"), \
+             patch.object(main.paypal_provider, "client_secret", "test_secret"), \
+             patch.object(main.paypal_provider, "get_plan_details", return_value={"price": 59.0, "currency": "USD", "interval": "month"}):
+            res = self.client.put(
+                "/api/admin/plans/professional_monthly",
+                json={"price": 59.0},
+                headers=self.auth,
+            )
+            self.assertEqual(res.status_code, 200)
+            data = res.json()
+            monthly = next(p for p in data["plans"] if p["id"] == "professional_monthly")
+            self.assertEqual(monthly["price"], 59.0)
+
+    def test_price_edit_rejected_with_409_when_disagreeing_with_paypal(self):
+        with patch.object(main.paypal_provider, "client_id", "test_id"), \
+             patch.object(main.paypal_provider, "client_secret", "test_secret"), \
+             patch.object(main.paypal_provider, "get_plan_details", return_value={"price": 49.0, "currency": "USD", "interval": "month"}):
+            res = self.client.put(
+                "/api/admin/plans/professional_monthly",
+                json={"price": 59.0},
+                headers=self.auth,
+            )
+            self.assertEqual(res.status_code, 409)
+            detail = res.json()["detail"]
+            self.assertIn("59", detail)
+            self.assertIn("49", detail)
+
+    def test_write_rejected_with_503_when_paypal_credentials_unset(self):
+        with patch.object(main.paypal_provider, "client_id", ""):
+            res = self.client.put(
+                "/api/admin/plans/professional_monthly",
+                json={"price": 49.0},
+                headers=self.auth,
+            )
+            self.assertEqual(res.status_code, 503)
+
+    def test_cannot_deactivate_last_active_plan(self):
+        with patch.object(main.paypal_provider, "client_id", "test_id"), \
+             patch.object(main.paypal_provider, "client_secret", "test_secret"), \
+             patch.object(main.paypal_provider, "get_plan_details", return_value={"price": 468.0, "currency": "USD", "interval": "year"}):
+            # Deactivate annual first
+            res1 = self.client.put(
+                "/api/admin/plans/professional_annual",
+                json={"is_active": False},
+                headers=self.auth,
+            )
+            self.assertEqual(res1.status_code, 200)
+
+        # Now attempt to deactivate monthly (the last active plan)
+        with patch.object(main.paypal_provider, "client_id", "test_id"), \
+             patch.object(main.paypal_provider, "client_secret", "test_secret"), \
+             patch.object(main.paypal_provider, "get_plan_details", return_value={"price": 49.0, "currency": "USD", "interval": "month"}):
+            res2 = self.client.put(
+                "/api/admin/plans/professional_monthly",
+                json={"is_active": False},
+                headers=self.auth,
+            )
+            self.assertEqual(res2.status_code, 409)
+            self.assertIn("last active plan", res2.json()["detail"])
+
+    def test_duplicate_paypal_plan_id_rejected_with_409(self):
+        res = self.client.put(
+            "/api/admin/plans/professional_monthly",
+            json={"paypal_plan_id": ANNUAL},
+            headers=self.auth,
+        )
+        self.assertEqual(res.status_code, 409)
+        self.assertIn("already assigned", res.json()["detail"])
+
+    def test_cache_invalidation_updates_get_api_plans_in_same_process(self):
+        init_plans = self.client.get("/api/plans").json()["plans"]
+        init_monthly = next(p for p in init_plans if p["id"] == "professional_monthly")
+        self.assertEqual(init_monthly["price"], 49.0)
+
+        with patch.object(main.paypal_provider, "client_id", "test_id"), \
+             patch.object(main.paypal_provider, "client_secret", "test_secret"), \
+             patch.object(main.paypal_provider, "get_plan_details", return_value={"price": 75.0, "currency": "USD", "interval": "month"}):
+            put_res = self.client.put(
+                "/api/admin/plans/professional_monthly",
+                json={"price": 75.0},
+                headers=self.auth,
+            )
+            self.assertEqual(put_res.status_code, 200)
+
+        # GET /api/plans in the same process must return the new price without restart
+        new_plans = self.client.get("/api/plans").json()["plans"]
+        new_monthly = next(p for p in new_plans if p["id"] == "professional_monthly")
+        self.assertEqual(new_monthly["price"], 75.0)
+
+    def test_grandfathered_subscriber_on_inactive_plan_resolves_plan_name(self):
+        self.send(activation("I-GF1", MONTHLY))
+
+        with patch.object(main.paypal_provider, "client_id", "test_id"), \
+             patch.object(main.paypal_provider, "client_secret", "test_secret"), \
+             patch.object(main.paypal_provider, "get_plan_details", return_value={"price": 49.0, "currency": "USD", "interval": "month"}):
+            # Deactivate monthly plan
+            deact_res = self.client.put(
+                "/api/admin/plans/professional_monthly",
+                json={"is_active": False},
+                headers=self.auth,
+            )
+            self.assertEqual(deact_res.status_code, 200)
+
+        # Grandfathered subscriber on inactive plan must still resolve plan name
+        sub_res = self.client.get("/api/admin/subscribers", headers=self.auth)
+        self.assertEqual(sub_res.status_code, 200)
+        subs = sub_res.json()["subscribers"]
+        gf_sub = next(s for s in subs if s.get("paypal") == "I-GF1")
+        self.assertEqual(gf_sub["plan_name"], "Professional")
+        self.assertIsNotNone(gf_sub["plan_price"])
+
+    def test_atomic_write_leaves_no_tmp_file_on_success_or_failure(self):
+        config_dir = os.path.dirname(self._plans_path)
+        tmp_before = [f for f in os.listdir(config_dir) if f.endswith(".tmp")]
+        self.assertEqual(len(tmp_before), 0)
+
+        # Success case
+        with patch.object(main.paypal_provider, "client_id", "test_id"), \
+             patch.object(main.paypal_provider, "client_secret", "test_secret"), \
+             patch.object(main.paypal_provider, "get_plan_details", return_value={"price": 49.0, "currency": "USD", "interval": "month"}):
+            self.client.put(
+                "/api/admin/plans/professional_monthly",
+                json={"name": "Atomic Name Test"},
+                headers=self.auth,
+            )
+            tmp_after = [f for f in os.listdir(config_dir) if f.endswith(".tmp")]
+            self.assertEqual(len(tmp_after), 0)
+
+        # Failure case: os.replace fails
+        with patch("os.replace", side_effect=OSError("Disk write error")):
+            try:
+                main._write_plan_catalogue({"currency": "USD", "trial_days": 14, "plans": []})
+            except OSError:
+                pass
+            tmp_fail = [f for f in os.listdir(config_dir) if f.endswith(".tmp")]
+            self.assertEqual(len(tmp_fail), 0)
+
+    def test_patch_catalogue_settings(self):
+        res = self.client.patch(
+            "/api/admin/plans",
+            json={"trial_days": 21, "currency": "EUR"},
+            headers=self.auth,
+        )
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertEqual(data["trial_days"], 21)
+        self.assertEqual(data["currency"], "EUR")
+
+        # Public plans reflect updated settings
+        pub = self.client.get("/api/plans").json()
+        self.assertEqual(pub["trial_days"], 21)
+        self.assertEqual(pub["currency"], "EUR")
+
+    def test_plan_details_extraction_from_paypal_response(self):
+        mock_response = {
+            "id": "P-TESTPLAN123",
+            "name": "JurisMon Pro Plan",
+            "status": "ACTIVE",
+            "billing_cycles": [
+                {
+                    "tenure_type": "TRIAL",
+                    "pricing_scheme": {"fixed_price": {"value": "0", "currency_code": "USD"}},
+                    "frequency": {"interval_unit": "DAY", "interval_count": 14},
+                },
+                {
+                    "tenure_type": "REGULAR",
+                    "pricing_scheme": {"fixed_price": {"value": "49.00", "currency_code": "USD"}},
+                    "frequency": {"interval_unit": "MONTH", "interval_count": 1},
+                },
+            ],
+        }
+        with patch.object(main.paypal_provider, "_get_access_token", return_value="fake_token"), \
+             patch("requests.get") as mock_get:
+            mock_get.return_value.status_code = 200
+            mock_get.return_value.json.return_value = mock_response
+            details = main.paypal_provider.get_plan_details("P-TESTPLAN123")
+            self.assertIsNotNone(details)
+            self.assertEqual(details["price"], 49.0)
+            self.assertEqual(details["currency"], "USD")
+            self.assertEqual(details["interval"], "month")
+            self.assertEqual(details["id"], "P-TESTPLAN123")
 
 
 if __name__ == "__main__":

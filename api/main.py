@@ -16,13 +16,15 @@ import shutil
 import subprocess
 import logging
 import asyncio
+import copy
+import threading
 from collections import defaultdict
 from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, Request, HTTPException, Query, Depends, status, BackgroundTasks
 from fastapi.responses import HTMLResponse, FileResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from db.repository import Repository
 import secrets
@@ -74,6 +76,11 @@ paypal_provider = PayPalProvider()
 mailer = Mailer()
 
 
+_catalogue_cache: Optional[Dict[str, Any]] = None
+_catalogue_mtime: Optional[float] = None
+_catalogue_lock = threading.Lock()
+
+
 def _load_plan_catalogue() -> Dict[str, Any]:
     """Reads config/plans.json, the single source of truth for what we sell.
 
@@ -89,7 +96,55 @@ def _load_plan_catalogue() -> Dict[str, Any]:
         return {"currency": "USD", "trial_days": 0, "plans": []}
 
 
-PLAN_CATALOGUE = _load_plan_catalogue()
+def get_plan_catalogue() -> Dict[str, Any]:
+    """Returns a defensive deep copy of the current plan catalogue.
+
+    Caches the catalogue in memory and automatically reloads if the cache
+    was invalidated or if config/plans.json mtime has changed.
+    """
+    global _catalogue_cache, _catalogue_mtime
+    path = os.path.join(os.path.dirname(__file__), "..", "config", "plans.json")
+    try:
+        current_mtime = os.path.getmtime(path)
+    except OSError:
+        current_mtime = None
+
+    with _catalogue_lock:
+        if _catalogue_cache is None or current_mtime != _catalogue_mtime:
+            _catalogue_cache = _load_plan_catalogue()
+            _catalogue_mtime = current_mtime
+        return copy.deepcopy(_catalogue_cache)
+
+
+def invalidate_plan_catalogue_cache() -> None:
+    """Explicitly invalidates the cached plan catalogue."""
+    global _catalogue_cache, _catalogue_mtime
+    with _catalogue_lock:
+        _catalogue_cache = None
+        _catalogue_mtime = None
+
+
+def _write_plan_catalogue(catalogue: Dict[str, Any]) -> None:
+    """Atomically writes catalogue to config/plans.json and invalidates cache."""
+    config_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "config"))
+    target_path = os.path.join(config_dir, "plans.json")
+    tmp_path = os.path.join(config_dir, f"plans.json.{os.getpid()}.{threading.get_ident()}.tmp")
+
+    try:
+        with open(tmp_path, "w", encoding="utf-8") as fh:
+            json.dump(catalogue, fh, indent=2)
+            fh.write("\n")
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(tmp_path, target_path)
+    finally:
+        if os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
+    invalidate_plan_catalogue_cache()
+
 
 
 def _monthly_value(plan: Dict[str, Any]) -> float:
@@ -135,6 +190,19 @@ class ResetPasswordRequest(BaseModel):
     email: str
     code: str
     new_password: str
+
+
+class UpdatePlanRequest(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=80)
+    price: Optional[float] = Field(None, gt=0, le=100000)
+    paypal_plan_id: Optional[str] = Field(None, pattern=r"^P-[A-Z0-9]{20,30}$")
+    is_active: Optional[bool] = None
+
+
+class UpdateCatalogueSettingsRequest(BaseModel):
+    trial_days: Optional[int] = Field(None, ge=0, le=90)
+    currency: Optional[str] = Field(None, pattern=r"^[A-Za-z]{3}$")
+
 
 
 # ==========================================
@@ -427,9 +495,10 @@ class SubscribeRequest(BaseModel):
 @app.get("/api/plans")
 async def public_plans():
     """The plan catalogue, for the pricing section on the public page."""
+    catalogue = get_plan_catalogue()
     return {
-        "currency": PLAN_CATALOGUE.get("currency", "USD"),
-        "trial_days": PLAN_CATALOGUE.get("trial_days", 0),
+        "currency": catalogue.get("currency", "USD"),
+        "trial_days": catalogue.get("trial_days", 0),
         "plans": [
             {
                 "id": p["id"],
@@ -437,7 +506,7 @@ async def public_plans():
                 "price": p["price"],
                 "interval": p["interval"],
             }
-            for p in PLAN_CATALOGUE.get("plans", [])
+            for p in catalogue.get("plans", [])
             if p.get("is_active", True)
         ],
     }
@@ -454,8 +523,9 @@ async def create_subscription(
     Requires authenticated customer so the account identity (custom_id) can
     be linked to the subscription, preventing unlinked or orphaned payments.
     """
+    catalogue = get_plan_catalogue()
     plan = next(
-        (p for p in PLAN_CATALOGUE.get("plans", [])
+        (p for p in catalogue.get("plans", [])
          if p["id"] == req.plan and p.get("is_active", True)),
         None,
     )
@@ -1056,7 +1126,7 @@ class CustomerCancelRequest(BaseModel):
 
 
 def resolve_plan_info(plan_id: Optional[str]) -> Dict[str, Any]:
-    """Resolves human-readable plan name, price, interval and currency from PLAN_CATALOGUE."""
+    """Resolves human-readable plan name, price, interval and currency from plan catalogue."""
     if not plan_id:
         return {
             "plan_name": None,
@@ -1065,12 +1135,13 @@ def resolve_plan_info(plan_id: Optional[str]) -> Dict[str, Any]:
             "billing_interval": None,
         }
 
-    for p in PLAN_CATALOGUE.get("plans", []):
+    catalogue = get_plan_catalogue()
+    for p in catalogue.get("plans", []):
         if p.get("paypal_plan_id") == plan_id or p.get("id") == plan_id:
             return {
                 "plan_name": p.get("name"),
                 "billing_amount": float(p.get("price")) if p.get("price") is not None else None,
-                "billing_currency": PLAN_CATALOGUE.get("currency", "USD"),
+                "billing_currency": catalogue.get("currency", "USD"),
                 "billing_interval": p.get("interval"),
             }
 
@@ -1450,8 +1521,9 @@ async def admin_overview(admin: dict = Depends(require_admin)):
     cloudflare = [s for s in all_sources if s.get("health_status") == "cloudflare_blocked"]
     dead = [s for s in all_sources if s.get("health_status") == "dead_link"]
     subs = repo.list_subscriptions()
+    catalogue = get_plan_catalogue()
 
-    by_paypal_id = {p["paypal_plan_id"]: p for p in PLAN_CATALOGUE.get("plans", [])}
+    by_paypal_id = {p["paypal_plan_id"]: p for p in catalogue.get("plans", [])}
     active = [s for s in subs if s.get("status") == "active"]
 
     # Annual plans are divided by twelve so monthly and annual subscribers can
@@ -1475,7 +1547,7 @@ async def admin_overview(admin: dict = Depends(require_admin)):
         "cancelled_subscribers": sum(1 for s in subs if s.get("status") in ("cancelled", "expired")),
         "mrr": round(mrr, 2),
         "arr": round(mrr * 12, 2),
-        "currency": PLAN_CATALOGUE.get("currency", "USD"),
+        "currency": catalogue.get("currency", "USD"),
         "payment_mode": paypal_provider.mode,
         "paypal_configured": bool(paypal_provider.client_id),
     }
@@ -1484,7 +1556,8 @@ async def admin_overview(admin: dict = Depends(require_admin)):
 @app.get("/api/admin/subscribers")
 async def list_subscribers(admin: dict = Depends(require_admin)):
     """Returns subscribers with their plan resolved, for the admin dashboard."""
-    by_paypal_id = {p["paypal_plan_id"]: p for p in PLAN_CATALOGUE.get("plans", [])}
+    catalogue = get_plan_catalogue()
+    by_paypal_id = {p["paypal_plan_id"]: p for p in catalogue.get("plans", [])}
 
     subscribers = []
     for row in repo.list_subscriptions():
@@ -1512,9 +1585,10 @@ async def list_subscribers(admin: dict = Depends(require_admin)):
 async def list_plans(admin: dict = Depends(require_admin)):
     """Returns the plan catalogue with live subscriber counts."""
     subs = repo.list_subscriptions()
+    catalogue = get_plan_catalogue()
 
     plans = []
-    for plan in PLAN_CATALOGUE.get("plans", []):
+    for plan in catalogue.get("plans", []):
         active = sum(
             1 for s in subs
             if s.get("plan_id") == plan["paypal_plan_id"] and s.get("status") == "active"
@@ -1525,16 +1599,172 @@ async def list_plans(admin: dict = Depends(require_admin)):
             "price": plan["price"],
             "interval": plan["interval"],
             "paypal": plan["paypal_plan_id"],
+            "paypal_plan_id": plan["paypal_plan_id"],
             "is_active": plan.get("is_active", True),
             "subscribers": active,
         })
 
     return {
-        "currency": PLAN_CATALOGUE.get("currency", "USD"),
-        "trial_days": PLAN_CATALOGUE.get("trial_days", 0),
+        "currency": catalogue.get("currency", "USD"),
+        "trial_days": catalogue.get("trial_days", 0),
         "count": len(plans),
         "plans": plans,
     }
+
+
+@app.put("/api/admin/plans/{plan_id}")
+async def update_plan(
+    plan_id: str,
+    req: UpdatePlanRequest,
+    admin: dict = Depends(require_admin),
+):
+    """Updates a plan's name, price, paypal_plan_id, or is_active state.
+
+    Verifies submitted price and interval against PayPal before persisting to prevent
+    price drift. Refuses deactivating the last active plan.
+    """
+    if (
+        req.name is None
+        and req.price is None
+        and req.paypal_plan_id is None
+        and req.is_active is None
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="At least one field (name, price, paypal_plan_id, is_active) must be provided.",
+        )
+
+    catalogue = get_plan_catalogue()
+    plan_index = next(
+        (i for i, p in enumerate(catalogue.get("plans", [])) if p["id"] == plan_id),
+        None,
+    )
+    if plan_index is None:
+        raise HTTPException(status_code=404, detail=f"Plan '{plan_id}' not found.")
+
+    current_plan = catalogue["plans"][plan_index]
+
+    target_name = req.name if req.name is not None else current_plan.get("name")
+    target_price = float(req.price) if req.price is not None else float(current_plan.get("price", 0))
+    target_paypal_id = req.paypal_plan_id if req.paypal_plan_id is not None else current_plan.get("paypal_plan_id")
+    target_is_active = req.is_active if req.is_active is not None else current_plan.get("is_active", True)
+    target_interval = current_plan.get("interval", "month")
+
+    # Validate paypal_plan_id uniqueness across catalogue
+    for other in catalogue.get("plans", []):
+        if other["id"] != plan_id and other.get("paypal_plan_id") == target_paypal_id:
+            raise HTTPException(
+                status_code=409,
+                detail=f"PayPal plan ID '{target_paypal_id}' is already assigned to plan '{other['id']}'.",
+            )
+
+    # Validate not deactivating the last active plan
+    if target_is_active is False:
+        active_remaining = [
+            p for p in catalogue.get("plans", [])
+            if p["id"] != plan_id and p.get("is_active", True)
+        ]
+        if not active_remaining:
+            raise HTTPException(
+                status_code=409,
+                detail="Cannot deactivate the last active plan in the catalogue.",
+            )
+
+    # Verify price and interval against live PayPal plan
+    if not paypal_provider.client_id or not paypal_provider.client_secret:
+        raise HTTPException(
+            status_code=503,
+            detail="PayPal credentials are not configured on this server.",
+        )
+
+    paypal_plan = paypal_provider.get_plan_details(target_paypal_id)
+    if not paypal_plan:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Could not verify plan '{target_paypal_id}' with PayPal.",
+        )
+
+    paypal_price = paypal_plan.get("price")
+    if paypal_price is not None and round(float(target_price), 2) != round(float(paypal_price), 2):
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Price mismatch: submitted price is {target_price}, "
+                f"but PayPal plan charges {paypal_price} {paypal_plan.get('currency', '')}."
+            ),
+        )
+
+    paypal_interval = paypal_plan.get("interval")
+    if paypal_interval and target_interval.lower() != paypal_interval.lower():
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Interval mismatch: catalogue specifies '{target_interval}', "
+                f"but PayPal plan interval is '{paypal_interval}'."
+            ),
+        )
+
+    old_plan = dict(current_plan)
+    updated_plan = dict(current_plan)
+    if req.name is not None:
+        updated_plan["name"] = req.name
+    if req.price is not None:
+        updated_plan["price"] = float(req.price)
+    if req.paypal_plan_id is not None:
+        updated_plan["paypal_plan_id"] = req.paypal_plan_id
+    if req.is_active is not None:
+        updated_plan["is_active"] = bool(req.is_active)
+
+    catalogue["plans"][plan_index] = updated_plan
+    _write_plan_catalogue(catalogue)
+
+    logger.info(
+        "Admin %s updated plan %s: old=%s, new=%s",
+        admin.get("sub", "admin"),
+        plan_id,
+        old_plan,
+        updated_plan,
+    )
+
+    return await list_plans(admin)
+
+
+@app.patch("/api/admin/plans")
+async def update_catalogue_settings(
+    req: UpdateCatalogueSettingsRequest,
+    admin: dict = Depends(require_admin),
+):
+    """Updates catalogue-level settings (trial_days and currency)."""
+    if req.trial_days is None and req.currency is None:
+        raise HTTPException(
+            status_code=400,
+            detail="At least one setting (trial_days, currency) must be provided.",
+        )
+
+    catalogue = get_plan_catalogue()
+    old_settings = {
+        "trial_days": catalogue.get("trial_days", 0),
+        "currency": catalogue.get("currency", "USD"),
+    }
+    new_settings = dict(old_settings)
+
+    if req.trial_days is not None:
+        catalogue["trial_days"] = int(req.trial_days)
+        new_settings["trial_days"] = catalogue["trial_days"]
+    if req.currency is not None:
+        catalogue["currency"] = str(req.currency).upper()
+        new_settings["currency"] = catalogue["currency"]
+
+    _write_plan_catalogue(catalogue)
+
+    logger.info(
+        "Admin %s updated catalogue settings: old=%s, new=%s",
+        admin.get("sub", "admin"),
+        old_settings,
+        new_settings,
+    )
+
+    return await list_plans(admin)
 
 
 @app.post("/api/admin/subscriptions/{external_id}/cancel")

@@ -84,3 +84,14 @@
 - **Root Cause**: The screenshot script used `?preview_state=` rather than logging into the application and setting up real database state. The preview path returned early, so the real code path never executed in the visual test.
 - **The Fix**: In Task Packet P2-1-FIX (commit `c3f4466`), deleted `renderPreviewState` entirely, removed hardcoded prices from markup, resolved human-readable plan names and prices from `PLAN_CATALOGUE` in `GET /api/account/subscription`, and rewrote `scripts/capture_account_screenshots.py` to seed real users in an isolated SQLite database and authenticate via genuine JWT tokens.
 - **The Rule**: **Rule 3 & Rule 6**. Never build preview renderers that bypass real server responses. Screenshots must be generated from real sessions against a real backend. A mock screenshot is worse than no screenshot because it masquerades as verification.
+
+---
+
+## Incident 9: Static Import-Time Plan Catalogue & Display Price Drift (DEBT-01)
+
+- **What Broke**: Modifying `config/plans.json` had no effect on the running API because `PLAN_CATALOGUE = _load_plan_catalogue()` was read once at module import. Furthermore, allowing arbitrary display price editing would cause public pricing to drift from what PayPal actually charges.
+- **How It Was Found**: Architecture audit during Phase 2 planning.
+- **Root Cause**: Module-level static global caching without invalidation; decoupling catalog display copy from PayPal's immutable billing plan rules.
+- **The Fix**: In Task Packet P2-02, replaced `PLAN_CATALOGUE` global across all 14 read sites with `get_plan_catalogue()` returning defensive deep copies with filesystem mtime detection and explicit `invalidate_plan_catalogue_cache()`. Added pre-commit verification against live PayPal plans (`GET /v1/billing/plans/{id}`) so price mismatches are rejected with HTTP 409 before persistence.
+- **The Rule**: Never allow billing copy to drift from payment gateway reality. Dynamic configuration must be served through cache-invalidating accessors, not module-level import-time globals.
+
