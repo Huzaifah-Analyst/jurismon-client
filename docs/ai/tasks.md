@@ -35,6 +35,8 @@
 | **P2-07** | **Multi-User Organization Seats** | Corporate tiers in `config/plans.json`. Tables `organizations`, `organization_members`. Multi-seat license management. | **NOT STARTED** | — |
 | **P2-08** | **Source Health Outbound Webhooks** | Outbound alerts to Slack / `$ADMIN_EMAIL` when operational sources degrade or crawl error rates exceed 10%. | **NOT STARTED** | — |
 | **P2-09** | **Cookie Consent Banner & Analytics** | GDPR/ePrivacy compliant cookie banner with Google Consent Mode v2 and Google Analytics tag. | **NOT STARTED** | — |
+| **P2-10** | **Repository Documentation Hygiene** | Shelve docs/ into ai/, context/, client/, reports/, assets/, and archive/; index READMEs; link repairs. | **SHIPPED** | [`d8df085`](https://github.com/Huzaifah-Analyst/jurismon-client/commit/d8df085) |
+| **P2-11** | **Public "About Us" Page (`/about`)** | Public About page (`frontend/about.html`) with 5 core architectural sections, live source counts, responsive risk table, and symmetric header navigation. | **CODE COMPLETE** *(Not Deployed)* | Current |
 
 ---
 

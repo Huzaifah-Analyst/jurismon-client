@@ -225,6 +225,14 @@ async def serve_admin_page():
     return "<h1>JurisMon Admin Panel</h1>"
 
 
+@app.get("/about", response_class=HTMLResponse)
+async def serve_about_page():
+    about_path = os.path.join(frontend_dir, "about.html")
+    if os.path.exists(about_path):
+        return FileResponse(about_path)
+    return "<h1>About JurisMon</h1>"
+
+
 @app.get("/terms", response_class=HTMLResponse)
 async def serve_terms_page():
     terms_path = os.path.join(frontend_dir, "terms.html")
@@ -286,6 +294,11 @@ async def serve_sitemap_xml():
         "    <loc>https://jurismon.com/</loc>\n"
         "    <changefreq>daily</changefreq>\n"
         "    <priority>1.0</priority>\n"
+        "  </url>\n"
+        "  <url>\n"
+        "    <loc>https://jurismon.com/about</loc>\n"
+        "    <changefreq>monthly</changefreq>\n"
+        "    <priority>0.8</priority>\n"
         "  </url>\n"
         "  <url>\n"
         "    <loc>https://jurismon.com/terms</loc>\n"

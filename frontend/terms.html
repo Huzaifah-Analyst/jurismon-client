@@ -224,7 +224,10 @@
       <img src="/static/assets/logo.png" alt="JurisMon"
            style="height:30px; width:auto; display:block; object-fit:contain;">
     </a>
-    <a class="nav-back" href="/">← Back to Search</a>
+    <nav class="topnav" aria-label="Main" style="display:flex; align-items:center; gap:12px;">
+      <a class="navlink" href="/about" style="text-decoration:none; color:var(--muted); font-size:13.5px; font-weight:500;">About</a>
+      <a class="nav-back" href="/">← Back to Search</a>
+    </nav>
   </div>
 </header>
 
@@ -316,6 +319,8 @@
       &copy; 2026 JurisMon. All rights reserved.
     </div>
     <nav class="site-footer-links" aria-label="Legal and contact links">
+      <a href="/about" class="site-footer-link">About</a>
+      <span class="site-footer-sep">&bull;</span>
       <a href="/terms" class="site-footer-link">Terms of Service</a>
       <span class="site-footer-sep">&bull;</span>
       <a href="/privacy" class="site-footer-link">Privacy Policy</a>

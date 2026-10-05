@@ -1157,10 +1157,32 @@ class TestTermsAndPrivacyPages(unittest.TestCase):
         self.assertIn("working draft", content.lower())
         self.assertIn("october 3, 2026", content.lower())
 
+    def test_about_endpoint_unauthenticated_and_structure(self):
+        """GET /about returns 200 without auth and contains 5 sections and CTA."""
+        res = self.client.get("/about")
+        self.assertEqual(res.status_code, 200)
+        self.assertIn("text/html", res.headers.get("content-type", ""))
+        content = res.text
+        self.assertIn("Continuous Multi-Portal Tracking", content)
+        self.assertIn("Extraction &amp; Normalization", content)
+        self.assertIn("Historical Retention &amp; Legal Precedent", content)
+        self.assertIn("Risk &amp; Impact Analysis", content)
+        self.assertIn("Statutory Delta Analysis", content)
+        self.assertIn("Never Miss a Statutory Delta Again", content)
+        self.assertIn("41 live jurisdictions, 65 tracked", content)
+        self.assertNotIn("65+", content)
+
+    def test_about_html_contains_no_literal_65_plus(self):
+        """frontend/about.html contains no literal '65+' claims."""
+        with open("frontend/about.html", "r", encoding="utf-8") as f:
+            raw = f.read()
+        self.assertNotIn("65+", raw)
+
     def test_sitemap_includes_terms_and_privacy(self):
-        """GET /sitemap.xml includes /terms and /privacy URLs."""
+        """GET /sitemap.xml includes /about, /terms and /privacy URLs."""
         res = self.client.get("/sitemap.xml")
         self.assertEqual(res.status_code, 200)
+        self.assertIn("https://jurismon.com/about", res.text)
         self.assertIn("https://jurismon.com/terms", res.text)
         self.assertIn("https://jurismon.com/privacy", res.text)
 
@@ -1174,7 +1196,7 @@ class TestTermsAndPrivacyPages(unittest.TestCase):
 
     def test_contact_email_present_and_no_placeholder(self):
         """Official contact address is present across legal pages and home without placeholder."""
-        for path in ["/", "/terms", "/privacy", "/admin"]:
+        for path in ["/", "/terms", "/privacy", "/about", "/admin"]:
             res = self.client.get(path)
             self.assertEqual(res.status_code, 200)
             self.assertIn("support@jurismon.com", res.text)
@@ -1236,7 +1258,7 @@ class TestTermsAndPrivacyPages(unittest.TestCase):
     def test_pages_contain_no_sample_or_fictional_data_indicators(self):
         """Assert no page served by the app contains forbidden sample or fictional data indicators."""
         forbidden_strings = ["sample data", "fictional", "dummy data", "demo data"]
-        pages = ["/", "/admin", "/terms", "/privacy"]
+        pages = ["/", "/admin", "/terms", "/privacy", "/about"]
         for page in pages:
             res = self.client.get(page)
             self.assertEqual(res.status_code, 200, f"Page {page} returned status {res.status_code}")

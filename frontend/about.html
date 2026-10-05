@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>About JurisMon | Municipal Zoning Tracker, Historical Audit &amp; Statutory Diffs</title>
+<link rel="icon" href="/static/assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/assets/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/static/assets/favicon-16.png">
+<link rel="apple-touch-icon" href="/static/assets/apple-touch-icon.png">
+<link rel="manifest" href="/static/assets/site.webmanifest">
+<link rel="canonical" href="https://jurismon.com/about">
+<meta name="description" content="JurisMon is an automated statutory intelligence platform offering 41 live jurisdictions, 65 tracked, historical point-in-time code retention, and section-level (§) delta alerts.">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#154DA8">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="JurisMon">
+<meta property="og:title" content="About JurisMon | Municipal Zoning Tracker &amp; Statutory Diffs">
+<meta property="og:description" content="JurisMon is an automated statutory intelligence platform offering 41 live jurisdictions, 65 tracked, historical point-in-time code retention, and section-level (§) delta alerts.">
+<meta property="og:url" content="https://jurismon.com/about">
+<meta property="og:image" content="https://jurismon.com/static/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="About JurisMon | Municipal Zoning Tracker &amp; Statutory Diffs">
+<meta name="twitter:description" content="JurisMon is an automated statutory intelligence platform offering 41 live jurisdictions, 65 tracked, historical point-in-time code retention, and section-level (§) delta alerts.">
+<meta name="twitter:image" content="https://jurismon.com/static/assets/og-image.png">
+
+<!-- JSON-LD -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "AboutPage",
+  "name": "About JurisMon",
+  "url": "https://jurismon.com/about",
+  "description": "JurisMon is an automated statutory intelligence platform offering 41 live jurisdictions, 65 tracked, historical point-in-time code retention, and section-level (§) delta alerts.",
+  "mainEntity": {
+    "@type": "Organization",
+    "name": "JurisMon",
+    "url": "https://jurismon.com/",
+    "logo": "https://jurismon.com/static/assets/logo.png",
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "email": "support@jurismon.com",
+      "contactType": "customer service"
+    }
+  }
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg:           #f8fafc;
+    --surface:      #ffffff;
+    --hover:        #f1f5f9;
+    --ink:          #0f172a;
+    --text:         #334155;
+    --muted:        #64748b;
+    --line:         #e2e8f0;
+    --line-strong:  #cbd5e1;
+    --primary:      #154da8;
+    --primary-hover:#0f3c85;
+
+    /* Diff Engine Colors */
+    --add-bg:       #ecfdf5;
+    --add-ink:      #065f46;
+    --add-bar:      #6ee7b7;
+    --del-bg:       #fff1f2;
+    --del-ink:      #9f1239;
+    --del-bar:      #fda4af;
+
+    --r-sm: 4px;
+    --r-md: 6px;
+    --r-lg: 10px;
+    --r-full: 999px;
+    --ease: cubic-bezier(.2, .7, .2, 1);
+    --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.65;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
+  a:hover { color: var(--ink); }
+
+  .wrap {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 0 24px;
+    width: 100%;
+  }
+
+  /* Top bar */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .topbar-inner {
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: inherit;
+  }
+  .brand-logo {
+    height: 30px;
+    width: auto;
+    display: block;
+    object-fit: contain;
+  }
+  .brand-tagline {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1;
+    border-left: 1px solid var(--line);
+    padding-left: 10px;
+  }
+  .topnav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .navlink {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: var(--r-md);
+    transition: background-color .15s var(--ease), color .15s var(--ease);
+  }
+  .navlink:hover {
+    background: var(--hover);
+    color: var(--ink);
+  }
+  .navlink.active {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .nav-back {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--ink);
+    background: #fff;
+    border: 1px solid var(--line-strong);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: var(--r-md);
+    transition: background-color .15s var(--ease), border-color .15s var(--ease);
+  }
+  .nav-back:hover {
+    background: var(--hover);
+  }
+
+  /* Main Document */
+  main {
+    flex: 1 0 auto;
+    padding: 40px 0 64px;
+  }
+
+  /* Eyebrow & Hero Header */
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: var(--r-full);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: #eff6ff;
+    color: var(--primary);
+    border: 1px solid #bfdbfe;
+    margin-bottom: 16px;
+  }
+  h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.025em;
+    margin: 0 0 16px;
+    line-height: 1.25;
+  }
+  .lede {
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--text);
+    margin: 0 0 48px;
+    max-width: 860px;
+  }
+  .lede strong {
+    color: var(--ink);
+  }
+
+  /* Section Common Styling */
+  .about-section {
+    margin-bottom: 56px;
+  }
+  .section-title {
+    font-size: 21px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.015em;
+    margin: 0 0 10px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    line-height: 1.35;
+  }
+  .section-num {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    background: var(--ink);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    vertical-align: middle;
+    flex-shrink: 0;
+  }
+  .section-sub {
+    font-size: 15px;
+    color: var(--muted);
+    margin: 0 0 24px;
+    max-width: 860px;
+  }
+
+  /* Card Grids */
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 24px;
+    transition: transform .15s var(--ease), box-shadow .15s var(--ease);
+    display: flex;
+    flex-direction: column;
+  }
+  .feature-card:hover {
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+  }
+  .feature-card h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0 0 10px;
+    line-height: 1.35;
+  }
+  .feature-card p {
+    font-size: 14px;
+    color: var(--muted);
+    margin: 0;
+    line-height: 1.55;
+    flex: 1 0 auto;
+  }
+
+  /* Highlight Panel / Competitive Moat */
+  .moat-panel {
+    background: #0f172a;
+    color: #f8fafc;
+    border-radius: var(--r-lg);
+    padding: 32px;
+    margin-bottom: 24px;
+    border: 1px solid #1e293b;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+  }
+  .moat-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    border-radius: var(--r-full);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    background: rgba(21, 77, 168, 0.35);
+    color: #93c5fd;
+    border: 1px solid #2563eb;
+    margin-bottom: 12px;
+  }
+  .moat-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0 0 12px;
+    letter-spacing: -0.015em;
+  }
+  .moat-text {
+    font-size: 15px;
+    line-height: 1.65;
+    color: #cbd5e1;
+    margin: 0;
+    max-width: 880px;
+  }
+
+  /* Section 4: Risk & Impact Table */
+  .risk-container {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+  }
+  .risk-row {
+    display: grid;
+    grid-template-columns: 1fr 1.35fr 1.35fr;
+    border-bottom: 1px solid var(--line);
+  }
+  .risk-row:last-child {
+    border-bottom: 0;
+  }
+  .risk-header {
+    background: #f8fafc;
+    border-bottom: 2px solid var(--line);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+  }
+  .risk-cell {
+    padding: 20px 24px;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .risk-who {
+    font-weight: 600;
+    color: var(--ink);
+    font-size: 15px;
+  }
+  .risk-cost-title {
+    font-weight: 600;
+    color: #b91c1c;
+    margin-bottom: 4px;
+  }
+  .risk-cost-desc {
+    color: var(--text);
+  }
+  .risk-protect {
+    color: var(--text);
+  }
+  .mobile-field-label {
+    display: none;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+    letter-spacing: 0.04em;
+  }
+
+  /* Section 5: Delta Diff Badges */
+  .diff-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: var(--r-sm);
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    letter-spacing: 0.04em;
+  }
+  .diff-badge-added {
+    background: var(--add-bg);
+    color: var(--add-ink);
+    border: 1px solid var(--add-bar);
+  }
+  .diff-badge-removed {
+    background: var(--del-bg);
+    color: var(--del-ink);
+    border: 1px solid var(--del-bar);
+  }
+  .diff-badge-modified {
+    background: #f1f5f9;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+  }
+
+  /* CTA Band */
+  .cta-band {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 44px 32px;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+  }
+  .cta-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    margin: 0 0 12px;
+  }
+  .cta-desc {
+    font-size: 15px;
+    color: var(--muted);
+    margin: 0 auto 28px;
+    max-width: 620px;
+    line-height: 1.6;
+  }
+  .cta-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .btn {
+    height: 40px;
+    border-radius: var(--r-md);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 0 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: background-color .15s var(--ease), border-color .15s var(--ease);
+    cursor: pointer;
+  }
+  .btn-primary {
+    background: var(--ink);
+    color: #fff;
+    border: 1px solid var(--ink);
+  }
+  .btn-primary:hover {
+    background: #1e293b;
+    color: #fff;
+  }
+  .btn-outline {
+    background: #fff;
+    color: var(--ink);
+    border: 1px solid var(--line-strong);
+  }
+  .btn-outline:hover {
+    background: var(--hover);
+    color: var(--ink);
+  }
+
+  /* Footer */
+  .site-footer {
+    border-top: 1px solid var(--line);
+    padding: 32px 0 40px;
+    background: var(--bg);
+    margin-top: auto;
+    font-size: 13px;
+  }
+  .site-footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .site-footer-copy { color: var(--muted); }
+  .site-footer-links {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .site-footer-link {
+    color: var(--text);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color .15s var(--ease);
+  }
+  .site-footer-link:hover { color: var(--ink); }
+  .site-footer-sep { color: var(--line-strong); user-select: none; }
+
+  /* Mobile Responsive Breakpoints */
+  @media (max-width: 900px) {
+    .grid-4 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 768px) {
+    h1 { font-size: 26px; }
+    .lede { font-size: 15px; margin-bottom: 36px; }
+    .section-title { font-size: 19px; }
+    .grid-3 { grid-template-columns: 1fr; }
+    .grid-4 { grid-template-columns: 1fr; }
+    
+    /* Stacked Risk Table on Mobile */
+    .risk-row.risk-header { display: none; }
+    .risk-row {
+      display: block;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
+    }
+    .risk-cell {
+      padding: 8px 0;
+    }
+    .risk-cell:first-child { padding-top: 0; }
+    .risk-cell:last-child { padding-bottom: 0; }
+    .mobile-field-label { display: block; }
+    
+    .moat-panel { padding: 24px; }
+    .cta-band { padding: 32px 20px; }
+    .cta-actions { flex-direction: column; width: 100%; }
+    .cta-actions .btn { width: 100%; }
+    .site-footer-inner { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .site-footer-links { gap: 8px 12px; }
+  }
+
+  @media (max-width: 480px) {
+    .wrap { padding: 0 16px; }
+    h1 { font-size: 23px; }
+    .feature-card { padding: 18px 16px; }
+    .moat-title { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="/" aria-label="JurisMon home">
+      <img src="/static/assets/logo.png" alt="JurisMon" class="brand-logo" width="107" height="30">
+      <span class="brand-tagline">Regulatory Drift Monitor</span>
+    </a>
+    <nav class="topnav" aria-label="Main">
+      <a href="/about" class="navlink active">About</a>
+      <a href="/" class="nav-back">&larr; Back to Search</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <!-- Header / Lede -->
+    <div class="hero-eyebrow">Municipal Version Control System</div>
+    <h1>Municipal Zoning &amp; Statutory Delta Intelligence</h1>
+    <p class="lede">
+      JurisMon eliminates the risk of unmonitored local regulatory change. Code publishers show today's law; aggregators alert on file upload; JurisMon is a <strong>complete version-control system for municipal law</strong>.
+    </p>
+
+    <!-- SECTION 1 -->
+    <section class="about-section">
+      <h2 class="section-title">
+        <span class="section-num">1</span>
+        Where the Data Begins: Continuous Multi-Portal Tracking
+      </h2>
+      <p class="section-sub">
+        Regulatory changes are fragmented across hundreds of disconnected city websites, unindexed PDF minutes, and legacy government portals. JurisMon unifies this fragmented landscape at the source:
+      </p>
+      <div class="grid-3">
+        <div class="feature-card">
+          <h3>Platform Networks</h3>
+          <p>Direct adapter integrations for Municode, Granicus Legistar, CivicPlus, XML/Atom, and custom REST APIs.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Official Primary Sources</h3>
+          <p>Daily automated crawling of public meeting notices, zoning agendas, board minutes, and updated codes.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Jurisdictional Scope</h3>
+          <p>Continuous tracking across county commissioners, city councils, and local zoning boards of adjustment.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2 -->
+    <section class="about-section">
+      <h2 class="section-title">
+        <span class="section-num">2</span>
+        How the Data Is Processed: Extraction &amp; Normalization
+      </h2>
+      <p class="section-sub">
+        Raw government PDFs are cluttered with disclaimers, broken site navigation, and scanned image text. JurisMon’s engineering pipeline standardizes raw documents for high-precision search:
+      </p>
+      <div class="grid-4">
+        <div class="feature-card">
+          <h3>1. Automated Ingestion</h3>
+          <p>Daily scheduled runs across <span id="ingestion-stat">41 live jurisdictions, 65 tracked</span>.</p>
+        </div>
+        <div class="feature-card">
+          <h3>2. Layout Stripping</h3>
+          <p>Removes site menus, headers, and disclaimers.</p>
+        </div>
+        <div class="feature-card">
+          <h3>3. OCR Fallback</h3>
+          <p>Tesseract OCR parses scanned physical notices.</p>
+        </div>
+        <div class="feature-card">
+          <h3>4. Database Indexing</h3>
+          <p>Full-text search across every indexed document via Postgres.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3 -->
+    <section class="about-section">
+      <h2 class="section-title">
+        <span class="section-num">3</span>
+        The Core Backbone: Historical Retention &amp; Legal Precedent
+      </h2>
+      <div class="moat-panel">
+        <div class="moat-badge">COMPETITIVE MOAT</div>
+        <h3 class="moat-title">Why Immutable Version Control is Our Competitive Moat</h3>
+        <p class="moat-text">
+          In land-use litigation, entitlement disputes, and real estate acquisitions, knowing current law is only half the battle. Municipalities routinely overwrite web pages and update code portals without preserving public changelogs, wiping out historical record accessibility. JurisMon solves this through permanent point-in-time snapshot retention.
+        </p>
+      </div>
+      <div class="grid-3">
+        <div class="feature-card">
+          <h3>Point-in-Time Reconstruction</h3>
+          <p>Reconstruct exact municipal code states from months or years prior to prove vested rights on permit dates.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Immutable Snapshot Vault</h3>
+          <p>Every ingested document, board notice, and statutory iteration is permanently cataloged and timestamped.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Complete Statutory Lineage</h3>
+          <p>Trace the exact evolution of a statutory section (&sect;) across time with full original source PDF references.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4 -->
+    <section class="about-section">
+      <h2 class="section-title">
+        <span class="section-num">4</span>
+        Who Is Affected &amp; What It Costs: Risk &amp; Impact Analysis
+      </h2>
+      <p class="section-sub">
+        A single unnoticed zoning amendment, setback shift, or land-use restriction can trigger severe financial and operational downstream costs:
+      </p>
+      <div class="risk-container">
+        <div class="risk-row risk-header">
+          <div class="risk-cell">Who Is Affected</div>
+          <div class="risk-cell">Real-World Risk &amp; Cost</div>
+          <div class="risk-cell">How JurisMon Protects You</div>
+        </div>
+        <div class="risk-row">
+          <div class="risk-cell">
+            <span class="mobile-field-label">Who Is Affected</span>
+            <div class="risk-who">Real Estate Developers</div>
+          </div>
+          <div class="risk-cell">
+            <span class="mobile-field-label">Real-World Risk &amp; Cost</span>
+            <div class="risk-cost-title">$50K–$500K+ in Delayed Projects</div>
+            <div class="risk-cost-desc">Unnoticed setback or height changes invalidate architectural plans, stall financing, or delay deal closing.</div>
+          </div>
+          <div class="risk-cell">
+            <span class="mobile-field-label">How JurisMon Protects You</span>
+            <div class="risk-protect">Flags early variance filings and zoning reclassifications during site selection and due diligence.</div>
+          </div>
+        </div>
+        <div class="risk-row">
+          <div class="risk-cell">
+            <span class="mobile-field-label">Who Is Affected</span>
+            <div class="risk-who">Land Use &amp; Zoning Attorneys</div>
+          </div>
+          <div class="risk-cell">
+            <span class="mobile-field-label">Real-World Risk &amp; Cost</span>
+            <div class="risk-cost-title">Malpractice &amp; Missed Appeals</div>
+            <div class="risk-cost-desc">Failing to catch an ordinance amendment causes clients to miss strict 14-to-30-day public appeal windows.</div>
+          </div>
+          <div class="risk-cell">
+            <span class="mobile-field-label">How JurisMon Protects You</span>
+            <div class="risk-protect">Delivers daily section-level (&sect;) alerts so legal teams can advise clients before ordinance passage.</div>
+          </div>
+        </div>
+        <div class="risk-row">
+          <div class="risk-cell">
+            <span class="mobile-field-label">Who Is Affected</span>
+            <div class="risk-who">Corporate Expansion Teams</div>
+          </div>
+          <div class="risk-cell">
+            <span class="mobile-field-label">Real-World Risk &amp; Cost</span>
+            <div class="risk-cost-title">Wasted Permitting &amp; Lease Fees</div>
+            <div class="risk-cost-desc">New conditional-use restrictions or parking minimum shifts render a newly leased commercial site unusable.</div>
+          </div>
+          <div class="risk-cell">
+            <span class="mobile-field-label">How JurisMon Protects You</span>
+            <div class="risk-protect">Tracks commercial zoning code amendments across multiple target expansion markets simultaneously.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5 -->
+    <section class="about-section">
+      <h2 class="section-title">
+        <span class="section-num">5</span>
+        What Changes: Section-Level (&sect;) Statutory Delta Analysis
+      </h2>
+      <p class="section-sub">
+        JurisMon does not force you to manually read through 180-page meeting agendas. Our proprietary diff engine compares incoming text against existing codes down to the specific section (&sect;) and paragraph level:
+      </p>
+      <div class="grid-3">
+        <div class="feature-card">
+          <div><span class="diff-badge diff-badge-added">+ ADDED</span></div>
+          <h3>Added Clauses (&sect;)</h3>
+          <p>Instant detection of newly introduced zoning restrictions, setback requirements, or compliance definitions.</p>
+        </div>
+        <div class="feature-card">
+          <div><span class="diff-badge diff-badge-removed">&minus; REMOVED</span></div>
+          <h3>Removed Language</h3>
+          <p>Explicit tracking of deleted statutory sections, repealed paragraphs, or removed conditional-use rights.</p>
+        </div>
+        <div class="feature-card">
+          <div><span class="diff-badge diff-badge-modified">&Delta; MODIFIED</span></div>
+          <h3>Modified Parameters</h3>
+          <p>Word-for-word comparative analysis surfacing numerical shifts (e.g., setback updated from 20 ft to 15 ft).</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA BAND -->
+    <div class="cta-band">
+      <h2 class="cta-title">Never Miss a Statutory Delta Again</h2>
+      <p class="cta-desc">Protect your deals, clients, and projects with automated daily tracking, historical version control, and section-level alerts.</p>
+      <div class="cta-actions">
+        <a href="/" class="btn btn-primary">Start Searching Municipal Updates</a>
+        <a href="mailto:support@jurismon.com?subject=Custom%20Jurisdiction%20Coverage%20Request" class="btn btn-outline">Request Custom Jurisdiction Coverage</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap site-footer-inner">
+    <div class="site-footer-copy">
+      &copy; 2026 JurisMon. All rights reserved.
+    </div>
+    <nav class="site-footer-links" aria-label="Legal and contact links">
+      <a href="/about" class="site-footer-link">About</a>
+      <span class="site-footer-sep">&bull;</span>
+      <a href="/terms" class="site-footer-link">Terms of Service</a>
+      <span class="site-footer-sep">&bull;</span>
+      <a href="/privacy" class="site-footer-link">Privacy Policy</a>
+      <span class="site-footer-sep">&bull;</span>
+      <span class="site-footer-contact">Contact: <a href="mailto:support@jurismon.com" class="site-footer-link">support@jurismon.com</a></span>
+    </nav>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    async function updateLiveCounts() {
+      try {
+        var res = await fetch("/api/sources");
+        if (!res.ok) return;
+        var data = await res.json();
+        var total = data.count ?? data.total_configured ?? 65;
+        var live = data.live_count ?? 41;
+        var statEl = document.getElementById("ingestion-stat");
+        if (statEl) {
+          statEl.textContent = live + " live jurisdictions, " + total + " tracked";
+        }
+      } catch (e) {
+        // Fallback remains the pre-rendered markup
+      }
+    }
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", updateLiveCounts);
+    } else {
+      updateLiveCounts();
+    }
+  })();
+</script>
+
+</body>
+</html>
