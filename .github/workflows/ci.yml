@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'claude/**'
+  pull_request:
+    branches:
+      - main
+      - 'claude/**'
+  workflow_dispatch:
+    inputs:
+      enable_deploy:
+        description: 'Set to true to run deploy job after tests (default: false)'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --ignore-installed PyYAML -r requirements.txt
+
+      - name: Run Pytest
+        run: |
+          python -m pytest -q
+
+  deploy:
+    name: Deploy to VPS
+    needs: test
+    # DISABLED: Gated behind manual workflow_dispatch with enable_deploy=true.
+    # When Huzaifah is ready to enable automated CD on push, update condition to:
+    # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && inputs.enable_deploy == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script: |
+            cd ${{ secrets.DEPLOY_PATH }}
+            bash scripts/deploy.sh
+
+      - name: Verify Live Health Endpoint
+        run: |
+          curl --fail --retry 3 --retry-delay 5 --show-error --silent https://jurismon.com/api/health

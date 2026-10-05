@@ -1,5 +1,7 @@
 # JurisMon - Municipal Zoning & Statutory Delta Monitor
 
+[![CI](https://github.com/Huzaifah-Analyst/jurismon-client/actions/workflows/ci.yml/badge.svg)](https://github.com/Huzaifah-Analyst/jurismon-client/actions/workflows/ci.yml)
+
 JurisMon is a production-grade statutory monitoring pipeline that tracks municipal and county zoning board websites daily, pulls PDF notices and meeting minutes, extracts and cleans text, detects added/removed statutory clauses (§ sections and paragraphs), and provides instant full-text search and subscription management.
 
 ---
