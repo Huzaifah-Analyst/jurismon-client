@@ -90,6 +90,8 @@ Huzaifah told the client Parts 1+2 in 3–4 days, with 7 on the order as a margi
 1. **Deploy Part 1** — code is approved but the live site still runs the old build
 2. **Part 2 packet** — admin pricing (see the trap in §5)
 3. **`docs/ai/` folder + CI pipeline** — packet written 5 Oct, awaiting Antigravity
+4. **Homepage jurisdiction count** — client asked about it 5 Oct, three options put to
+   him, awaiting his answer. See §5.
 
 ---
 
@@ -161,6 +163,25 @@ everyone assumed the fix was live. Deployment is a separate manual step
 
 **Live PayPal credentials.** `.env` has `PAYPAL_MODE=live`. Never run subscription
 lifecycle calls against it in testing. Antigravity was right to refuse this.
+
+**The homepage shows a different number to admins and to the public.** This is
+deliberate, not a bug, and not a caching problem. `frontend/index.html:1394` sets
+`isAdminView = ("operational_count" in data)`. Admins see "41 active jurisdictions"
+plus the Cloudflare/dead-link breakdown; everyone else sees "65 U.S. jurisdictions"
+and "Monitoring 65 municipal and county portals daily". It came from Huzaifah's own
+requirement that visitors not be shown "41 / 65".
+
+On 5 Oct the client asked whether the 65 was correct, having seen 65 while Huzaifah
+saw 41 in the same session. **If this comes up again: it is not cache, do not tell
+anyone to hard-refresh.** The honest concern is that 65 oversells — 24 of those
+portals bring in nothing, so a subscriber who paid on the strength of "65" has a
+legitimate refund argument. Three options were put to the client: leave 65, change to
+41, or "41 live jurisdictions, 65 tracked" (recommended — true, doesn't undersell, and
+still reads correctly once Part 4 raises both numbers). **Awaiting his decision.**
+
+Related: `index.html:1407` has `data.count ?? data.total_configured ?? 65` — a
+hardcoded 65 fallback. It happens to be the real configured count today, but it will
+be wrong the moment Part 4 lands. Fix it then.
 
 ---
 
