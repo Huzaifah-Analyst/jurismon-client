@@ -47,6 +47,10 @@ Thumbs.db
 # Everything the client sends goes in credentials/ so a new file cannot be
 # swept in by `git add -A` before anyone thinks about it.
 credentials/
+# Raw client correspondence transcript: no live keys, but it carries the VPS
+# root IP and the full commercial negotiation. Never tracked. See ORDER-P2-10.
+docs/archive/source-of-truth.txt
+docs/source of truth.txt
 docs/Updates.txt
 docs/Resend*.txt
 **/credentials*.txt
