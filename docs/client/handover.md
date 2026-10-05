@@ -71,7 +71,7 @@ JurisMon is an automated regulatory drift monitoring platform that crawls munici
 Deployment is a manual, isolated operational step on the production VPS.
 
 ### Deployment Instructions
-Detailed deployment documentation is maintained in [README.md](../README.md#🚨-deploying-a-change-to-jurismoncom-critical).
+Detailed deployment documentation is maintained in [README.md](../../README.md#🚨-deploying-a-change-to-jurismoncom-critical).
 
 **Summary command to run as root on the VPS:**
 ```bash
@@ -196,7 +196,7 @@ To permanently prevent this, `tests/test_schema_contract.py::TestSQLitePostgresS
    - The rate limiters for login attempts and forgot-password requests are maintained in memory (`api/main.py`). They reset when `jurismon.service` restarts and are scoped to the running process. For the current single-worker deployment this is fully sufficient, but multi-worker scaling requires migrating rate-limit counters to Redis or database persistence.
 2. **Source Ingestion Coverage (24 of 65 Inactive):**
    - Out of the 65 monitored jurisdictions in `config/sites.json`, 41 are operational and crawled daily. 24 sources are currently un-ingestible due to external municipal blockers (dead links, Cloudflare Turnstile bot blocks, HTTP 403 blocks, or portal authentication requirements).
-   - See [docs/SOURCE_COVERAGE.md](SOURCE_COVERAGE.md) for the exact source-by-source status breakdown.
+   - See [docs/client/source-coverage.md](source-coverage.md) for the exact source-by-source status breakdown.
 3. **Diffs Require a Baseline Snapshot:**
    - Clause deltas (added/removed text) are only generated on the **second** and subsequent crawls of any document. The initial crawl establishes the baseline snapshot. The absence of diffs on a brand-new source is expected behavior, not a defect.
 4. **Municipal Portal Markup Changes:**

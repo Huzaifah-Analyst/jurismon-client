@@ -78,5 +78,6 @@ pass_count = sum(1 for r in results if r["verdict"] == "PASS")
 fail_count = len(results) - pass_count
 print(f"Passed: {pass_count}/{len(results)}, Failed/Need Key: {fail_count}")
 
-with open("docs/audit_18_new_sources.json", "w", encoding="utf-8") as f:
+os.makedirs("docs/reports/data", exist_ok=True)
+with open("docs/reports/data/audit-18-new-sources.json", "w", encoding="utf-8") as f:
     json.dump(results, f, indent=2)

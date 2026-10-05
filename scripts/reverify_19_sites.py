@@ -137,9 +137,10 @@ async def main():
     print("=== SUMMARY OF 19 RE-VERIFIED SITES ===")
     print("="*80)
     import json
-    with open("docs/live_reverification_19_sites.json", "w", encoding="utf-8") as f:
+    os.makedirs("docs/reports/data", exist_ok=True)
+    with open("docs/reports/data/live-reverification-19-sites.json", "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)
-    print("Saved raw live results to docs/live_reverification_19_sites.json")
+    print("Saved raw live results to docs/reports/data/live-reverification-19-sites.json")
 
 if __name__ == "__main__":
     asyncio.run(main())

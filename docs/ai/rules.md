@@ -6,7 +6,7 @@
 ---
 
 ### RULE 1: Dual-Schema Parity
-- Whenever you add a column or table to `_init_sqlite_schema()` in [`db/repository.py`](file:///d:/fiverr%20client/malok%20mading/db/repository.py), you **MUST** create a matching numbered SQL migration in [`db/migrations/`](file:///d:/fiverr%20client/malok%20mading/db/migrations/) in the same commit.
+- Whenever you add a column or table to `_init_sqlite_schema()` in [`db/repository.py`](../../db/repository.py), you **MUST** create a matching numbered SQL migration in [`db/migrations/`](../../db/migrations/) in the same commit.
 - Use the next sequential number. As of now, migrations exist from `001` through `007`. **The next migration file is `008_<name>.sql`**.
 - PostgreSQL column types are strict (`BOOLEAN DEFAULT TRUE`, not `INTEGER 1`).
 - **Enforcement**: Run `pytest tests/test_schema_contract.py`. If this test fails, you are not allowed to push.
@@ -14,7 +14,7 @@
 ---
 
 ### RULE 2: Dual-Branch Repository Implementation
-- Every data access method in [`db/repository.py`](file:///d:/fiverr%20client/malok%20mading/db/repository.py) that performs writes, updates, or deletes **MUST** implement both execution branches:
+- Every data access method in [`db/repository.py`](../../db/repository.py) that performs writes, updates, or deletes **MUST** implement both execution branches:
   ```python
   if self.supabase:
       # Production PostgreSQL branch via Supabase SDK
@@ -24,7 +24,7 @@
       ...
   ```
 - **Never implement a write solely for SQLite.** Local tests run against SQLite and will give you a false sense of success, while production (which uses Supabase) will silently fail to persist data.
-- Verify both paths by running tests that test SQLite and tests that mock the Supabase client ([`tests/test_supabase_path.py`](file:///d:/fiverr%20client/malok%20mading/tests/test_supabase_path.py)).
+- Verify both paths by running tests that test SQLite and tests that mock the Supabase client ([`tests/test_supabase_path.py`](../../tests/test_supabase_path.py)).
 
 ---
 
@@ -69,7 +69,7 @@
 ---
 
 ### RULE 8: Preserve `config/sites.json` Byte-for-Byte
-- [`config/sites.json`](file:///d:/fiverr%20client/malok%20mading/config/sites.json) defines the active 65 municipal and statutory sources.
+- [`config/sites.json`](../../config/sites.json) defines the active 65 municipal and statutory sources.
 - **Do not touch, reformat, reorder, or modify `config/sites.json`** unless the user's task packet explicitly instructs you to modify sources.
 - Even whitespace diffs in `config/sites.json` are rejected.
 

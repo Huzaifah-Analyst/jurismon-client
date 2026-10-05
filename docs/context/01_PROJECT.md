@@ -6,7 +6,7 @@ JurisMon is an automated regulatory intelligence platform tailored for municipal
 ---
 
 ## Original Contract Brief: The 8 Deliverables
-The project contract established eight core technical milestones documented in [docs/PROJECT_SPEC.md](file:///d:/fiverr%20client/malok%20mading/docs/PROJECT_SPEC.md):
+The project contract established eight core technical milestones documented in [docs/client/project-spec.md](../client/project-spec.md):
 
 1. **50 Municipal URLs Monitored**: Crawling across municipal and county planning and zoning portals.
 2. **Document & Text Extraction Pipeline**: Ingestion of PDF and HTML documents with OCR fallback (via Tesseract) for scanned documents.
@@ -44,7 +44,7 @@ During development, the core platform was expanded significantly beyond the orig
 ## Commercial Model & Access Lifecycle
 
 ### Subscription Tiers
-Defined in [config/plans.json](file:///d:/fiverr%20client/malok%20mading/config/plans.json):
+Defined in [config/plans.json](../../config/plans.json):
 - **14-Day Free Trial**: Automatically attached to every new account upon email verification.
 - **Professional Monthly**: $49.00 / month (PayPal Plan ID: `P-09H67919864276135NHBHYUI`).
 - **Professional Annual**: $468.00 / year (equivalent to $39/mo, 20% discount; PayPal Plan ID: `P-5G6438883W139580UNHBHY7A`).

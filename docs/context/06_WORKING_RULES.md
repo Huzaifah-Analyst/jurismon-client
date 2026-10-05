@@ -7,7 +7,7 @@ These 10 non-negotiable rules were established through hard-learned production f
 ## Rule 1: Dual-Schema Parity Discipline
 > **Any column added to the SQLite schema requires a matching PostgreSQL migration in the same commit.**
 
-- In [db/repository.py:51-175](file:///d:/fiverr%20client/malok%20mading/db/repository.py), the `_init_sqlite_schema()` method creates SQLite tables for local offline execution.
+- In [db/repository.py:51-175](../../db/repository.py#L51-L175), the `_init_sqlite_schema()` method creates SQLite tables for local offline execution.
 - Production runs PostgreSQL hosted on Supabase. SQLite will happily create columns on the fly, but PostgreSQL will immediately crash with syntax/column errors if a column is missing.
 - Whenever a column or table is added to `_init_sqlite_schema()`, you must create a corresponding numbered migration file in `db/migrations/` (e.g., `007_new_feature.sql`).
 - **Enforcement**: Run `pytest tests/test_schema_contract.py`. If a column exists in SQLite without a matching migration, the test fails.
@@ -65,7 +65,7 @@ These 10 non-negotiable rules were established through hard-learned production f
   cd /opt/jurismon && bash scripts/deploy.sh
   ```
 - This script pulls the latest commit, installs dependencies, applies database migrations, restarts systemd services, and executes a health check probe.
-- Refer to [docs/HANDOVER.md:68-89](file:///d:/fiverr%20client/malok%20mading/docs/HANDOVER.md) for full deployment instructions.
+- Refer to [docs/client/handover.md:68-89](../client/handover.md#L68-L89) for full deployment instructions.
 
 ---
 

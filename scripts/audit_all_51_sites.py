@@ -8,8 +8,8 @@ Categorizes every site into:
 4. [CATEGORY D] SELECTOR TUNING NEEDED (Page loads 200 OK, needs custom portal sub-path)
 
 Generates:
-- docs/AUDIT_51_SITES_REPORT.md
-- docs/audit_results.json
+- docs/reports/audit-51-sites.md
+- docs/reports/data/audit-results.json
 """
 
 import os
@@ -153,7 +153,8 @@ def run_full_audit(max_workers: int = 4):
 
     # Save JSON report
     os.makedirs("docs", exist_ok=True)
-    with open("docs/audit_results.json", "w", encoding="utf-8") as f:
+    os.makedirs("docs/reports/data", exist_ok=True)
+    with open("docs/reports/data/audit-results.json", "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)
 
     # Generate Markdown Audit Report
@@ -218,12 +219,13 @@ def generate_markdown_report(results: dict, duration: float, total_sites: int):
         lines.append(f"| {s['name']} | [{s['url']}]({s['url']}) | 200 OK | {s['recommendation']} |")
     lines.append("\n")
 
-    with open("docs/AUDIT_51_SITES_REPORT.md", "w", encoding="utf-8") as f:
+    os.makedirs("docs/reports", exist_ok=True)
+    with open("docs/reports/audit-51-sites.md", "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
 
     print("\n" + "=" * 75)
     print(f"Audit Complete in {duration}s!")
-    print(f"Results saved to: docs/AUDIT_51_SITES_REPORT.md and docs/audit_results.json")
+    print(f"Results saved to: docs/reports/audit-51-sites.md and docs/reports/data/audit-results.json")
     print("=" * 75 + "\n")
 
 

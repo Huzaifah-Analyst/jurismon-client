@@ -6,7 +6,7 @@ dependency; the Markdown parser is not, so install it before running:
     pip install markdown
 
 Usage:
-    python scripts/md_to_pdf.py docs/JurisMon_Client_Action_Guide.md                                 docs/JurisMon_Client_Action_Guide.pdf
+    python scripts/md_to_pdf.py docs/client/client-action-guide.md                                 docs/client/client-action-guide.pdf
 """
 
 import sys

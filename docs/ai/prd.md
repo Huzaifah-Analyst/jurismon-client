@@ -1,7 +1,7 @@
 # JurisMon Product Requirements Document (PRD)
 
 > **Audience**: AI coding agents preparing to modify or extend JurisMon.  
-> **Source of Truth Reference**: Human history and commercial brief are documented in [docs/context/01_PROJECT.md](file:///d:/fiverr%20client/malok%20mading/docs/context/01_PROJECT.md) and [docs/context/04_CURRENT_STATE.md](file:///d:/fiverr%20client/malok%20mading/docs/context/04_CURRENT_STATE.md).
+> **Source of Truth Reference**: Human history and commercial brief are documented in [docs/context/01_PROJECT.md](../context/01_PROJECT.md) and [docs/context/04_CURRENT_STATE.md](../context/04_CURRENT_STATE.md).
 
 ---
 
@@ -42,13 +42,13 @@ JurisMon provides an automated regulatory intelligence and statutory delta monit
 ### [Shipped] Core Platform & Production Features (Deployed on VPS)
 *All features below are verified, tested, and running in production at `https://jurismon.com` as of commit `c7c01a0`.*
 
-- **[Shipped] Daily Automated Crawler**: Runs daily at 04:00 UTC via systemd timer (`jurismon-crawl.timer`), orchestrating multi-source ingestion across 65 configured jurisdictions ([`crawler/orchestrator.py`](file:///d:/fiverr%20client/malok%20mading/crawler/orchestrator.py)).
-- **[Shipped] Seven Crawler Adapters**: Specialized scrapers for Granicus, CivicPlus, Municode, REST APIs, XML/Atom feeds, direct documents, and custom HTML portals ([`crawler/adapters/`](file:///d:/fiverr%20client/malok%20mading/crawler/adapters/)).
-- **[Shipped] Document Extraction & OCR Pipeline**: Text extraction for PDF and HTML with Tesseract OCR for scanned PDF files ([`extractor/`](file:///d:/fiverr%20client/malok%20mading/extractor/)).
-- **[Shipped] Paragraph & Section Diff Engine**: Computes additions, deletions, and modifications between statutory snapshots with SHA-256 content deduplication ([`diff_engine/`](file:///d:/fiverr%20client/malok%20mading/diff_engine/)).
-- **[Shipped] Dual-Persistence Architecture**: Production PostgreSQL hosted on Supabase with SQLite fallback for offline execution and unit testing ([`db/repository.py`](file:///d:/fiverr%20client/malok%20mading/db/repository.py)).
-- **[Shipped] Numbered SQL Migrations**: Versioned database migrations (`001` through `007`) guarded by an automated SQLite/Postgres schema parity test ([`db/migrations/`](file:///d:/fiverr%20client/malok%20mading/db/migrations/)).
-- **[Shipped] Google-Style Full-Text Search**: Keyword, date-range, and jurisdiction search powered by PostgreSQL full-text search (`websearch_to_tsquery`) ([`api/main.py`](file:///d:/fiverr%20client/malok%20mading/api/main.py)).
+- **[Shipped] Daily Automated Crawler**: Runs daily at 04:00 UTC via systemd timer (`jurismon-crawl.timer`), orchestrating multi-source ingestion across 65 configured jurisdictions ([`crawler/orchestrator.py`](../../crawler/orchestrator.py)).
+- **[Shipped] Seven Crawler Adapters**: Specialized scrapers for Granicus, CivicPlus, Municode, REST APIs, XML/Atom feeds, direct documents, and custom HTML portals ([`crawler/adapters/`](../../crawler/adapters/)).
+- **[Shipped] Document Extraction & OCR Pipeline**: Text extraction for PDF and HTML with Tesseract OCR for scanned PDF files ([`extractor/`](../../extractor/)).
+- **[Shipped] Paragraph & Section Diff Engine**: Computes additions, deletions, and modifications between statutory snapshots with SHA-256 content deduplication ([`diff_engine/`](../../diff_engine/)).
+- **[Shipped] Dual-Persistence Architecture**: Production PostgreSQL hosted on Supabase with SQLite fallback for offline execution and unit testing ([`db/repository.py`](../../db/repository.py)).
+- **[Shipped] Numbered SQL Migrations**: Versioned database migrations (`001` through `007`) guarded by an automated SQLite/Postgres schema parity test ([`db/migrations/`](../../db/migrations/)).
+- **[Shipped] Google-Style Full-Text Search**: Keyword, date-range, and jurisdiction search powered by PostgreSQL full-text search (`websearch_to_tsquery`) ([`api/main.py`](../../api/main.py)).
 - **[Shipped] Customer Authentication & JWT**: Registration, bcrypt password hashing, and JWT bearer sessions (`api/auth.py`).
 - **[Shipped] Transactional Email Verification**: 6-digit OTP codes sent via Resend API (`POST /api/auth/verify-code`).
 - **[Shipped] 14-Day Free Trial & Search Gating**: Search teaser paywalling for unauthenticated or expired accounts (`api/main.py`, `frontend/index.html`).

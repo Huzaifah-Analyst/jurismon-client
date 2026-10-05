@@ -1,7 +1,7 @@
 # JurisMon Technical Architecture
 
 > **Audience**: AI coding agents preparing to modify or extend JurisMon.  
-> **Source of Truth Reference**: Engineering history in [docs/context/02_DECISIONS.md](file:///d:/fiverr%20client/malok%20mading/docs/context/02_DECISIONS.md) and [docs/HANDOVER.md](file:///d:/fiverr%20client/malok%20mading/docs/HANDOVER.md).
+> **Source of Truth Reference**: Engineering history in [docs/context/02_DECISIONS.md](../context/02_DECISIONS.md) and [docs/client/handover.md](../client/handover.md).
 
 ---
 

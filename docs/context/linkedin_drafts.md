@@ -30,11 +30,11 @@ The figures cited below are sourced directly from git logs, the test suite, and 
 
 ## Accompanying Posters & Image Assets
 
-Three high-resolution square graphics (1200 x 1200 px, optimal for LinkedIn feed engagement) were generated from the delivery artifacts and saved in [`docs/context/posters/`](file:///d:/fiverr%20client/malok%20mading/docs/context/posters/):
+Three high-resolution square graphics (1200 x 1200 px, optimal for LinkedIn feed engagement) were generated from the delivery artifacts and saved in [`docs/assets/posters/`](../assets/posters/):
 
-1. [**`poster_1_client_review.png`**](file:///d:/fiverr%20client/malok%20mading/docs/context/posters/poster_1_client_review.png): High-trust social proof featuring the verified Fiverr review card ("I wish there's another rating above 5 stars..."), paired with the 4 core delivery metrics (41 sources, 915 documents, 226 diffs, 255 tests).
-2. [**`poster_2_system_architecture.png`**](file:///d:/fiverr%20client/malok%20mading/docs/context/posters/poster_2_system_architecture.png): Product and UI showcase displaying the live Legal Redline Diff Viewer and the Administrative Source Health Console in clean macOS-style window frames.
-3. [**`poster_3_engineering_process.png`**](file:///d:/fiverr%20client/malok%20mading/docs/context/posters/poster_3_engineering_process.png): Engineering rigor and post-mortem breakdown featuring the passing test suite terminal and the 3 architectural rules that prevented production failures.
+1. [**`poster_1_client_review.png`**](../assets/posters/poster_1_client_review.png): High-trust social proof featuring the verified Fiverr review card ("I wish there's another rating above 5 stars..."), paired with the 4 core delivery metrics (41 sources, 915 documents, 226 diffs, 255 tests).
+2. [**`poster_2_system_architecture.png`**](../assets/posters/poster_2_system_architecture.png): Product and UI showcase displaying the live Legal Redline Diff Viewer and the Administrative Source Health Console in clean macOS-style window frames.
+3. [**`poster_3_engineering_process.png`**](../assets/posters/poster_3_engineering_process.png): Engineering rigor and post-mortem breakdown featuring the passing test suite terminal and the 3 architectural rules that prevented production failures.
 
 ---
 
@@ -275,8 +275,8 @@ If you have a complex scraping, web application, or automation project, feel fre
 ### Which Draft to Post First?
 **Post Draft D (The Review) or Draft A (The Bug Story) first.**
 
-- **Why Draft D first**: If your primary objective is immediate inbound client enquiries, leading with a verbatim, glowing client review paired with [**`poster_1_client_review.png`**](file:///d:/fiverr%20client/malok%20mading/docs/context/posters/poster_1_client_review.png) provides immediate proof of capability and customer satisfaction. It bridges freelancing with engineering execution.
-- **Why Draft A second**: "The Bug Story" paired with [**`poster_3_engineering_process.png`**](file:///d:/fiverr%20client/malok%20mading/docs/context/posters/poster_3_engineering_process.png) travels exceptionally well on LinkedIn technical feeds because engineers and CTOs appreciate vulnerability, concrete debugging post-mortems, and practical takeaways.
+- **Why Draft D first**: If your primary objective is immediate inbound client enquiries, leading with a verbatim, glowing client review paired with [**`poster_1_client_review.png`**](../assets/posters/poster_1_client_review.png) provides immediate proof of capability and customer satisfaction. It bridges freelancing with engineering execution.
+- **Why Draft A second**: "The Bug Story" paired with [**`poster_3_engineering_process.png`**](../assets/posters/poster_3_engineering_process.png) travels exceptionally well on LinkedIn technical feeds because engineers and CTOs appreciate vulnerability, concrete debugging post-mortems, and practical takeaways.
 
 ---
 
@@ -284,16 +284,16 @@ If you have a complex scraping, web application, or automation project, feel fre
 
 | Post Draft | Recommended Visual Asset | Notes & Privacy Considerations |
 | :--- | :--- | :--- |
-| **Draft A (The Bug Story)** | [**`poster_3_engineering_process.png`**](file:///d:/fiverr%20client/malok%20mading/docs/context/posters/poster_3_engineering_process.png) OR `delivery_screenshots/19_tests_passing.png` | Completely safe to post. Contains only code, terminal output, and architectural lessons. No sensitive client data. |
-| **Draft B (The Build)** | [**`poster_2_system_architecture.png`**](file:///d:/fiverr%20client/malok%20mading/docs/context/posters/poster_2_system_architecture.png) OR `delivery_screenshots/04_diff_viewer_modal.png` | The Diff Viewer modal shows public municipal zoning ordinances (public record). Shows UI sophistication without exposing proprietary backend secrets. |
-| **Draft C (The Process)** | [**`poster_3_engineering_process.png`**](file:///d:/fiverr%20client/malok%20mading/docs/context/posters/poster_3_engineering_process.png) | High engineering credibility. Highlights the schema-contract parity guard and testing discipline. |
-| **Draft D (The Review)** | [**`poster_1_client_review.png`**](file:///d:/fiverr%20client/malok%20mading/docs/context/posters/poster_1_client_review.png) | Uses the public review from Fiverr profile. The poster pairs the cropped review with clean delivery numbers (41 sources, 915 documents, 255 tests). Highly recommended. |
+| **Draft A (The Bug Story)** | [**`poster_3_engineering_process.png`**](../assets/posters/poster_3_engineering_process.png) OR `delivery_screenshots/19_tests_passing.png` | Completely safe to post. Contains only code, terminal output, and architectural lessons. No sensitive client data. |
+| **Draft B (The Build)** | [**`poster_2_system_architecture.png`**](../assets/posters/poster_2_system_architecture.png) OR `delivery_screenshots/04_diff_viewer_modal.png` | The Diff Viewer modal shows public municipal zoning ordinances (public record). Shows UI sophistication without exposing proprietary backend secrets. |
+| **Draft C (The Process)** | [**`poster_3_engineering_process.png`**](../assets/posters/poster_3_engineering_process.png) | High engineering credibility. Highlights the schema-contract parity guard and testing discipline. |
+| **Draft D (The Review)** | [**`poster_1_client_review.png`**](../assets/posters/poster_1_client_review.png) | Uses the public review from Fiverr profile. The poster pairs the cropped review with clean delivery numbers (41 sources, 915 documents, 255 tests). Highly recommended. |
 
 > [!WARNING]
 > **Data Privacy Notice:**
 > - Avoid posting screenshots showing raw customer email addresses or database connection strings.
 > - `delivery_screenshots/15_admin_subscribers.png` should not be posted publicly unless test customer names/emails are blurred.
-> - The three generated posters in `docs/context/posters/` have already been vetted and contain zero credentials, zero IP addresses, and zero private customer data.
+> - The three generated posters in `docs/assets/posters/` have already been vetted and contain zero credentials, zero IP addresses, and zero private customer data.
 
 ---
 

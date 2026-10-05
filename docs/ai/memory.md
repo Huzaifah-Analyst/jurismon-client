@@ -2,7 +2,7 @@
 
 > **Audience**: AI coding agents working on JurisMon.  
 > **Purpose**: Forensic record of real failures that reached production or survived code review.  
-> **Source of Truth Reference**: Documented in detail in [docs/context/03_FAILURE_LOG.md](file:///d:/fiverr%20client/malok%20mading/docs/context/03_FAILURE_LOG.md).  
+> **Source of Truth Reference**: Documented in detail in [docs/context/03_FAILURE_LOG.md](../context/03_FAILURE_LOG.md).  
 > **Tone**: Objective, direct, and unvarnished. Read these so you do not repeat them.
 
 ---
@@ -11,8 +11,8 @@
 
 - **What Broke**: The application ran and passed 100% of unit tests locally, but crashed immediately upon deployment to production with database column errors (e.g. `column "sources_skipped" does not exist`, missing customer authentication columns).
 - **How It Was Found**: Live API calls threw HTTP 500 errors on the production VPS; daily crawl recording crashed.
-- **Root Cause**: `_init_sqlite_schema()` in [`db/repository.py`](file:///d:/fiverr%20client/malok%20mading/db/repository.py) dynamically creates tables and adds columns on the fly for SQLite. Developers added columns to SQLite locally, tested against SQLite, and forgot to create matching PostgreSQL migrations in `db/migrations/*.sql` for Supabase.
-- **The Fix**: Added migration `006_crawl_sources_skipped.sql` and implemented an automated schema parity test ([`tests/test_schema_contract.py`](file:///d:/fiverr%20client/malok%20mading/tests/test_schema_contract.py)) that introspects the SQLite schema and asserts every column has an identical migration in `db/migrations/`.
+- **Root Cause**: `_init_sqlite_schema()` in [`db/repository.py`](../../db/repository.py) dynamically creates tables and adds columns on the fly for SQLite. Developers added columns to SQLite locally, tested against SQLite, and forgot to create matching PostgreSQL migrations in `db/migrations/*.sql` for Supabase.
+- **The Fix**: Added migration `006_crawl_sources_skipped.sql` and implemented an automated schema parity test ([`tests/test_schema_contract.py`](../../tests/test_schema_contract.py)) that introspects the SQLite schema and asserts every column has an identical migration in `db/migrations/`.
 - **The Rule**: **Rule 1 (Dual-Schema Parity)**. Every column added to SQLite requires a numbered migration file in `db/migrations/` in the same commit. `pytest tests/test_schema_contract.py` must pass before pushing. Next migration number is `008`.
 
 ---
@@ -21,8 +21,8 @@
 
 - **What Broke**: Real customers on `https://jurismon.com` received 6-digit confirmation codes via email but were told `Invalid verification code` upon entering them. Customer registration was completely broken in production.
 - **How It Was Found**: Live manual registration testing on production.
-- **Root Cause**: `set_verification_code()` and `verify_user_email()` in [`db/repository.py`](file:///d:/fiverr%20client/malok%20mading/db/repository.py) were written only using `with self._connect() as conn:` (the SQLite branch). There was no `if self.supabase:` branch. In production, the verification code was written to a local SQLite file on the VPS disk that production Supabase queries never read. Local unit tests passed because they ran against SQLite.
-- **The Fix**: Implemented the Supabase write branch in `set_verification_code()` and added unit tests in [`tests/test_supabase_path.py`](file:///d:/fiverr%20client/malok%20mading/tests/test_supabase_path.py) that mock the Supabase client to assert both branches exist.
+- **Root Cause**: `set_verification_code()` and `verify_user_email()` in [`db/repository.py`](../../db/repository.py) were written only using `with self._connect() as conn:` (the SQLite branch). There was no `if self.supabase:` branch. In production, the verification code was written to a local SQLite file on the VPS disk that production Supabase queries never read. Local unit tests passed because they ran against SQLite.
+- **The Fix**: Implemented the Supabase write branch in `set_verification_code()` and added unit tests in [`tests/test_supabase_path.py`](../../tests/test_supabase_path.py) that mock the Supabase client to assert both branches exist.
 - **The Rule**: **Rule 2 (Dual-Branch Repository Implementation)**. Every data mutation method in `db/repository.py` must implement `if self.supabase:` AND `with self._connect():`. A SQLite-only write is invisible in production.
 
 ---
@@ -32,7 +32,7 @@
 - **What Broke**: The search landing page opened completely blank with zero results, despite 773 indexed statutory records existing in the production database.
 - **How It Was Found**: Visual inspection of the live homepage `https://jurismon.com`.
 - **Root Cause**: PostgreSQL full-text search used `plainto_tsquery('english', q)`. When `q` was empty (`""`), `plainto_tsquery('')` generated an empty `tsquery` that matched zero rows in PostgreSQL. Meanwhile, SQLite's fallback used `LIKE '%%'`, which matched every row. Local testing saw a full table; production saw nothing.
-- **The Fix**: Added logic in [`db/repository.py:347-360`](file:///d:/fiverr%20client/malok%20mading/db/repository.py#L347-L360) to detect empty or whitespace queries and execute a standard timestamp-ordered select query instead of a tsquery vector match. Added regression test in `tests/test_api_and_db.py`.
+- **The Fix**: Added logic in [`db/repository.py:347-360`](../../db/repository.py#L347-L360) to detect empty or whitespace queries and execute a standard timestamp-ordered select query instead of a tsquery vector match. Added regression test in `tests/test_api_and_db.py`.
 - **The Rule**: Never assume PostgreSQL tsquery and SQLite `LIKE` behave identically on boundary conditions. Verify empty queries, special characters, and edge cases on both engines.
 
 ---
@@ -41,7 +41,7 @@
 
 - **What Broke**: Clicking "Log out" in the admin dashboard resulted in frozen loading spinners and no login screen. The admin panel became completely unusable after logout.
 - **How It Was Found**: Manually testing the logout flow in a live browser session.
-- **Root Cause**: In [`frontend/admin.html`](file:///d:/fiverr%20client/malok%20mading/frontend/admin.html), the `<div id="auth-gate">` element was placed at line 2260, after the closing `</script>` tag at line 2256. When the script initialized, `document.getElementById('auth-gate')` returned `null`. The code had a defensive null guard `if (authGate) { authGate.style.display = 'block'; }`, so it silently failed without logging a single error to the console.
+- **Root Cause**: In [`frontend/admin.html`](../../frontend/admin.html), the `<div id="auth-gate">` element was placed at line 2260, after the closing `</script>` tag at line 2256. When the script initialized, `document.getElementById('auth-gate')` returned `null`. The code had a defensive null guard `if (authGate) { authGate.style.display = 'block'; }`, so it silently failed without logging a single error to the console.
 - **The Fix**: Moved `#auth-gate` above the `<script>` tag and added an automated HTML structure test in `tests/test_api_and_db.py` asserting `#auth-gate` precedes `<script>`.
 - **The Rule**: **Rule 4 & Rule 5**. Every element referenced by `getElementById` must be declared in markup above the `<script>` tag. Never write silent null guards on mandatory elements — they turn structural bugs into invisible failures.
 
@@ -52,7 +52,7 @@
 - **What Broke**: The client reported that bugs declared "fixed" were still present on `https://jurismon.com`. Five consecutive bug-fix commits pushed to GitHub over multiple days were completely absent from the live server.
 - **How It Was Found**: Client inspection of the live admin dashboard, followed by running `git log` on the VPS which showed the server was five commits behind.
 - **Root Cause**: Developers assumed GitHub repository pushes triggered automatic continuous deployment. The VPS had no automated CI/CD webhook runner configured.
-- **The Fix**: Documented the deployment runbook in `docs/HANDOVER.md` and created `scripts/deploy.sh`.
+- **The Fix**: Documented the deployment runbook in `docs/client/handover.md` and created `scripts/deploy.sh`.
 - **The Rule**: **Rule 10 (Pushing Is Not Deploying)**. `git push` updates GitHub; it never updates the server. Code is not live until deployed to the VPS via SSH (`bash scripts/deploy.sh`) and verified via health check.
 
 ---

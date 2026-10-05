@@ -28,7 +28,7 @@ The following subsystems are verified, active, and operating in production:
    - Gated search results for unauthenticated or expired users (headline match visible; full text locked behind paywall).
    - Self-service password reset flow (`POST /api/auth/forgot-password` and `POST /api/auth/reset-password`).
 5. **PayPal Subscription Payments & Webhook Automation**:
-   - Client-side PayPal Smart Buttons embedding user account UUID in `custom_id` ([frontend/index.html:1326](file:///d:/fiverr%20client/malok%20mading/frontend/index.html)).
+   - Client-side PayPal Smart Buttons embedding user account UUID in `custom_id` ([frontend/index.html:1326](../../frontend/index.html#L1326)).
    - Webhook processor (`POST /api/payments/webhook`) handling `BILLING.SUBSCRIPTION.ACTIVATED`, `PAYMENT.SALE.COMPLETED`, and `BILLING.SUBSCRIPTION.CANCELLED`.
    - Automatic account activation and cancellation.
 6. **Administrative Console**:
@@ -58,7 +58,7 @@ The following capabilities were intentionally excluded from Phase 1 scope:
 
 ## 3. Known Limitations
 
-Technical boundaries, external upstream constraints, and hardware capacity limits are documented in detail in [docs/HANDOVER.md Section 8 (Known Limitations)](file:///d:/fiverr%20client/malok%20mading/docs/HANDOVER.md#8-known-limitations). Summary of core limitations:
+Technical boundaries, external upstream constraints, and hardware capacity limits are documented in detail in [docs/client/handover.md Section 8 (Known Limitations)](../client/handover.md#8-known-limitations). Summary of core limitations:
 - **Cloudflare-Protected Sources (7 jurisdictions)**: Portals using Cloudflare Turnstile or aggressive bot challenges (e.g., NYC Rules) cannot be bypassed without third-party residential proxies or CAPTCHA solving services, which are out of scope.
 - **Single-Host Crawl Concurrency**: The crawler operates serially per host with polite delays (0.5s–1.5s jitter) to avoid IP blacklisting by municipal servers.
 - **Tesseract OCR Throughput**: OCR processing on scanned PDFs is CPU-bound on the 2-vCPU VPS instance; large documents (100+ pages) take several minutes to process.
@@ -69,15 +69,15 @@ Technical boundaries, external upstream constraints, and hardware capacity limit
 
 The following implementation quirks were identified during development and deliberately preserved for Phase 1 stability:
 
-1. **Hardcoded "MM" Avatar Initials in Admin Header** ([frontend/admin.html:698](file:///d:/fiverr%20client/malok%20mading/frontend/admin.html)):
+1. **Hardcoded "MM" Avatar Initials in Admin Header** ([frontend/admin.html:698](../../frontend/admin.html#L698)):
    - *Status*: The admin header renders an avatar chip with the static initials "MM", matching the client's name (Malok Mading).
    - *Why left*: Admin authentication uses a shared administrative password verified against `$ADMIN_PASSWORD_HASH`. There is no administrative user profile entity in the database to dynamically derive initials from.
    - *When to fix*: When multi-user role-based administrative accounts are implemented in Phase 2.
-2. **Fallback Catalog Counters in Frontend Markup** ([frontend/admin.html:706](file:///d:/fiverr%20client/malok%20mading/frontend/admin.html), [frontend/index.html:123](file:///d:/fiverr%20client/malok%20mading/frontend/index.html)):
+2. **Fallback Catalog Counters in Frontend Markup** ([frontend/admin.html:706](../../frontend/admin.html#L706), [frontend/index.html:123](../../frontend/index.html#L123)):
    - *Status*: The HTML templates contain fallback text referencing 65 sources if the live statistics API (`/api/stats` or `/api/admin/metrics`) fails to respond.
    - *Why left*: Provides a graceful fallback if the client loses network connectivity.
    - *When to fix*: When the catalog expands in Phase 2 (e.g., ingesting the 88 new sources), the fallback strings should be updated or replaced with generic loading skeletons.
-3. **In-Memory Rate Limiting in `api/auth.py`** ([api/auth.py:60-95](file:///d:/fiverr%20client/malok%20mading/api/auth.py)):
+3. **In-Memory Rate Limiting in `api/auth.py`** ([api/auth.py:60-95](../../api/auth.py#L60-L95)):
    - *Status*: Password reset and login attempt rate limits are tracked in a process-local Python dictionary with timestamps.
    - *Why left*: The production environment runs a single Uvicorn process managed by systemd. An in-memory dict avoids adding Redis as an infrastructure dependency.
    - *When to fix*: If Uvicorn worker count is scaled horizontally across multiple processes or containers, rate limiting must be migrated to Redis.

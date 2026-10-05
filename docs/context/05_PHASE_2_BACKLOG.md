@@ -3,8 +3,8 @@
 This document outlines the agreed feature backlog for Phase 2. For each item, it details the existing foundations, required additions, and codebase touchpoints.
 
 > [!IMPORTANT]
-> The client's source review data and additional jurisdiction links are parked unmodified in [docs/source of truth.txt](file:///d:/fiverr%20client/malok%20mading/docs/source%20of%20truth.txt) and [docs/JurisMon_18_Additional_Sources.txt](file:///d:/fiverr%20client/malok%20mading/docs/JurisMon_18_Additional_Sources.txt).
-> The active source configuration file at [config/sites.json](file:///d:/fiverr%20client/malok%20mading/config/sites.json) must remain completely untouched until Phase 2 source expansion is formally commissioned.
+> The client's source review data and additional jurisdiction links are parked unmodified in [docs/archive/source-of-truth.txt](../archive/source-of-truth.txt) and [docs/reports/sources-18-additional.txt](../reports/sources-18-additional.txt).
+> The active source configuration file at [config/sites.json](../../config/sites.json) must remain completely untouched until Phase 2 source expansion is formally commissioned.
 
 ---
 

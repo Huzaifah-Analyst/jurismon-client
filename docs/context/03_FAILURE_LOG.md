@@ -10,16 +10,16 @@ This document records the major defects that escaped to production or survived i
 On three separate occasions during development, changes were made to the database access layer that functioned flawlessly in local unit tests but immediately crashed production upon deployment:
 1. New customer authentication columns (`password_hash`, `is_verified`, `verification_code`, `trial_ends_at`, `subscription_status`, `paypal_subscription_id`) were added to the SQLite initialization method, but no matching PostgreSQL migration was written for Supabase (commits `e58817c`, `7950456`).
 2. Type mismatch on `is_active` and `sources` columns, where SQLite flexibly treats `1`/`0` as truthy integers, but PostgreSQL strictly enforces boolean column constraints (`BOOLEAN NOT NULL DEFAULT TRUE`).
-3. The `sources_skipped` column was added to `crawl_runs` in `_init_sqlite_schema()` ([db/repository.py:145](file:///d:/fiverr%20client/malok%20mading/db/repository.py)), but no PostgreSQL migration was created, causing the crawl recording query to fail on Supabase (commit `9df6dbc`).
+3. The `sources_skipped` column was added to `crawl_runs` in `_init_sqlite_schema()` ([db/repository.py:145](../../db/repository.py#L145)), but no PostgreSQL migration was created, causing the crawl recording query to fail on Supabase (commit `9df6dbc`).
 
 ### Why it happened
-In [db/repository.py:51-175](file:///d:/fiverr%20client/malok%20mading/db/repository.py), the `_init_sqlite_schema()` method uses dynamic `CREATE TABLE IF NOT EXISTS` and `ALTER TABLE ADD COLUMN` statements. When developers added features locally, they added columns to SQLite. The local test suite ran exclusively against SQLite and reported 100% passing tests. PostgreSQL running on Supabase never received corresponding migrations in `db/migrations/*.sql`.
+In [db/repository.py:51-175](../../db/repository.py#L51-L175), the `_init_sqlite_schema()` method uses dynamic `CREATE TABLE IF NOT EXISTS` and `ALTER TABLE ADD COLUMN` statements. When developers added features locally, they added columns to SQLite. The local test suite ran exclusively against SQLite and reported 100% passing tests. PostgreSQL running on Supabase never received corresponding migrations in `db/migrations/*.sql`.
 
 ### How it was found
 During live testing and deployment on the VPS: database queries threw `column "sources_skipped" does not exist` and HTTP 500 errors during crawl completion.
 
 ### What prevents it now
-The schema parity test suite in [tests/test_schema_contract.py:TestSQLitePostgresSchemaParity](file:///d:/fiverr%20client/malok%20mading/tests/test_schema_contract.py) (introduced in commit `9df6dbc`). It introspects the SQLite tables initialized by `_init_sqlite_schema()` and scans every migration file in `db/migrations/`, asserting that every single SQLite column has an explicit, corresponding migration in PostgreSQL. The test suite fails if any column is added to SQLite without a matching migration.
+The schema parity test suite in [tests/test_schema_contract.py:TestSQLitePostgresSchemaParity](../../tests/test_schema_contract.py) (introduced in commit `9df6dbc`). It introspects the SQLite tables initialized by `_init_sqlite_schema()` and scans every migration file in `db/migrations/`, asserting that every single SQLite column has an explicit, corresponding migration in PostgreSQL. The test suite fails if any column is added to SQLite without a matching migration.
 
 ### What to watch for
 Never add a column or table to `_init_sqlite_schema()` without creating a numbered migration in `db/migrations/` in the same commit. Always run `pytest tests/test_schema_contract.py` before pushing.
@@ -29,7 +29,7 @@ Never add a column or table to `_init_sqlite_schema()` without creating a number
 ## 2. Missing Supabase Branches in Repository Data Mutation Methods
 
 ### What happened
-Methods responsible for writing user verification data — specifically `set_verification_code()` and `verify_user_email()` in [db/repository.py](file:///d:/fiverr%20client/malok%20mading/db/repository.py) — contained logic that executed only against the local SQLite database via `self._connect()` (commits `e58817c`, `74172a1`). There was no `if self.supabase:` branch implemented for these methods.
+Methods responsible for writing user verification data — specifically `set_verification_code()` and `verify_user_email()` in [db/repository.py](../../db/repository.py) — contained logic that executed only against the local SQLite database via `self._connect()` (commits `e58817c`, `74172a1`). There was no `if self.supabase:` branch implemented for these methods.
 
 ### Why it happened
 The repository was originally authored with a dual-mode fallback architecture: write to Supabase if connected, otherwise write to SQLite. During rapid implementation of the authentication flow, the developer implemented only the SQLite query path. Because test fixtures intentionally mock or disconnect Supabase to avoid mutating production data, unit tests executed the SQLite path and passed completely.
@@ -38,7 +38,7 @@ The repository was originally authored with a dual-mode fallback architecture: w
 During live end-to-end verification of customer registration on [https://jurismon.com](https://jurismon.com). Users entered their 6-digit confirmation code, but the server returned `Invalid verification code` because the verification code had been written to a local SQLite file on the VPS that the production Supabase queries never read.
 
 ### What prevents it now
-Code review discipline and end-to-end integration tests in [tests/test_supabase_path.py](file:///d:/fiverr%20client/malok%20mading/tests/test_supabase_path.py), which explicitly test repository methods with a mock Supabase client to assert that both branches exist.
+Code review discipline and end-to-end integration tests in [tests/test_supabase_path.py](../../tests/test_supabase_path.py), which explicitly test repository methods with a mock Supabase client to assert that both branches exist.
 
 ### What to watch for
 Every data access method in `db/repository.py` must follow the dual-branch pattern:
@@ -65,7 +65,7 @@ In PostgreSQL, full-text search was executed using `plainto_tsquery('english', q
 Discovered during visual review of the live production search page: searching for anything worked, but loading the homepage with default parameters presented a completely empty table.
 
 ### What prevents it now
-In [db/repository.py:347-360](file:///d:/fiverr%20client/malok%20mading/db/repository.py), empty search strings are explicitly intercepted before constructing the tsquery: if `query` is empty or whitespace-only, the repository executes a standard timestamp-ordered select query rather than a full-text search vector query. Regression tests in `tests/test_api_and_db.py` verify that `GET /api/documents?q=` returns documents on both database engines.
+In [db/repository.py:347-360](../../db/repository.py#L347-L360), empty search strings are explicitly intercepted before constructing the tsquery: if `query` is empty or whitespace-only, the repository executes a standard timestamp-ordered select query rather than a full-text search vector query. Regression tests in `tests/test_api_and_db.py` verify that `GET /api/documents?q=` returns documents on both database engines.
 
 ### What to watch for
 PostgreSQL tsquery functions (`to_tsquery`, `plainto_tsquery`, `websearch_to_tsquery`) have distinct parsing rules and fail or return empty on empty strings, punctuation-only inputs, or boolean operators.
@@ -84,7 +84,7 @@ Assumed deployment automation: developers assumed that pushing to the `main` or 
 The client inspected the live admin panel and reported that bugs previously declared "fixed" were still visible on the live domain. Checking `git log` on the VPS revealed that the production server was five commits behind origin.
 
 ### What prevents it now
-The manual deployment runbook in [docs/HANDOVER.md:68-89](file:///d:/fiverr%20client/malok%20mading/docs/HANDOVER.md). Every production release requires SSH access to the VPS and running:
+The manual deployment runbook in [docs/client/handover.md:68-89](../client/handover.md#L68-L89). Every production release requires SSH access to the VPS and running:
 ```bash
 cd /opt/jurismon && bash scripts/deploy.sh
 ```
@@ -112,7 +112,7 @@ The administrative dashboard (`frontend/admin.html`) was initially built as a st
 Discovered when the client logged into their live dashboard, noticed conflicting numbers (47 + 7 + 12 ≠ 50), and scrolled to the bottom to see "Showing sample data" on a production dashboard.
 
 ### What prevents it now
-- Automated string assertion tests in [tests/test_api_and_db.py:test_pages_contain_no_sample_or_fictional_data_indicators](file:///d:/fiverr%20client/malok%20mading/tests/test_api_and_db.py) scanning all HTML files for sample data markers.
+- Automated string assertion tests in [tests/test_api_and_db.py:test_pages_contain_no_sample_or_fictional_data_indicators](../../tests/test_api_and_db.py) scanning all HTML files for sample data markers.
 - Removal of simulated client-side handlers in commit `c7c01a0`.
 
 ### What to watch for
@@ -126,7 +126,7 @@ When inheriting or creating frontend templates, search comprehensively for hardc
 When an administrator clicked "Log out" in the admin dashboard, the session was cleared, but the dashboard remained on screen with frozen loading spinners. The admin login modal gate never appeared, rendering the panel unusable (commit `e10c07b`).
 
 ### Why it happened
-In [frontend/admin.html](file:///d:/fiverr%20client/malok%20mading/frontend/admin.html), the `<div id="auth-gate">` element was placed at line 2260, **after** the closing `</script>` tag at line 2256. At parse time, `document.getElementById('auth-gate')` executed when the script loaded, but the element did not yet exist in the DOM, returning `null`.
+In [frontend/admin.html](../../frontend/admin.html), the `<div id="auth-gate">` element was placed at line 2260, **after** the closing `</script>` tag at line 2256. At parse time, `document.getElementById('auth-gate')` executed when the script loaded, but the element did not yet exist in the DOM, returning `null`.
 Because the JavaScript code defensively wrapped DOM manipulations in `if (authGate) { authGate.style.display = ... }`, the code silently skipped showing the modal without throwing any runtime JavaScript exceptions or console errors.
 
 ### How it was found
@@ -154,7 +154,7 @@ Initial testing used PayPal sandbox subscription creation, which triggers `BILLI
 Discovered during audit of PayPal IPN/Webhook lifecycle documentation prior to client delivery. Without handling sale completion, subsequent monthly renewals would not extend the subscription expiry or refresh active status.
 
 ### What prevents it now
-[api/payments/paypal_provider.py:110-125](file:///d:/fiverr%20client/malok%20mading/api/payments/paypal_provider.py) explicitly processes `PAYMENT.SALE.COMPLETED` by extracting the subscription ID, resolving the user account via `custom_id` or payer email, and updating `subscription_status = 'active'`.
+[api/payments/paypal_provider.py:110-125](../../api/payments/paypal_provider.py#L110-L125) explicitly processes `PAYMENT.SALE.COMPLETED` by extracting the subscription ID, resolving the user account via `custom_id` or payer email, and updating `subscription_status = 'active'`.
 
 ### What to watch for
 Subscription webhook handlers must support the full state lifecycle: activation, recurring payment success, payment failure/denial, suspension, and cancellation.
@@ -194,7 +194,7 @@ Automated credential pattern scanning and manual commit review prior to Phase 1 
 ### What prevents it now
 - The compromised credential was immediately revoked and rotated at the external provider.
 - Working trees were purged of the file, and `.gitignore` was updated to exclude all `.env*` files (except `.env.example`).
-- Ground Rule R3 and Rule 9 of [06_WORKING_RULES.md](file:///d:/fiverr%20client/malok%20mading/docs/context/06_WORKING_RULES.md) strictly forbid hardcoding credentials.
+- Ground Rule R3 and Rule 9 of [06_WORKING_RULES.md](06_WORKING_RULES.md) strictly forbid hardcoding credentials.
 
 ### What to watch for
 Never include real API keys, tokens, or passwords in repository files, commit messages, or chat transcripts. Use environment variables exclusively.

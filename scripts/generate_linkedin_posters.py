@@ -4,7 +4,7 @@ import os
 from PIL import Image, ImageDraw, ImageFont
 
 # Ensure target directory exists
-os.makedirs("docs/context/posters", exist_ok=True)
+os.makedirs("docs/assets/posters", exist_ok=True)
 
 # Color Palette (Dark Theme / Slate Modern)
 BG_COLOR = (11, 17, 32)         # Slate 950
@@ -49,7 +49,7 @@ def generate_poster_1():
     draw.text((70, 170), "Delivering an automated regulatory monitoring platform for a US legal client.", fill=TEXT_MUTED, font=f_sub)
 
     # Clean Review Card
-    rev_img = Image.open("docs/context/review_card_clean.png")
+    rev_img = Image.open("docs/assets/review-card.png")
     target_w = 1060
     scale = target_w / rev_img.width
     target_h = int(rev_img.height * scale)
@@ -86,7 +86,7 @@ def generate_poster_1():
     draw.text((70, 1150), "Built & Deployed by Huzaifah Naseer", fill=TEXT_WHITE, font=f_footer)
     draw.text((810, 1150), "Python • FastAPI • PostgreSQL • Playwright", fill=TEXT_MUTED, font=f_footer)
 
-    out_path = "docs/context/posters/poster_1_client_review.png"
+    out_path = "docs/assets/posters/poster_1_client_review.png"
     img.save(out_path)
     print(f"Poster 1 generated: {out_path}")
 
@@ -165,7 +165,7 @@ def generate_poster_2():
     draw.text((70, 1145), "Designed & Engineered by Huzaifah Naseer", fill=TEXT_WHITE, font=f_footer)
     draw.text((810, 1145), "FastAPI • Supabase • Playwright • Systemd", fill=TEXT_MUTED, font=f_footer)
 
-    out_path = "docs/context/posters/poster_2_system_architecture.png"
+    out_path = "docs/assets/posters/poster_2_system_architecture.png"
     img.save(out_path)
     print(f"Poster 2 generated: {out_path}")
 
@@ -249,7 +249,7 @@ def generate_poster_3():
     draw.text((70, 1145), "Engineering Memory & Standards by Huzaifah Naseer", fill=TEXT_WHITE, font=f_footer)
     draw.text((780, 1145), "Reliability Engineering • Zero Silent Failures", fill=TEXT_MUTED, font=f_footer)
 
-    out_path = "docs/context/posters/poster_3_engineering_process.png"
+    out_path = "docs/assets/posters/poster_3_engineering_process.png"
     img.save(out_path)
     print(f"Poster 3 generated: {out_path}")
 
