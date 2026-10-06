@@ -37,8 +37,8 @@
 | **P2-09** | **Cookie Consent Banner & Analytics** | GDPR/ePrivacy compliant cookie banner with Google Consent Mode v2 and Google Analytics tag. | **NOT STARTED** | — |
 | **P2-10** | **Repository Documentation Hygiene** | Shelve docs/ into ai/, context/, client/, reports/, assets/, and archive/; index READMEs; link repairs. | **SHIPPED** | [`d8df085`](https://github.com/Huzaifah-Analyst/jurismon-client/commit/d8df085) |
 | **P2-11** | **Public "About Us" Page (`/about`)** | Public About page (`frontend/about.html`) with 5 core architectural sections, live source counts, responsive risk table, and symmetric header navigation. | **SHIPPED** | [`c133cb3`](https://github.com/Huzaifah-Analyst/jurismon-client/commit/c133cb3) |
-| **P2-12** | **Health Check Liveness Probe (`/api/health`)** | Unauthenticated `/api/health` endpoint with genuine database check, uptime and version reporting, 503 degraded error state without credential leakage, and full test suite coverage. | **CODE COMPLETE** *(Not Deployed)* | `fbe9aa2` |
-| **P2-13** | **Subscription Lifecycle Confirmation Emails** | Pause/resume/cancel now each send one transactional Resend email with real plan name, amount and dates; sent only after PayPal confirms; a dead mailer cannot fail the action (`email_sent` flag surfaced to the account page). | **CODE COMPLETE** *(Not Deployed)* | [`c2c562f`](https://github.com/Huzaifah-Analyst/jurismon-client/commit/c2c562f) |
+| **P2-12** | **Health Check Liveness Probe (`/api/health`)** | Unauthenticated `/api/health` endpoint with genuine database check, uptime and version reporting, 503 degraded error state without credential leakage, and full test suite coverage. | **SHIPPED** | [`fbe9aa2`](https://github.com/Huzaifah-Analyst/jurismon-client/commit/fbe9aa2) |
+| **P2-13** | **Subscription Lifecycle Confirmation Emails** | Pause/resume/cancel now each send one transactional Resend email with real plan name, amount and dates; sent only after PayPal confirms; a dead mailer cannot fail the action (`email_sent` flag surfaced to the account page). | **SHIPPED** | [`c2c562f`](https://github.com/Huzaifah-Analyst/jurismon-client/commit/c2c562f) |
 
 ---
 
