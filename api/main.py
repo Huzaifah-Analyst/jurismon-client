@@ -21,7 +21,7 @@ import threading
 from collections import defaultdict
 from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, Request, HTTPException, Query, Depends, status, BackgroundTasks
-from fastapi.responses import HTMLResponse, FileResponse, PlainTextResponse, Response
+from fastapi.responses import HTMLResponse, FileResponse, PlainTextResponse, Response, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -48,10 +48,34 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("jurismon.api")
 _subscription_locks: Dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
 
+SERVER_START_TIME = time.time()
+
+
+def _resolve_app_version() -> str:
+    env_ver = os.getenv("APP_VERSION")
+    if env_ver:
+        return env_ver
+    try:
+        res = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True,
+            text=True,
+            timeout=1,
+            cwd=os.path.dirname(__file__),
+        )
+        if res.returncode == 0 and res.stdout.strip():
+            return res.stdout.strip()
+    except Exception:
+        pass
+    return "1.0.0"
+
+
+APP_VERSION = _resolve_app_version()
+
 app = FastAPI(
     title="JurisMon Regulatory Drift API",
     description="Statutory Zoning & Municipal Regulatory Delta Engine",
-    version="1.0.0",
+    version=APP_VERSION,
 )
 
 # A wildcard origin combined with credentials lets any site issue authenticated
@@ -459,6 +483,32 @@ async def search_endpoint(
         "is_gated": False,
         "access": access_status,
     }
+
+
+@app.get("/api/health")
+async def health_check():
+    """Liveness probe verifying application process and database connectivity."""
+    try:
+        sources = repo.get_active_sources()
+        if sources is None:
+            raise RuntimeError("Database probe returned invalid state")
+        return {
+            "status": "ok",
+            "version": APP_VERSION,
+            "database": "ok",
+            "uptime_seconds": int(time.time() - SERVER_START_TIME),
+        }
+    except Exception as exc:
+        logger.error("Health check database probe failed: %s", exc)
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={
+                "status": "degraded",
+                "version": APP_VERSION,
+                "database": "error",
+                "uptime_seconds": int(time.time() - SERVER_START_TIME),
+            },
+        )
 
 
 @app.get("/api/sources")

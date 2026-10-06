@@ -536,6 +536,66 @@ class TestFastAPIEndpoints(unittest.TestCase):
         self.assertIn("items", data)
         self.assertIn("results", data)
 
+    def test_health_endpoint_healthy(self):
+        """GET /api/health returns 200 with status=ok, database=ok, version, and uptime."""
+        res = self.client.get("/api/health")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.headers.get("content-type"), "application/json")
+        data = res.json()
+        self.assertEqual(data["status"], "ok")
+        self.assertEqual(data["database"], "ok")
+        self.assertIn("version", data)
+        self.assertIsInstance(data["version"], str)
+        self.assertTrue(len(data["version"]) > 0)
+        self.assertIn("uptime_seconds", data)
+        self.assertIsInstance(data["uptime_seconds"], int)
+        self.assertGreaterEqual(data["uptime_seconds"], 0)
+
+    def test_health_endpoint_simulated_db_failure_returns_503_and_leaks_nothing(self):
+        """GET /api/health returns 503 with status=degraded and leaks no credentials or tracebacks."""
+        sensitive_exc_msg = (
+            "connection to server at 'db.supabase.co' (192.0.2.1), port 5432 failed: "
+            "FATAL: password authentication failed for user 'postgres' password='super_secret_password_123'"
+        )
+        with patch("api.main.repo.get_active_sources", side_effect=Exception(sensitive_exc_msg)):
+            res = self.client.get("/api/health")
+            self.assertEqual(res.status_code, 503)
+            self.assertEqual(res.headers.get("content-type"), "application/json")
+            data = res.json()
+            self.assertEqual(data["status"], "degraded")
+            self.assertEqual(data["database"], "error")
+            self.assertIn("version", data)
+            self.assertIn("uptime_seconds", data)
+            self.assertIsInstance(data["uptime_seconds"], int)
+
+            # Leak assertions: Rule 7 enforcement
+            raw_text = res.text
+            raw_lower = raw_text.lower()
+            self.assertNotIn("super_secret_password_123", raw_text)
+            self.assertNotIn("db.supabase.co", raw_text)
+            self.assertNotIn("192.0.2.1", raw_text)
+            self.assertNotIn("5432", raw_text)
+            self.assertNotIn("postgres", raw_lower)
+            self.assertNotIn("password", raw_lower)
+            self.assertNotIn("fatal", raw_lower)
+            self.assertNotIn("authentication failed", raw_lower)
+            self.assertNotIn("traceback", raw_lower)
+            self.assertNotIn("exception", raw_lower)
+
+    def test_health_endpoint_requires_no_authentication(self):
+        """GET /api/health is strictly unauthenticated and ignores bogus authorization headers."""
+        # Anonymous
+        res_anon = self.client.get("/api/health")
+        self.assertEqual(res_anon.status_code, 200)
+
+        # Bogus token header
+        res_bogus = self.client.get(
+            "/api/health",
+            headers={"Authorization": "Bearer totally-invalid-token-12345"},
+        )
+        self.assertEqual(res_bogus.status_code, 200)
+        self.assertEqual(res_bogus.json()["status"], "ok")
+
     def test_serve_frontend_pages(self):
         # Test index search page
         idx_res = self.client.get("/")
