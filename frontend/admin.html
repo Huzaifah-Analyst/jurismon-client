@@ -984,6 +984,32 @@
 
       <div class="plans" id="plans"></div>
 
+      <div class="panel" style="margin-top: 16px;">
+
+        <div class="controls">
+
+          <div style="font-size: 13.5px; font-weight: 600; color: var(--ink);">Price change history</div>
+
+          <span class="spacer"></span>
+
+          <span class="block-sub" style="margin:0">Every change to a plan or to the catalogue, with the date it was made</span>
+
+        </div>
+
+        <div class="table-scroll">
+
+          <table>
+
+            <thead><tr><th>Date</th><th>Changed by</th><th>Plan</th><th>Field</th><th>From</th><th>To</th></tr></thead>
+
+            <tbody id="plan-changes-body"></tbody>
+
+          </table>
+
+        </div>
+
+      </div>
+
     </div>
 
 
@@ -1886,6 +1912,61 @@
 
   }
 
+  /* Price change history. Loaded from /api/admin/plans/changes - never
+     rendered from anything held locally, so the table can only ever show
+     changes the server actually recorded. */
+  async function loadPlanChanges() {
+    const body = $("#plan-changes-body");
+    if (!body) return;
+
+    const token = localStorage.getItem("jurismon_admin_token");
+    if (!token) {
+      body.innerHTML = '<tr><td colspan="6" style="padding: 20px; text-align: center; color: var(--muted);">Authentication required. Sign in to view the change history.</td></tr>';
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/admin/plans/changes", {
+        headers: { "Authorization": "Bearer " + token }
+      });
+
+      if (res.status === 401 || res.status === 403) {
+        handleExpiredSession();
+        return;
+      }
+
+      if (!res.ok) {
+        body.innerHTML = `<tr><td colspan="6" style="padding: 20px; text-align: center; color: var(--muted);">Could not load the change history (HTTP ${res.status}).</td></tr>`;
+        return;
+      }
+
+      const data = await res.json();
+      const rows = data.changes || [];
+
+      if (!rows.length) {
+        body.innerHTML = '<tr><td colspan="6" style="padding: 20px; text-align: center; color: var(--muted);">No pricing changes recorded yet.</td></tr>';
+        return;
+      }
+
+      body.innerHTML = rows.map(c => {
+        const when = c.changed_at ? new Date(c.changed_at) : null;
+        const whenStr = when && !isNaN(when) ? when.toLocaleString() : "—";
+        const planLabel = c.plan_id ? esc(c.plan_id) : "Catalogue";
+        return `<tr>
+          <td>${esc(whenStr)}</td>
+          <td>${esc(c.changed_by || "—")}</td>
+          <td>${planLabel}</td>
+          <td>${esc(c.field || "—")}</td>
+          <td>${c.old_value == null ? "—" : esc(c.old_value)}</td>
+          <td>${c.new_value == null ? "—" : esc(c.new_value)}</td>
+        </tr>`;
+      }).join("");
+
+    } catch (err) {
+      body.innerHTML = '<tr><td colspan="6" style="padding: 20px; text-align: center; color: var(--muted);">Could not reach the server to load the change history.</td></tr>';
+    }
+  }
+
   async function handleSavePlan(id, btn) {
     const token = localStorage.getItem("jurismon_admin_token");
     if (!token) {
@@ -1963,7 +2044,10 @@
       }
       editingPlanId = null;
       renderPlans();
-      toast("Plan updated successfully");
+      loadPlanChanges();
+      toast(resData.changes_recorded === false
+        ? "Plan updated. The change could not be written to the history log."
+        : "Plan updated successfully");
     } catch (err) {
       toast("Connection error updating plan");
       if (btn) {
@@ -2041,7 +2125,10 @@
       if (resData.currency && currInput) currInput.value = resData.currency;
       if (resData.trial_days != null && trialInput) trialInput.value = resData.trial_days;
       renderPlans();
-      toast("Catalogue settings updated successfully");
+      loadPlanChanges();
+      toast(resData.changes_recorded === false
+        ? "Settings updated. The change could not be written to the history log."
+        : "Catalogue settings updated successfully");
     } catch (err) {
       toast("Connection error updating catalogue settings");
     } finally {
@@ -2531,6 +2618,7 @@
     renderSubs();
     renderPlans();
     renderHooks();
+    loadPlanChanges();
   }
 
   /* ---------- Crawl Run Management ---------- */

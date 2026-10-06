@@ -170,6 +170,38 @@ def _write_plan_catalogue(catalogue: Dict[str, Any]) -> None:
     invalidate_plan_catalogue_cache()
 
 
+def _record_plan_changes(
+    changed_by: str,
+    changes: List[Dict[str, Any]],
+    plan_id: Optional[str] = None,
+    paypal_plan_id: Optional[str] = None,
+) -> int:
+    """Writes one audit row per changed field. Returns how many rows were stored.
+
+    Recording must never fail the change it is recording: by the time this
+    runs, config/plans.json is already written and the new price is already
+    in effect, so raising here would tell the admin the edit failed when it
+    did not. A failed write is logged and reported in the response instead.
+    """
+    stored = 0
+    for change in changes:
+        try:
+            if repo.record_plan_change(
+                changed_by=changed_by,
+                field=change["field"],
+                old_value=change["old"],
+                new_value=change["new"],
+                plan_id=plan_id,
+                paypal_plan_id=paypal_plan_id,
+            ):
+                stored += 1
+        except Exception as exc:
+            logger.error(
+                "Could not record plan change (%s on %s): %s",
+                change.get("field"), plan_id or "catalogue", exc,
+            )
+    return stored
+
 
 def _monthly_value(plan: Dict[str, Any]) -> float:
     """Normalises a plan's price to a monthly figure so MRR is comparable."""
@@ -1908,7 +1940,23 @@ async def update_plan(
         updated_plan,
     )
 
-    return await list_plans(admin)
+    # One audit row per field that actually moved. Fields submitted with their
+    # existing value are not changes and are not recorded.
+    changed_fields = [
+        {"field": f, "old": old_plan.get(f), "new": updated_plan.get(f)}
+        for f in ("name", "price", "paypal_plan_id", "is_active")
+        if old_plan.get(f) != updated_plan.get(f)
+    ]
+    stored = _record_plan_changes(
+        changed_by=admin.get("sub", "admin"),
+        changes=changed_fields,
+        plan_id=plan_id,
+        paypal_plan_id=updated_plan.get("paypal_plan_id"),
+    )
+
+    response = await list_plans(admin)
+    response["changes_recorded"] = stored == len(changed_fields)
+    return response
 
 
 @app.patch("/api/admin/plans")
@@ -1946,7 +1994,30 @@ async def update_catalogue_settings(
         new_settings,
     )
 
-    return await list_plans(admin)
+    # plan_id stays null: these settings belong to the catalogue, not a plan.
+    changed_fields = [
+        {"field": f, "old": old_settings.get(f), "new": new_settings.get(f)}
+        for f in ("trial_days", "currency")
+        if old_settings.get(f) != new_settings.get(f)
+    ]
+    stored = _record_plan_changes(
+        changed_by=admin.get("sub", "admin"),
+        changes=changed_fields,
+    )
+
+    response = await list_plans(admin)
+    response["changes_recorded"] = stored == len(changed_fields)
+    return response
+
+
+@app.get("/api/admin/plans/changes")
+async def list_plan_changes(
+    limit: int = Query(default=50, ge=1, le=200),
+    admin: dict = Depends(require_admin),
+):
+    """Returns the recorded history of plan catalogue changes, newest first."""
+    changes = repo.list_plan_changes(limit=limit)
+    return {"count": len(changes), "changes": changes}
 
 
 @app.post("/api/admin/subscriptions/{external_id}/cancel")

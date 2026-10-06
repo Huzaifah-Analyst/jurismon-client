@@ -567,5 +567,156 @@ class TestPlanCatalogueManagement(AdminTestCase):
             self.assertEqual(details["id"], "P-TESTPLAN123")
 
 
+class TestPlanChangeLog(AdminTestCase):
+    """ORDER P2-14: the client was promised "a record of every price change,
+    with dates". It must be stored and readable, one row per changed field,
+    and it must never record a change that was refused."""
+
+    PAYPAL_OK = {"price": 49.0, "currency": "USD", "interval": "month"}
+
+    def _paypal(self, details=None):
+        return (
+            patch.object(main.paypal_provider, "client_id", "test_id"),
+            patch.object(main.paypal_provider, "client_secret", "test_secret"),
+            patch.object(
+                main.paypal_provider,
+                "get_plan_details",
+                return_value=details if details is not None else self.PAYPAL_OK,
+            ),
+        )
+
+    def _put(self, payload, details=None):
+        cid, secret, plan = self._paypal(details)
+        with cid, secret, plan:
+            return self.client.put(
+                "/api/admin/plans/professional_monthly",
+                json=payload,
+                headers=self.auth,
+            )
+
+    def test_a_price_edit_writes_exactly_one_row_with_both_values(self):
+        res = self._put({"price": 59.0}, {"price": 59.0, "currency": "USD", "interval": "month"})
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.json()["changes_recorded"])
+
+        rows = main.repo.list_plan_changes()
+        self.assertEqual(len(rows), 1)
+        row = rows[0]
+        self.assertEqual(row["field"], "price")
+        self.assertEqual(row["old_value"], "49.0")
+        self.assertEqual(row["new_value"], "59.0")
+        self.assertEqual(row["plan_id"], "professional_monthly")
+        self.assertEqual(row["paypal_plan_id"], MONTHLY)
+        self.assertTrue(row["changed_at"])
+        self.assertTrue(row["changed_by"])
+
+    def test_a_three_field_edit_writes_three_rows(self):
+        res = self._put({
+            "name": "JurisMon Pro",
+            "price": 49.0,
+            "is_active": False,
+        })
+        self.assertEqual(res.status_code, 200)
+
+        rows = main.repo.list_plan_changes()
+        # price was submitted unchanged, so only name and is_active moved.
+        fields = sorted(r["field"] for r in rows)
+        self.assertEqual(fields, ["is_active", "name"])
+
+        res2 = self._put({"price": 59.0}, {"price": 59.0, "currency": "USD", "interval": "month"})
+        self.assertEqual(res2.status_code, 200)
+        self.assertEqual(len(main.repo.list_plan_changes()), 3)
+
+    def test_a_field_submitted_unchanged_records_nothing(self):
+        res = self._put({"name": "Professional"})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(main.repo.list_plan_changes(), [])
+
+    def test_a_refused_price_edit_records_nothing(self):
+        res = self._put({"price": 99.0})  # PayPal still says 49.00
+        self.assertEqual(res.status_code, 409)
+        self.assertEqual(main.repo.list_plan_changes(), [])
+
+    def test_deactivating_the_last_active_plan_records_nothing(self):
+        # Deactivate the monthly plan first, which is allowed and is recorded.
+        first = self._put({"is_active": False})
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(len(main.repo.list_plan_changes()), 1)
+
+        # The annual plan is now the only active one, so this must be refused.
+        cid, secret, plan = self._paypal({"price": 468.0, "currency": "USD", "interval": "year"})
+        with cid, secret, plan:
+            res = self.client.put(
+                "/api/admin/plans/professional_annual",
+                json={"is_active": False},
+                headers=self.auth,
+            )
+        self.assertEqual(res.status_code, 409)
+
+        # The refused change left no trace; only the accepted one is on record.
+        rows = main.repo.list_plan_changes()
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["plan_id"], "professional_monthly")
+
+    def test_catalogue_settings_change_records_with_a_null_plan_id(self):
+        res = self.client.patch(
+            "/api/admin/plans", json={"trial_days": 21}, headers=self.auth
+        )
+        self.assertEqual(res.status_code, 200)
+
+        rows = main.repo.list_plan_changes()
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["field"], "trial_days")
+        self.assertEqual(rows[0]["old_value"], "14")
+        self.assertEqual(rows[0]["new_value"], "21")
+        self.assertIsNone(rows[0]["plan_id"])
+
+    def test_change_history_endpoint_requires_admin(self):
+        res = self.client.get("/api/admin/plans/changes")
+        self.assertEqual(res.status_code, 401)
+
+        cust_token = auth.create_customer_token("cust_1", "cust@example.com")
+        res_cust = self.client.get(
+            "/api/admin/plans/changes",
+            headers={"Authorization": f"Bearer {cust_token}"},
+        )
+        self.assertEqual(res_cust.status_code, 403)
+
+    def test_change_history_endpoint_returns_newest_first_and_respects_limit(self):
+        self._put({"name": "First"})
+        self._put({"name": "Second"})
+        self._put({"name": "Third"})
+
+        res = self.client.get("/api/admin/plans/changes", headers=self.auth)
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertEqual(data["count"], 3)
+        self.assertEqual(data["changes"][0]["new_value"], "Third")
+
+        limited = self.client.get("/api/admin/plans/changes?limit=1", headers=self.auth)
+        self.assertEqual(len(limited.json()["changes"]), 1)
+        self.assertEqual(limited.json()["changes"][0]["new_value"], "Third")
+
+    def test_limit_is_bounded(self):
+        self.assertEqual(
+            self.client.get("/api/admin/plans/changes?limit=0", headers=self.auth).status_code, 422
+        )
+        self.assertEqual(
+            self.client.get("/api/admin/plans/changes?limit=500", headers=self.auth).status_code, 422
+        )
+
+    def test_a_failing_audit_write_does_not_fail_the_price_change(self):
+        with patch.object(main.repo, "record_plan_change", side_effect=Exception("db gone")):
+            res = self._put({"price": 59.0}, {"price": 59.0, "currency": "USD", "interval": "month"})
+
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(res.json()["changes_recorded"])
+
+        # The price really did change, which is the point: the catalogue write
+        # had already succeeded before the audit row was attempted.
+        monthly = next(p for p in res.json()["plans"] if p["id"] == "professional_monthly")
+        self.assertEqual(monthly["price"], 59.0)
+
+
 if __name__ == "__main__":
     unittest.main()

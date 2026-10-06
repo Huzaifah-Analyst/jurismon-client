@@ -142,6 +142,19 @@ class Repository:
                 )
             """)
             cur.execute("""
+                CREATE TABLE IF NOT EXISTS plan_changes (
+                    id TEXT PRIMARY KEY,
+                    changed_at TEXT,
+                    changed_by TEXT,
+                    plan_id TEXT,
+                    field TEXT,
+                    old_value TEXT,
+                    new_value TEXT,
+                    paypal_plan_id TEXT
+                )
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_plan_changes_changed_at ON plan_changes(changed_at DESC)")
+            cur.execute("""
                 CREATE TABLE IF NOT EXISTS crawl_runs (
                     id TEXT PRIMARY KEY,
                     started_at TEXT,
@@ -872,6 +885,82 @@ class Repository:
             cur = conn.cursor()
             cur.execute(
                 "SELECT * FROM webhook_events ORDER BY received_at DESC LIMIT ?", (limit,)
+            )
+            return [dict(r) for r in cur.fetchall()]
+
+    def record_plan_change(
+        self,
+        changed_by: str,
+        field: str,
+        old_value: Any,
+        new_value: Any,
+        plan_id: Optional[str] = None,
+        paypal_plan_id: Optional[str] = None,
+    ) -> bool:
+        """Records one changed field of the plan catalogue. Returns True on a confirmed write.
+
+        One call per field. A single request that changes name and price writes
+        two rows, so the history can be read back as "the price changed on this
+        date" rather than "this plan was edited at some point".
+
+        plan_id is None for catalogue-level settings (trial_days, currency).
+        """
+        import uuid
+        row_id = str(uuid.uuid4())
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        old_str = None if old_value is None else str(old_value)
+        new_str = None if new_value is None else str(new_value)
+
+        if self.supabase:
+            try:
+                res = self.supabase.table("plan_changes").insert({
+                    "id": row_id,
+                    "changed_at": now_iso,
+                    "changed_by": changed_by,
+                    "plan_id": plan_id,
+                    "field": field,
+                    "old_value": old_str,
+                    "new_value": new_str,
+                    "paypal_plan_id": paypal_plan_id,
+                }).execute()
+                return bool(res.data)
+            except Exception as e:
+                logger.error(f"Supabase record_plan_change error: {e}")
+
+        with self._connect() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT INTO plan_changes (
+                    id, changed_at, changed_by, plan_id, field,
+                    old_value, new_value, paypal_plan_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (row_id, now_iso, changed_by, plan_id, field,
+                  old_str, new_str, paypal_plan_id))
+            conn.commit()
+            return cur.rowcount > 0
+
+    def list_plan_changes(self, limit: int = 100) -> List[Dict[str, Any]]:
+        """Returns recorded plan catalogue changes, newest first."""
+        if self.supabase:
+            try:
+                res = (
+                    self.supabase.table("plan_changes")
+                    .select("*")
+                    .order("changed_at", desc=True)
+                    .limit(limit)
+                    .execute()
+                )
+                if res.data is not None:
+                    return list(res.data)
+            except Exception as e:
+                logger.error(f"Supabase list_plan_changes error: {e}")
+
+        with self._connect() as conn:
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT * FROM plan_changes ORDER BY changed_at DESC LIMIT ?", (limit,)
             )
             return [dict(r) for r in cur.fetchall()]
 
