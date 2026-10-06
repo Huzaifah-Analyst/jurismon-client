@@ -1216,6 +1216,109 @@ def resolve_plan_info(plan_id: Optional[str]) -> Dict[str, Any]:
     }
 
 
+def _format_human_date(value: Optional[str]) -> str:
+    """Formats an ISO timestamp as '6 November 2026' for customer-facing copy.
+
+    Falls back to a plain-English phrase rather than ever showing a raw
+    ISO string or a blank field in an email a paying customer reads.
+    """
+    if not value:
+        return "the end of your current billing period"
+    try:
+        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        return f"{dt.day} {dt.strftime('%B %Y')}"
+    except (ValueError, TypeError):
+        return str(value)[:10]
+
+
+def _format_money(amount: Optional[float], currency: Optional[str]) -> Optional[str]:
+    """Formats a plan price for an email, e.g. 49.0/"USD" -> "$49.00"."""
+    if amount is None:
+        return None
+    curr = (currency or "USD").upper()
+    symbol = "$" if curr == "USD" else f"{curr} "
+    return f"{symbol}{amount:.2f}"
+
+
+def _send_subscription_lifecycle_email(
+    kind: str,
+    user_email: str,
+    plan_id: Optional[str],
+    dates: Dict[str, Optional[str]],
+) -> bool:
+    """Sends the pause/resume/cancel confirmation email. Returns True only on a
+    confirmed send.
+
+    This must never raise and never block the action it confirms: by the time
+    this runs, PayPal has already accepted the change and the database already
+    reflects it, so a dead mailer can only cost the customer an email, never
+    the action itself. Mailer.send() already fails soft; this function adds
+    nothing that could turn that into an exception.
+    """
+    plan_info = resolve_plan_info(plan_id)
+    plan_name = plan_info.get("plan_name") or "your JurisMon subscription"
+    amount_str = _format_money(plan_info.get("billing_amount"), plan_info.get("billing_currency"))
+    interval = plan_info.get("billing_interval")
+
+    if kind == "paused":
+        subject = "Your JurisMon subscription is paused"
+        access_date = _format_human_date(dates.get("access_until"))
+        html = f"""
+        <div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif; max-width:520px; margin:0 auto; padding:24px; border:1px solid #e2e8f0; border-radius:8px; background:#ffffff;">
+          <h2 style="color:#0f172a; margin-top:0; font-size:20px;">Your subscription is paused</h2>
+          <p style="color:#334155; font-size:14px; line-height:1.6;">Billing for <strong>{plan_name}</strong> has been suspended at your request. No further charges will be taken while your subscription is paused.</p>
+          <p style="color:#334155; font-size:14px; line-height:1.6;">You keep full access through <strong>{access_date}</strong>, since you have already paid for the current period.</p>
+          <p style="color:#334155; font-size:14px; line-height:1.6;">You can resume billing at any time from <a href="https://jurismon.com/account" style="color:#154DA8;">your account page</a>.</p>
+          <p style="color:#64748b; font-size:12.5px; line-height:1.5; margin-top:24px;">Questions? Contact support@jurismon.com.</p>
+        </div>
+        """
+        text = (
+            f"Your JurisMon subscription ({plan_name}) is now paused. No further charges will be "
+            f"taken. You keep full access through {access_date}. Resume anytime from "
+            "https://jurismon.com/account."
+        )
+    elif kind == "resumed":
+        subject = "Your JurisMon subscription is active again"
+        next_billing = _format_human_date(dates.get("next_billing_at"))
+        price_line = f"{amount_str} per {interval}" if amount_str and interval else "your plan's regular price"
+        html = f"""
+        <div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif; max-width:520px; margin:0 auto; padding:24px; border:1px solid #e2e8f0; border-radius:8px; background:#ffffff;">
+          <h2 style="color:#0f172a; margin-top:0; font-size:20px;">Your subscription is active again</h2>
+          <p style="color:#334155; font-size:14px; line-height:1.6;">Billing for <strong>{plan_name}</strong> has resumed. Your next charge of <strong>{price_line}</strong> will be on <strong>{next_billing}</strong>.</p>
+          <p style="color:#334155; font-size:14px; line-height:1.6;">You have full access to search, full-text documents, and diff history right now.</p>
+          <p style="color:#64748b; font-size:12.5px; line-height:1.5; margin-top:24px;">Questions? Contact support@jurismon.com.</p>
+        </div>
+        """
+        text = (
+            f"Your JurisMon subscription ({plan_name}) is active again. Next charge: "
+            f"{price_line} on {next_billing}."
+        )
+    elif kind == "cancelled":
+        subject = "Your JurisMon subscription is cancelled"
+        access_date = _format_human_date(dates.get("access_until"))
+        html = f"""
+        <div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif; max-width:520px; margin:0 auto; padding:24px; border:1px solid #e2e8f0; border-radius:8px; background:#ffffff;">
+          <h2 style="color:#0f172a; margin-top:0; font-size:20px;">Your subscription is cancelled</h2>
+          <p style="color:#334155; font-size:14px; line-height:1.6;">Billing for <strong>{plan_name}</strong> has stopped. No further charges will be taken.</p>
+          <p style="color:#334155; font-size:14px; line-height:1.6;">You keep full access through <strong>{access_date}</strong>. After that date, search will return teaser results only.</p>
+          <p style="color:#334155; font-size:14px; line-height:1.6;">You're welcome back any time &mdash; subscribe again from <a href="https://jurismon.com/account" style="color:#154DA8;">your account page</a>.</p>
+          <p style="color:#64748b; font-size:12.5px; line-height:1.5; margin-top:24px;">Questions? Contact support@jurismon.com.</p>
+        </div>
+        """
+        text = (
+            f"Your JurisMon subscription ({plan_name}) is cancelled. You keep full access through "
+            f"{access_date}. Subscribe again anytime at https://jurismon.com/account."
+        )
+    else:
+        logger.error("Unknown subscription lifecycle email kind: %s", kind)
+        return False
+
+    sent = mailer.send(subject=subject, html=html, to=[user_email], text=text)
+    if not sent:
+        logger.warning("Lifecycle confirmation email failed to send (%s) for %s", kind, user_email)
+    return sent
+
+
 @app.get("/api/account/subscription")
 async def get_account_subscription(auth_user: dict = Depends(require_customer)):
     """Returns current subscription details and access status for authenticated customer."""
@@ -1332,12 +1435,17 @@ async def pause_customer_subscription(auth_user: dict = Depends(require_customer
         )
         logger.info("Customer %s paused subscription %s (access until %s)", user_email, ext_id, access_until)
 
+        email_sent = _send_subscription_lifecycle_email(
+            "paused", user_email, fresh_sub.get("plan_id"), {"access_until": access_until}
+        )
+
         return {
             "status": "paused",
             "subscription_id": ext_id,
             "paused_at": now_iso,
             "access_until": access_until,
             "message": f"Billing paused. Your access continues until {access_until[:10]}.",
+            "email_sent": email_sent,
         }
 
 
@@ -1401,11 +1509,17 @@ async def resume_customer_subscription(auth_user: dict = Depends(require_custome
         )
         logger.info("Customer %s resumed subscription %s", user_email, ext_id)
 
+        email_sent = _send_subscription_lifecycle_email(
+            "resumed", user_email, fresh_sub.get("plan_id"),
+            {"next_billing_at": fresh_sub.get("next_billing_at")},
+        )
+
         return {
             "status": "active",
             "subscription_id": ext_id,
             "resumed_at": now_iso,
             "message": "Subscription reactivated successfully.",
+            "email_sent": email_sent,
         }
 
 
@@ -1470,12 +1584,17 @@ async def cancel_customer_subscription(
         )
         logger.info("Customer %s cancelled subscription %s (access retained until %s)", user_email, ext_id, access_until)
 
+        email_sent = _send_subscription_lifecycle_email(
+            "cancelled", user_email, fresh_sub.get("plan_id"), {"access_until": access_until}
+        )
+
         return {
             "status": "cancelled",
             "subscription_id": ext_id,
             "cancelled_at": now_iso,
             "access_until": access_until,
             "message": f"Subscription cancelled. Your access continues until {access_until[:10]}.",
+            "email_sent": email_sent,
         }
 
 

@@ -36,7 +36,8 @@
 | **P2-08** | **Source Health Outbound Webhooks** | Outbound alerts to Slack / `$ADMIN_EMAIL` when operational sources degrade or crawl error rates exceed 10%. | **NOT STARTED** | — |
 | **P2-09** | **Cookie Consent Banner & Analytics** | GDPR/ePrivacy compliant cookie banner with Google Consent Mode v2 and Google Analytics tag. | **NOT STARTED** | — |
 | **P2-11** | **Public "About Us" Page (`/about`)** | Public About page (`frontend/about.html`) with 5 core architectural sections, live source counts, responsive risk table, and symmetric header navigation. | **CODE COMPLETE** *(Not Deployed)* | [`c133cb3`](https://github.com/Huzaifah-Analyst/jurismon-client/commit/c133cb3) |
-| **P2-12** | **Health Check Liveness Probe (`/api/health`)** | Unauthenticated `/api/health` endpoint with genuine database check, uptime and version reporting, 503 degraded error state without credential leakage, and full test suite coverage. | **CODE COMPLETE** *(Not Deployed)* | Current |
+| **P2-12** | **Health Check Liveness Probe (`/api/health`)** | Unauthenticated `/api/health` endpoint with genuine database check, uptime and version reporting, 503 degraded error state without credential leakage, and full test suite coverage. | **CODE COMPLETE** *(Not Deployed)* | `fbe9aa2` |
+| **P2-13** | **Subscription Lifecycle Confirmation Emails** | Pause/resume/cancel now each send one transactional Resend email with real plan name, amount and dates; sent only after PayPal confirms; a dead mailer cannot fail the action (`email_sent` flag surfaced to the account page). | **CODE COMPLETE** *(Not Deployed)* | Current |
 
 ---
 

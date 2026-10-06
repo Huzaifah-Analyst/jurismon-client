@@ -727,6 +727,15 @@
     }, 4000);
   }
 
+  // Appends a note when the backend confirms the action but could not email a
+  // confirmation, so the customer isn't left assuming a receipt is on its way.
+  function withEmailNote(message, data) {
+    if (data && data.email_sent === false) {
+      return message + " We couldn't send a confirmation email right now — this page is accurate either way.";
+    }
+    return message;
+  }
+
   function hideAllStates() {
     stateSignedOut.style.display = "none";
     stateLoading.style.display = "none";
@@ -954,7 +963,7 @@
         throw new Error(data.detail || "Unable to pause subscription.");
       }
 
-      showToast(data.message || "Subscription paused successfully.");
+      showToast(withEmailNote(data.message || "Subscription paused successfully.", data));
       await init();
     } catch (err) {
       alert("Error: " + err.message);
@@ -981,7 +990,7 @@
         throw new Error(data.detail || "Unable to resume subscription.");
       }
 
-      showToast(data.message || "Subscription reactivated successfully.");
+      showToast(withEmailNote(data.message || "Subscription reactivated successfully.", data));
       await init();
     } catch (err) {
       alert("Error: " + err.message);
@@ -1027,7 +1036,7 @@
       }
 
       cancelModal.style.display = "none";
-      showToast(data.message || "Subscription cancelled.");
+      showToast(withEmailNote(data.message || "Subscription cancelled.", data));
       await init();
     } catch (err) {
       alert("Error: " + err.message);

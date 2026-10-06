@@ -475,3 +475,158 @@ class TestCustomerSubscriptionControls(unittest.TestCase):
         self.assertIn("state-active", res.text)
         self.assertIn("state-paused", res.text)
         self.assertIn("cancel-modal", res.text)
+
+
+class TestSubscriptionLifecycleEmails(unittest.TestCase):
+    """ORDER P2-13: pause/resume/cancel must each send one transactional
+    confirmation email, only after PayPal confirms, with real plan figures,
+    and a failed send must never fail the underlying action."""
+
+    def setUp(self):
+        self._tmp = tempfile.mkdtemp(prefix="jurismon_sub_email_test_")
+        self.test_db = os.path.join(self._tmp, "test_emails.db")
+        self._saved_repo = main.repo
+        self.repo = Repository(db_path=self.test_db)
+        main.repo = self.repo
+        self.client = TestClient(main.app)
+
+        pw_hash = get_password_hash("Password123!")
+        self.alice = self.repo.create_user(
+            email="alice@example.com",
+            password_hash=pw_hash,
+            full_name="Alice Smith",
+            is_verified=1,
+        )
+        self.repo.activate_user_trial("alice@example.com", trial_days=14)
+        self.alice_token = create_customer_token(user_id=self.alice["id"], email=self.alice["email"])
+        self.alice_headers = {"Authorization": f"Bearer {self.alice_token}"}
+
+    def tearDown(self):
+        main.repo = self._saved_repo
+        shutil.rmtree(self._tmp, ignore_errors=True)
+
+    def _setup_alice_subscription(self, status="active", next_billing_days=30):
+        now = datetime.now(timezone.utc)
+        next_billing = (now + timedelta(days=next_billing_days)).isoformat()
+        return self.repo.record_subscription(
+            external_sub_id="I-ALICE-EMAIL",
+            plan_id="professional_monthly",
+            status=status,
+            user_email="alice@example.com",
+            subscriber_name="Alice Smith",
+            next_billing_at=next_billing,
+            user_id=self.alice["id"],
+        )
+
+    # 1. Pause sends exactly one email with the right subject and real figures
+    def test_pause_sends_one_confirmation_email_with_real_figures(self):
+        self._setup_alice_subscription(status="active", next_billing_days=25)
+
+        with patch.object(main.paypal_provider, "suspend_subscription", return_value=True), \
+             patch("api.main.mailer.send", return_value=True) as mock_send:
+            res = self.client.post("/api/account/subscription/pause", headers=self.alice_headers)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.json()["email_sent"])
+        mock_send.assert_called_once()
+        kwargs = mock_send.call_args[1]
+        self.assertIn("paused", kwargs["subject"].lower())
+        self.assertEqual(kwargs["to"], ["alice@example.com"])
+        self.assertIn("Professional", kwargs["html"])
+        sub = self.repo.get_subscription_by_external_id("I-ALICE-EMAIL")
+        access_date_fragment = sub["access_until"][:4]  # the year, at minimum
+        self.assertIn(access_date_fragment, kwargs["html"])
+
+    # 2. Resume sends exactly one email
+    def test_resume_sends_one_confirmation_email_with_real_figures(self):
+        self._setup_alice_subscription(status="active", next_billing_days=20)
+        self.repo.set_subscription_paused(
+            "I-ALICE-EMAIL",
+            paused_at=datetime.now(timezone.utc).isoformat(),
+            access_until=(datetime.now(timezone.utc) + timedelta(days=20)).isoformat(),
+        )
+
+        with patch.object(main.paypal_provider, "activate_subscription", return_value=True), \
+             patch("api.main.mailer.send", return_value=True) as mock_send:
+            res = self.client.post("/api/account/subscription/resume", headers=self.alice_headers)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.json()["email_sent"])
+        mock_send.assert_called_once()
+        kwargs = mock_send.call_args[1]
+        self.assertIn("active again", kwargs["subject"].lower())
+        self.assertIn("$49.00", kwargs["html"])
+
+    # 3. Cancel sends exactly one email
+    def test_cancel_sends_one_confirmation_email_with_real_figures(self):
+        self._setup_alice_subscription(status="active", next_billing_days=15)
+
+        with patch.object(main.paypal_provider, "cancel_subscription", return_value=True), \
+             patch("api.main.mailer.send", return_value=True) as mock_send:
+            res = self.client.post(
+                "/api/account/subscription/cancel",
+                headers=self.alice_headers,
+                json={"reason": "Budget change"},
+            )
+
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.json()["email_sent"])
+        mock_send.assert_called_once()
+        kwargs = mock_send.call_args[1]
+        self.assertIn("cancelled", kwargs["subject"].lower())
+        self.assertIn("Professional", kwargs["html"])
+
+    # 4. No PayPal success, no email - a failed action gets no confirmation
+    def test_failed_paypal_call_sends_no_email(self):
+        self._setup_alice_subscription(status="active", next_billing_days=25)
+
+        with patch.object(main.paypal_provider, "suspend_subscription", return_value=False), \
+             patch("api.main.mailer.send", return_value=True) as mock_send:
+            res = self.client.post("/api/account/subscription/pause", headers=self.alice_headers)
+
+        self.assertEqual(res.status_code, 502)
+        mock_send.assert_not_called()
+
+    # 5. A dead mailer does not fail the action, and the response says so honestly
+    def test_mailer_failure_does_not_fail_the_pause_action(self):
+        self._setup_alice_subscription(status="active", next_billing_days=25)
+
+        with patch.object(main.paypal_provider, "suspend_subscription", return_value=True), \
+             patch("api.main.mailer.send", return_value=False) as mock_send:
+            res = self.client.post("/api/account/subscription/pause", headers=self.alice_headers)
+
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertEqual(data["status"], "paused")
+        self.assertFalse(data["email_sent"])
+        mock_send.assert_called_once()
+
+        # The subscription really is paused regardless of the dead mailer.
+        sub = self.repo.get_subscription_by_external_id("I-ALICE-EMAIL")
+        self.assertEqual(sub["status"], "paused")
+
+    # 6. No PayPal subscription id or internal user id ever appears in the email
+    def test_email_body_leaks_no_paypal_id_or_internal_user_id(self):
+        self._setup_alice_subscription(status="active", next_billing_days=25)
+
+        with patch.object(main.paypal_provider, "cancel_subscription", return_value=True), \
+             patch("api.main.mailer.send", return_value=True) as mock_send:
+            self.client.post("/api/account/subscription/cancel", headers=self.alice_headers)
+
+        kwargs = mock_send.call_args[1]
+        body = kwargs["html"] + kwargs.get("text", "")
+        self.assertNotIn("I-ALICE-EMAIL", body)
+        self.assertNotIn(self.alice["id"], body)
+
+    # 7. An unconfigured mailer (no RESEND_API_KEY) never touches the network
+    def test_unconfigured_mailer_returns_false_and_makes_no_http_call(self):
+        self._setup_alice_subscription(status="active", next_billing_days=25)
+
+        with patch.object(main.paypal_provider, "suspend_subscription", return_value=True), \
+             patch("api.main.mailer.is_configured", return_value=False), \
+             patch("notifications.mailer.requests.post") as mock_post:
+            res = self.client.post("/api/account/subscription/pause", headers=self.alice_headers)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(res.json()["email_sent"])
+        mock_post.assert_not_called()
