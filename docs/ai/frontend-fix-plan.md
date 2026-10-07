@@ -16,7 +16,7 @@ These are the QA report's own "Top 5 worst" list, each one picked because it
 either breaks the business model, breaks trust on the first thing a visitor
 reads, or means a shipped feature silently doesn't exist in production.
 
-### 1. Paywall is cosmetic, the full locked content is already in the response — FIXED, verified locally, not deployed
+### 1. Paywall is cosmetic, the full locked content is already in the response — SHIPPED (`44e3863`)
 
 - **Where**: `api/main.py:502`, `GET /api/search`
 - **What's wrong**: the gated branch returns `"results": results`, the
@@ -46,7 +46,7 @@ reads, or means a shipped feature silently doesn't exist in production.
   present) and two new regression tests added
   (`test_search_gating_anonymous_response_drops_the_raw_results_dict`,
   `test_search_gating_long_document_teaser_is_capped_not_complete`). Full
-  suite: 305 passed. Not deployed yet, still local and uncommitted.
+  suite: 305 passed. Deployed Oct 8, release `44e3863`. Verified live: anonymous `/api/search?q=` dropped from 357,585 to 45,077 bytes, `results` key confirmed absent.
 
 ### 2. The core claim doesn't match the core content
 
