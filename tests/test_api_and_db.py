@@ -423,7 +423,10 @@ class TestFastAPIEndpoints(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(data["query"], "ordinance")
-        self.assertIn("results", data)
+        self.assertIn("items", data)
+        # Anonymous requests are gated: the raw results dict (full diffs and
+        # snapshots) must not be present, only the trimmed teaser items.
+        self.assertNotIn("results", data)
 
     def test_sources_endpoint(self):
         from api.auth import create_access_token, ADMIN_EMAIL
@@ -534,7 +537,7 @@ class TestFastAPIEndpoints(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn("items", data)
-        self.assertIn("results", data)
+        self.assertNotIn("results", data)
 
     def test_health_endpoint_healthy(self):
         """GET /api/health returns 200 with status=ok, database=ok, version, and uptime."""
@@ -1299,7 +1302,7 @@ class TestTermsAndPrivacyPages(unittest.TestCase):
         self.assertEqual(html.count('id="btn-logout"'), 1)
 
         # Default PayPal badge is unknown/dash, not Sandbox
-        self.assertIn('id="paypal-mode">—', html)
+        self.assertIn('id="paypal-mode">–', html)
 
         # Header status starts with loading indicator
         self.assertIn('id="sys-text">Loading portal status...<', html)

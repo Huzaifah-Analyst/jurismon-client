@@ -233,6 +233,60 @@ class TestCustomerAuthAndGating(unittest.TestCase):
         self.assertTrue(data["items"][0].get("is_locked"))
         self.assertIn("locked", data["items"][0]["full"].lower())
 
+    def test_search_gating_anonymous_response_drops_the_raw_results_dict(self):
+        """A raw `results` key used to ship the complete, untruncated
+        snapshots and diffs (full cleaned_text/diff_payload, tens of
+        thousands of characters per record in production) to anonymous
+        visitors, even though the UI only ever showed a 2-item locked
+        teaser built from `items`. The short teaser preview in `items[].text`
+        is allowed to carry real text by design (that's what distinguishes a
+        teaser from nothing), capped server-side at 240 characters; what must
+        never come back is the unbounded raw dict a plain unauthenticated
+        fetch could previously read in full."""
+        res = self.client.get("/api/search?q=setback")
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data["is_gated"])
+
+        # No raw results dict at all on the gated path.
+        self.assertNotIn("results", data)
+
+        # The locked item's "full" field is the generic upsell message, not
+        # real statutory text, regardless of what the fixture seeded.
+        self.assertIn("locked", data["items"][0]["full"].lower())
+        self.assertNotIn("25 feet minimum front yard", data["items"][0]["full"])
+
+    def test_search_gating_long_document_teaser_is_capped_not_complete(self):
+        """A document long enough to distinguish 'a short preview' from 'the
+        whole thing' must still come back capped on the gated path."""
+        long_text = "§ 99-1-100. " + ("Setback requirement text. " * 50)
+        self.assertGreater(len(long_text), 240)
+        doc = self.repo.get_or_create_document(
+            source_id="city-austin",
+            title="Long Zoning Ordinance",
+            pdf_url="https://austin.gov/long-ordinance.pdf",
+        )
+        self.repo.create_snapshot(
+            document_id=doc["id"],
+            version=1,
+            content_hash="hash-long",
+            raw_text=long_text,
+            cleaned_text=long_text,
+        )
+
+        res = self.client.get("/api/search?q=Setback+requirement")
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data["is_gated"])
+        self.assertNotIn("results", data)
+
+        teaser_text = next(
+            (i["text"] for i in data["items"] if i.get("doc") == "Long Zoning Ordinance"),
+            None,
+        )
+        self.assertIsNotNone(teaser_text, "the long document should appear in the teaser items")
+        self.assertLess(len(teaser_text), len(long_text))
+
     def test_search_gating_active_trial_full_access(self):
         self.client.post("/api/auth/register", json={
             "email": "active_trial@test.com",

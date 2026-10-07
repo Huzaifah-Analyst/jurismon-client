@@ -495,11 +495,18 @@ async def search_endpoint(
                 "Sign up for a 14-day free trial or subscribe to JurisMon Professional ($49/mo) to unlock complete access."
             )
             item["is_locked"] = True
+        # The raw `results` dict (full diffs and snapshots, including the
+        # complete `cleaned_text`/`diff_payload` of everything, not just the
+        # 2-item teaser) is deliberately left out here. It used to be
+        # returned unconditionally, which meant an anonymous fetch with no
+        # auth header could read 100% of the gated content straight out of
+        # the JSON body while the UI only showed a locked 2-item teaser.
+        # `total_snaps`/`total_dfs` below already carry the counts the
+        # frontend needs; nothing reads `results` on the gated path.
         return {
             "query": q,
             "total_snapshots": total_snaps,
             "total_diffs": total_dfs,
-            "results": results,
             "items": teaser_items,
             "is_gated": True,
             "gate_reason": access_status.get("reason", "unauthenticated"),
