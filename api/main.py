@@ -490,6 +490,21 @@ async def search_endpoint(
     if not has_access:
         teaser_items = items[:2]
         for item in teaser_items:
+            # Snapshot-type items already carry a pre-capped 240-char preview
+            # in `text` (set server-side in format_result_items) and nothing
+            # further is needed there. Diff-type items have no `text` field -
+            # the frontend builds the visible preview straight from
+            # `segments`, which held the ENTIRE word-level diff (every
+            # "eq"/"add"/"del" chunk of the full modified section) with no
+            # cap at all. Masking only `full` left this wide open: an
+            # anonymous visitor's rendered card showed the complete,
+            # unlocked diff text, because `segments` was never touched.
+            # Collapse it to the same short, capped preview treatment
+            # snapshots already get.
+            if item.get("type") == "diff":
+                joined = " ".join(seg[1] for seg in item.get("segments", []) if len(seg) > 1)
+                preview = joined[:240] + "..." if len(joined) > 240 else joined
+                item["segments"] = [["eq", preview]]
             item["full"] = (
                 "Full statutory text and clause delta history are locked. "
                 "Sign up for a 14-day free trial or subscribe to JurisMon Professional ($49/mo) to unlock complete access."

@@ -287,6 +287,68 @@ class TestCustomerAuthAndGating(unittest.TestCase):
         self.assertIsNotNone(teaser_text, "the long document should appear in the teaser items")
         self.assertLess(len(teaser_text), len(long_text))
 
+    def test_search_gating_diff_type_segments_are_capped_on_the_gated_path(self):
+        """Regression: masking item["full"] on the gated path was not
+        enough. For a diff-type item, the frontend builds its visible
+        preview straight from item["segments"] (processData() in
+        frontend/index.html joins every segment into d.plain), and
+        segments carried the complete, uncapped word-level diff - the
+        full "eq"/"add"/"del" text of the whole modified section, for
+        every anonymous visitor, regardless of is_locked. A single real
+        example reproduced this as a 14,198px-tall rendered card. The
+        gated path must cap segments the same way the snapshot preview
+        is already capped, not just blank out the unused "full" field."""
+        long_diff_text = "§ 99-2-200. " + ("Amended clause language. " * 50)
+        self.assertGreater(len(long_diff_text), 240)
+        doc = self.repo.get_or_create_document(
+            source_id="city-austin",
+            title="Long Diff Ordinance",
+            pdf_url="https://austin.gov/long-diff.pdf",
+        )
+        snap = self.repo.create_snapshot(
+            document_id=doc["id"],
+            version=1,
+            content_hash="hash-long-diff",
+            raw_text=long_diff_text,
+            cleaned_text=long_diff_text,
+        )
+        self.repo.save_diff(
+            document_id=doc["id"],
+            previous_snapshot_id=None,
+            current_snapshot_id=snap["id"],
+            diff_payload={
+                "strategy_used": "section",
+                "total_added": 0,
+                "total_removed": 0,
+                "total_modified": 1,
+                "summary": "1 clause(s) modified",
+                "modified": [{
+                    "identifier": "§ 99-2-200",
+                    "old_text": "Old clause language.",
+                    "new_text": long_diff_text,
+                }],
+            },
+        )
+
+        res = self.client.get("/api/search?q=Amended+clause")
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data["is_gated"])
+        self.assertNotIn("results", data)
+
+        diff_item = next(
+            (i for i in data["items"] if i.get("doc") == "Long Diff Ordinance"),
+            None,
+        )
+        self.assertIsNotNone(diff_item, "the long diff should appear in the teaser items")
+        self.assertTrue(diff_item.get("is_locked"))
+
+        segments_text = "".join(seg[1] for seg in diff_item["segments"])
+        self.assertLess(
+            len(segments_text), len(long_diff_text),
+            "segments must be capped on the gated path, not the full word-level diff",
+        )
+
     def test_search_gating_active_trial_full_access(self):
         self.client.post("/api/auth/register", json={
             "email": "active_trial@test.com",
