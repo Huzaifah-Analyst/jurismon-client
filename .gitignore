@@ -67,3 +67,8 @@ delivery_screenshots.zip
 docs/deliverable/
 docs/deliverable.zip
 
+# Design inspiration references - mockups/exports kept locally for the
+# frontend redesign, never pushed. The design itself, once built, goes
+# into frontend/ as real code and IS tracked.
+frontend/stitch_jurismon_frontend_redesign/
+
