@@ -116,13 +116,80 @@ Displayed at `height:30px` (`frontend/index.html:961`), so it is being scaled do
 
 ---
 
-## 6. Account page loading sequence — PARTIALLY VERIFIED
+## 6. Live walkthrough — signup, login, about, account (Oct 7, 2026)
 
-Code-confirmed: `init()` in `frontend/account.html:770-800` makes `GET /api/auth/me` then `GET /api/account/subscription` in sequence (not parallel), each gated behind the previous one resolving. `state-loading` (`frontend/account.html:409`, a centered `.spinner`) is shown for the full duration of both calls.
+Tested by hand against production (`https://jurismon.com`) and, for the four authenticated account states, against a local server forced onto an isolated SQLite database (`SUPABASE_URL` unset for that process) seeded with throwaway test users — **production data was never touched**. The account page HTML served locally was first diffed byte-for-byte against the live page and confirmed identical, so this is a true test of what is live.
 
-**Not yet reproduced**: the client's screenshot shows a spinner appearing to float over already-rendered account content. Only one spinner element exists in the markup (`frontend/account.html:410`), inside `#state-loading`, which the code hides before showing `#state-active` — a straightforward read of `hideAllStates()` (`:739-748`) does not explain an overlap. Reproducing this needs a real authenticated session (OTP email, real trial user); I have not done that against production and will not fabricate a root cause I have not seen happen. Flagging as open, not closed.
+**Note on the client's screenshot**: the floating spinner in the screenshot the client sent was Fiverr's own image still loading, not a JurisMon bug — confirmed by the client. Removed from this audit; it was never a real finding.
 
-**Standard rule violated**: unresolved pending reproduction.
+### 6a. Signup and email verification — PASS
+
+Registered a real throwaway account end to end: form submit → `POST /api/auth/register` (200) → code-entry screen appears in under 2 seconds with the submitted email echoed back correctly. Submitted a deliberately wrong 6-digit code and got a clear red inline error, "Invalid confirmation code. Please check your email and try again." Resend link present. No issues.
+
+### 6b. Login with wrong credentials — FAIL, new finding
+
+```
+POST /api/auth/login -> 401 Unauthorized
+Result: the modal silently closed. No error message shown anywhere.
+```
+
+Signup shows a clear red banner on a wrong code. Login shows **nothing** on a wrong password — the modal just closes and the visitor is back on the homepage with no idea what happened to their attempt. Same form, same app, two different behaviours. This is the kind of thing that reads as "broken" even though the backend did the right thing (401 is correct) — the frontend threw the error away.
+
+**Standard rule violated**: 4.2 (every fetch must handle non-2xx explicitly — this one does not).
+
+### 6c. A third spot still says "65" without "live/tracked" — FAIL, new finding
+
+The Oct 5 decision was "41 live jurisdictions, 65 tracked" everywhere customer-facing. Two spots were fixed. A third was missed:
+
+```
+frontend/index.html:1367
+"Free Preview Mode: ... Start your 14-day free trial for full text
+across all 65 jurisdictions."
+```
+
+This is the exact banner shown to every anonymous visitor who searches without an account — the highest-traffic unauthenticated surface on the site — still making the unqualified "65" claim the client asked removed.
+
+**Standard rule violated**: 4.7 (no claim should exist in two forms after a correction) and reopens the business risk from the Oct 5 decision.
+
+### 6d. About page — PASS
+
+All content accurate, ingestion stat correctly shows "41 live jurisdictions, 65 tracked" (the one place this was fully fixed), zero console errors, zero failed requests.
+
+### 6e. Account page, signed out — PASS
+
+Clean signed-out state, correct call to action, no errors.
+
+### 6f. Account page, all four authenticated states — mostly PASS, one new finding
+
+Walked through Trial, Active, Paused, and Cancelled-in-period with real seeded users and real JWTs:
+
+| State | Visual | Behaviour |
+| :--- | :--- | :--- |
+| Trial, no subscription | Correct, matches client's own screenshot | Pass |
+| Active | Correct | Pass, but see below |
+| Paused | Correct, access date and paused-since date both right | Pass |
+| Cancelled, in paid period | Correct, red notice is clear | Pass |
+
+**New finding**: the Active state shows a raw internal identifier to the customer with no explanation —
+
+```
+SUBSCRIPTION ID
+I-ACTIVE-1
+```
+
+A zoning lawyer with no reason to know what a PayPal subscription id looks like sees a cryptic code sitting on their account page. It is their own id, not a security leak, but it is implementation detail that belongs in a support ticket, not the customer's screen.
+
+**Standard rule violated**: 5.4 (an internal id should not appear in the customer-facing DOM without a reason to).
+
+### 6g. Account page at 375px — minor finding
+
+No horizontal overflow (`scrollWidth === clientWidth === 375`, confirmed). But the header stacks into three separate full-width rows — "Back to Search" button, then the account email as its own line, then "Sign Out" — instead of a compact single bar. Not broken, just wasteful of a small screen's vertical space.
+
+**Standard rule violated**: 8.1 is technically met (no scroll), but this misses the spirit of 8.3/8.4.
+
+### 6h. Admin page, signed out — PASS
+
+Clean, no console errors.
 
 ---
 
@@ -147,10 +214,29 @@ No framework, no build step and no new runtime dependency is needed for any of t
 | 1. First paint | Partial — shell is static and fast (586ms TTFB), but the page looks "ready" before it is |
 | 2. Loading states | Fail — no skeleton anywhere, confirmed by grep |
 | 3. Stale content | Fail — no `Cache-Control` on any HTML response, confirmed by header dump |
-| 4. Data fetching | Fail — unbounded payload, sequential calls on the account page, no abort/timeout seen |
-| 5. Backend contract | Fail — gated response still ships ungated data |
+| 4. Data fetching | Fail — unbounded payload, sequential calls on the account page, no abort/timeout, a failed login shows no error |
+| 5. Backend contract | Fail — gated response still ships ungated data, a raw subscription id reaches the customer |
 | 6. Assets | Fail — raster logo, no hash-based cache busting |
 | 7. Structure | Pass — DOM order is correct, no unexplained null guards found in this pass |
-| 8. Responsive | Not audited this pass (deferred to the fix-plan verification step) |
+| 8. Responsive | Partial — no overflow at 375px anywhere tested, but the account header wastes space stacking into three rows |
 | 9. Accessibility | Not audited this pass |
 | 10. Testing | Fail — zero frontend tests exist |
+
+---
+
+## 9. Every problem found, in one table
+
+| # | Problem | Where | Severity | How it will be fixed |
+| :-- | :--- | :--- | :--- | :--- |
+| 1 | No `Cache-Control` on any HTML page, so refresh can show yesterday's deploy | `api/main.py:272-320`, every `FileResponse` | High — this is the client's own complaint | Add `Cache-Control: no-cache` to every HTML response; keep the existing ETag so a refresh is a cheap 304, not a full reload |
+| 2 | `/api/search` ships the full matched dataset even to a gated/teaser visitor — 86% of the payload (306 KB of 357 KB) is content the visitor is not shown | `api/main.py:469-503` | High — this is the client's "results load slowly" complaint, with a cause | Truncate `results.snapshots`/`results.diffs` to match the teaser `items` when `has_access` is false; add `limit`/`offset` for authenticated requests too |
+| 3 | No compression anywhere — nginx or FastAPI | `deploy/nginx.conf`, `api/main.py` | High — multiplies every other payload problem | Add `GZipMiddleware` in FastAPI (three lines, no new dependency) |
+| 4 | No loading state anywhere on the homepage; `<ul id="results">` is just empty for 1-3.5 seconds | `frontend/index.html:1058` | High — makes a working page look broken | Pure CSS skeleton rows shaped like a result card, shown the instant the fetch starts, `aria-live="polite"` region |
+| 5 | A failed login (401) shows no error at all — the modal just closes | `frontend/index.html`, login submit handler | High — looks exactly like "the site is broken" | Add the same inline error banner the signup form already has, reused for both forms |
+| 6 | "Free Preview Mode" banner still says "across all 65 jurisdictions" — the exact claim corrected everywhere else on Oct 5 | `frontend/index.html:1367` | High — reopens a decision the client already made, on the highest-traffic banner on the site | Rewrite to "41 live jurisdictions, 65 tracked," matching the header and About page |
+| 7 | Raw PayPal subscription id shown on the customer's account page with no explanation | `frontend/account.html`, Active/Paused state markup | Medium — not a leak of someone else's data, but unexplained technical detail on a lawyer-facing page | Remove from the default view, or label and tuck it under a "details" disclosure |
+| 8 | Logo is a 278×72 raster PNG, not SVG; no dark-mode variant; not cache-busted (`expires 7d` on a fixed filename) | `frontend/assets/logo.png`, `deploy/nginx.conf:81-84` | Medium | Re-export as SVG; add a dark-mode variant; adopt content-hashed filenames for `/static/` |
+| 9 | Account page header stacks into three full-width rows at 375px instead of one compact bar | `frontend/account.html` header markup | Low — not broken, just wasteful | Lay out email + buttons on one row within the existing breakpoint |
+| 10 | Zero frontend tests of any kind | whole `frontend/` directory | High — every bug above would have been caught by a 10-minute test, not a client screenshot | Add the four test layers from `frontend-standard.md` §10, starting with the states and flows this audit just walked by hand |
+
+---
