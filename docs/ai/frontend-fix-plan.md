@@ -46,7 +46,7 @@ reads, or means a shipped feature silently doesn't exist in production.
   present) and two new regression tests added
   (`test_search_gating_anonymous_response_drops_the_raw_results_dict`,
   `test_search_gating_long_document_teaser_is_capped_not_complete`). Full
-  suite: 305 passed. Deployed Oct 8, release `44e3863`. Verified live: anonymous `/api/search?q=` dropped from 357,585 to 45,077 bytes, `results` key confirmed absent.
+  suite: 305 passed. Deployed Oct 8, release `b5f53bb` (superseding `44e3863`). Verified live: anonymous `/api/search?q=` dropped from 357,585 to 1,625 bytes for the exact query that originally leaked. **A second leak in the same endpoint was found after the first fix shipped**: `item['segments']` (what the frontend actually renders a diff-type teaser from) was never capped, only `item['full']` was. Found by the user directly inspecting the live response, not caught by this session's own verification pass. Fixed in `c42d1c5`, same 240-char cap applied to `segments` on the gated path. Full suite: 306 passed.
 
 ### 2. The core claim doesn't match the core content
 
