@@ -21,14 +21,14 @@
 <meta name="theme-color" content="#154DA8">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="JurisMon">
-<meta property="og:title" content="JurisMon — Regulatory Drift Monitor">
+<meta property="og:title" content="JurisMon | Regulatory Drift Monitor">
 <meta property="og:description" content="Daily tracking of statutory and zoning changes across government sources. See exactly what text was added or removed.">
 <meta property="og:url" content="https://jurismon.com/">
 <meta property="og:image" content="https://jurismon.com/static/assets/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="JurisMon — Regulatory Drift Monitor">
+<meta name="twitter:title" content="JurisMon | Regulatory Drift Monitor">
 <meta name="twitter:description" content="Daily tracking of statutory and zoning changes across government sources.">
 <meta name="twitter:image" content="https://jurismon.com/static/assets/og-image.png">
 
@@ -101,6 +101,8 @@
 
 
   *, *::before, *::after { box-sizing: border-box; }
+
+  .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 
   html { -webkit-text-size-adjust: 100%; }
 
@@ -654,11 +656,55 @@
 
 
 
-  /* One orchestrated entrance, first load only */
+  /* One orchestrated entrance: first load, and again on a filter/tab switch */
 
   .results.intro .result { animation: rise .45s var(--ease) both; animation-delay: calc(var(--i) * 40ms + 80ms); }
 
   @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+
+
+  /* ---------- Loading skeleton ---------- */
+
+  /* Shaped like a real .result row, so nothing shifts when data lands. */
+
+  .skel-row {
+
+    display: grid; grid-template-columns: 116px minmax(0, 1fr);
+
+    border-top: 1px solid var(--line);
+
+  }
+
+  .skel-row:first-child { border-top: 0; }
+
+  .skel-gutter { padding: 20px 18px 20px 20px; border-right: 1px solid var(--line); display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+
+  .skel-body { padding: 18px 22px 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+
+  .skel-bar { border-radius: var(--r-sm); background: var(--line); }
+
+
+
+  @media (prefers-reduced-motion: no-preference) {
+
+    .skel-bar {
+
+      background: linear-gradient(100deg, var(--line) 30%, var(--hover) 50%, var(--line) 70%);
+
+      background-size: 240% 100%;
+
+      animation: skel-shimmer 1.5s ease-in-out infinite;
+
+    }
+
+    .skel-row { animation: skel-fade-in .3s var(--ease) both; animation-delay: calc(var(--i) * 60ms); }
+
+  }
+
+  @keyframes skel-shimmer { 0% { background-position: 120% 0; } 100% { background-position: -20% 0; } }
+
+  @keyframes skel-fade-in { from { opacity: 0; } to { opacity: 1; } }
 
 
 
@@ -965,7 +1011,7 @@
     </a>
     <nav class="topnav" aria-label="Main" id="nav-actions">
       <a href="/about" class="navlink" style="text-decoration:none; color:var(--muted); font-size:13.5px; font-weight:500;">About</a>
-      <span class="navlink" style="cursor:default;"><span class="label">Operational Jurisdictions</span> <span class="navcount" id="source-count">—</span></span>
+      <span class="navlink" style="cursor:default;"><span class="label">Operational Jurisdictions</span> <span class="navcount" id="source-count">-</span></span>
       <div id="auth-unauthed" style="display:flex; align-items:center; gap:8px;">
         <button type="button" class="btn-outline" id="btn-nav-login" style="cursor:pointer; height:32px; font-weight:500;">Log In</button>
         <button type="button" class="btn-primary" id="btn-nav-register" style="cursor:pointer; height:32px; font-weight:500; background:var(--ink); color:#fff; border:0; border-radius:var(--r-md); padding:0 12px; font-size:13.5px;">Start 14-Day Free Trial</button>
@@ -1282,6 +1328,36 @@
     return `${m[1]}<${tag}>${hl(m[2])}</${tag}>${m[3]}`;
   };
 
+  /* Caps the always-visible preview to roughly PREVIEW_CHAR_CAP characters,
+     matching the server's own 240-char teaser convention. This is separate
+     from d.full, which stays complete and is only shown after the user
+     clicks "Show full section", a deliberate action. Without this cap a
+     single long document renders its entire text in the collapsed card. */
+  const PREVIEW_CHAR_CAP = 240;
+
+  const capPlainText = text => {
+    const s = String(text ?? "");
+    return s.length > PREVIEW_CHAR_CAP ? s.slice(0, PREVIEW_CHAR_CAP) + "..." : s;
+  };
+
+  const capSegments = segments => {
+    let used = 0;
+    const out = [];
+    for (const [op, text] of segments) {
+      const s = String(text ?? "");
+      if (used >= PREVIEW_CHAR_CAP) break;
+      const remaining = PREVIEW_CHAR_CAP - used;
+      if (s.length <= remaining) {
+        out.push([op, s]);
+        used += s.length;
+      } else {
+        out.push([op, s.slice(0, remaining) + "..."]);
+        used = PREVIEW_CHAR_CAP;
+      }
+    }
+    return out.length ? out : segments.slice(0, 1);
+  };
+
   const inFilter = (d, f) =>
     f === "all" ||
     (f === "added" && d.type === "diff" && d.hasAdd) ||
@@ -1312,6 +1388,7 @@
   /* ---------- API Fetching ---------- */
 
   async function fetchLiveSearch(query) {
+    showSearchSkeleton();
     try {
       const token = localStorage.getItem("jurismon_token");
       const headers = token ? { "Authorization": `Bearer ${token}` } : {};
@@ -1364,7 +1441,9 @@
         bannerCta.onclick = () => openPaywallModal();
       } else {
         banner.classList.remove("is-expired");
-        bannerText.innerHTML = "<strong>Free Preview Mode:</strong> Showing initial municipal changes. Start your 14-day free trial for full text across all 65 jurisdictions.";
+        const previewLive = counts.operational || 41;
+        const previewTotal = counts.total || 65;
+        bannerText.innerHTML = `<strong>Free Preview Mode:</strong> Showing initial municipal changes. Start your 14-day free trial for full text across ${previewLive} live jurisdictions, ${previewTotal} tracked.`;
         bannerCta.textContent = "Start 14-Day Free Trial";
         bannerCta.onclick = () => openAuthModal("register");
       }
@@ -1462,11 +1541,42 @@
     return { results, counts };
   }
 
+  /* Shows while a request is in flight, shaped like real result rows so
+     nothing jumps when the data replaces it. Widths vary per row so it
+     doesn't read as a single repeated tile. */
+  function skeletonHTML(count) {
+    const widths = ["86%", "62%", "94%", "70%"];
+    let out = "";
+    for (let i = 0; i < count; i++) {
+      out += `
+        <li class="skel-row" style="--i:${i}" aria-hidden="true">
+          <div class="skel-gutter">
+            <div class="skel-bar" style="width:48px; height:15px;"></div>
+            <div class="skel-bar" style="width:60px; height:18px; border-radius:999px;"></div>
+          </div>
+          <div class="skel-body">
+            <div class="skel-bar" style="width:40%; height:15px;"></div>
+            <div class="skel-bar" style="width:25%; height:13px;"></div>
+            <div class="skel-bar" style="width:${widths[i % widths.length]}; height:14px; margin-top:6px;"></div>
+            <div class="skel-bar" style="width:${widths[(i + 2) % widths.length]}; height:14px;"></div>
+          </div>
+        </li>`;
+    }
+    return out;
+  }
+
+  function showSearchSkeleton() {
+    list.innerHTML = skeletonHTML(5);
+    list.classList.remove("intro");
+    empty.hidden = true;
+    summary.innerHTML = `<span style="display:inline-block; width:120px; height:12px; border-radius:4px; background:var(--line);" aria-hidden="true"></span><span class="visually-hidden"> Loading results…</span>`;
+  }
+
   function itemHTML(d, i) {
     const open = state.open.has(d.id);
     const body = d.type === "diff"
-      ? d.segments.map(([t, s]) => t === "add" ? wrap("ins", s) : t === "del" ? wrap("del", s) : hl(s)).join("")
-      : hl(d.plain);
+      ? capSegments(d.segments).map(([t, s]) => t === "add" ? wrap("ins", s) : t === "del" ? wrap("del", s) : hl(s)).join("")
+      : hl(capPlainText(d.plain));
     const noun = d.type === "diff" ? "section" : "page";
     const fullLabel = d.type === "diff" ? `Current text of ${esc(d.section)}` : `Full text, ${esc(d.section)}`;
 
@@ -1516,7 +1626,8 @@
       </li>`;
   }
 
-  function render() {
+  function render(opts) {
+    const animate = !!(opts && opts.animate);
     const { results, counts } = getResults();
 
     for (const [k, v] of Object.entries(counts)) {
@@ -1546,6 +1657,10 @@
       state.first = false;
       list.classList.add("intro");
       setTimeout(() => list.classList.remove("intro"), 1200);
+    } else if (animate && n) {
+      // A tab/filter switch, not a fresh search: same light rise, shorter hold.
+      list.classList.add("intro");
+      setTimeout(() => list.classList.remove("intro"), 700);
     }
   }
 
@@ -1568,10 +1683,10 @@
     state.filter = btn.dataset.filter;
     moveIndicator();
     btn.scrollIntoView({ block: "nearest", inline: "nearest" });
-    render();
+    render({ animate: true });
   });
 
-  sortSel.addEventListener("change", () => { state.sort = sortSel.value; render(); });
+  sortSel.addEventListener("change", () => { state.sort = sortSel.value; render({ animate: true }); });
 
   /* ---------- Search input ---------- */
   let timer;

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Customer Account — JurisMon</title>
+  <title>Customer Account | JurisMon</title>
   <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -431,11 +431,11 @@
     <div class="prop-grid">
       <div class="prop-item">
         <span class="prop-label">Account Email</span>
-        <span class="prop-val" id="no-sub-email">—</span>
+        <span class="prop-val" id="no-sub-email">-</span>
       </div>
       <div class="prop-item">
         <span class="prop-label">Trial Expiration</span>
-        <span class="prop-val" id="no-sub-expires">—</span>
+        <span class="prop-val" id="no-sub-expires">-</span>
       </div>
     </div>
 
@@ -458,19 +458,19 @@
     <div class="prop-grid">
       <div class="prop-item">
         <span class="prop-label">Plan</span>
-        <span class="prop-val" id="active-plan-name">—</span>
+        <span class="prop-val" id="active-plan-name">-</span>
       </div>
       <div class="prop-item">
         <span class="prop-label">Billing Amount</span>
-        <span class="prop-val" id="active-plan-price">—</span>
+        <span class="prop-val" id="active-plan-price">-</span>
       </div>
       <div class="prop-item">
         <span class="prop-label">Next Billing Date</span>
-        <span class="prop-val" id="active-next-bill">—</span>
+        <span class="prop-val" id="active-next-bill">-</span>
       </div>
       <div class="prop-item">
         <span class="prop-label">Subscription ID</span>
-        <span class="prop-val" id="active-sub-id" style="font-family:monospace; font-size:13px;">—</span>
+        <span class="prop-val" id="active-sub-id" style="font-family:monospace; font-size:13px;">-</span>
       </div>
     </div>
 
@@ -492,7 +492,7 @@
 
     <div class="notice notice-amber" id="paused-notice">
       <div>
-        <strong>Billing paused. Access continues until <span id="paused-access-date">—</span>.</strong>
+        <strong>Billing paused. Access continues until <span id="paused-access-date">-</span>.</strong>
         <p style="margin-top:4px;">You have already paid for the current billing cycle. You may resume anytime to retain access without interruption.</p>
       </div>
     </div>
@@ -504,15 +504,15 @@
       </div>
       <div class="prop-item">
         <span class="prop-label">Access Until</span>
-        <span class="prop-val" id="paused-access-val">—</span>
+        <span class="prop-val" id="paused-access-val">-</span>
       </div>
       <div class="prop-item">
         <span class="prop-label">Paused Since</span>
-        <span class="prop-val" id="paused-since-val">—</span>
+        <span class="prop-val" id="paused-since-val">-</span>
       </div>
       <div class="prop-item">
         <span class="prop-label">Subscription ID</span>
-        <span class="prop-val" id="paused-sub-id" style="font-family:monospace; font-size:13px;">—</span>
+        <span class="prop-val" id="paused-sub-id" style="font-family:monospace; font-size:13px;">-</span>
       </div>
     </div>
 
@@ -533,7 +533,7 @@
 
     <div class="notice notice-rose" id="cancelled-in-period-notice">
       <div>
-        <strong>Cancelled. Access continues until <span id="cancelled-access-date">—</span>.</strong>
+        <strong>Cancelled. Access continues until <span id="cancelled-access-date">-</span>.</strong>
         <p style="margin-top:4px;">You will not be billed again. Your access remains active until your pre-paid cycle concludes.</p>
       </div>
     </div>
@@ -545,11 +545,11 @@
       </div>
       <div class="prop-item">
         <span class="prop-label">Access Until</span>
-        <span class="prop-val" id="cancelled-in-period-access-val">—</span>
+        <span class="prop-val" id="cancelled-in-period-access-val">-</span>
       </div>
       <div class="prop-item">
         <span class="prop-label">Cancelled Date</span>
-        <span class="prop-val" id="cancelled-in-period-date">—</span>
+        <span class="prop-val" id="cancelled-in-period-date">-</span>
       </div>
     </div>
 
@@ -599,7 +599,7 @@
       <p class="modal-body" id="cancel-modal-desc">
         Your subscription will be cancelled and automatic billing will cease immediately.
         <br><br>
-        <strong>You will retain full access until <span id="cancel-modal-access-date">—</span>.</strong>
+        <strong>You will retain full access until <span id="cancel-modal-access-date">-</span>.</strong>
       </p>
 
       <div class="form-group" style="margin-bottom:20px;">
@@ -700,7 +700,7 @@
 
   // Formatting helpers
   function formatDate(isoStr) {
-    if (!isoStr) return "—";
+    if (!isoStr) return "-";
     try {
       const d = new Date(isoStr);
       if (isNaN(d.getTime())) return isoStr;
@@ -711,7 +711,7 @@
   }
 
   function formatPrice(amount, currency, interval) {
-    if (amount == null) return "—";
+    if (amount == null) return "-";
     const curr = currency || "USD";
     const sym = curr === "USD" ? "$" : curr + " ";
     const amtStr = typeof amount === "number" ? amount.toFixed(2) : amount;
@@ -731,7 +731,7 @@
   // confirmation, so the customer isn't left assuming a receipt is on its way.
   function withEmailNote(message, data) {
     if (data && data.email_sent === false) {
-      return message + " We couldn't send a confirmation email right now — this page is accurate either way.";
+      return message + " We couldn't send a confirmation email right now. This page is accurate either way.";
     }
     return message;
   }
@@ -821,7 +821,7 @@
     // 1. No subscription
     if (!data.has_subscription || status === "none") {
       stateNoSub.style.display = "block";
-      noSubEmail.textContent = currentUser ? currentUser.email : "—";
+      noSubEmail.textContent = currentUser ? currentUser.email : "-";
 
       if (access.has_access && access.reason === "trial") {
         const days = access.trial_days_remaining != null ? access.trial_days_remaining : null;
@@ -844,10 +844,10 @@
     if (status === "active" || status === "completed") {
       stateActive.style.display = "block";
       if (activePlanTitle) activePlanTitle.textContent = planDisplay;
-      activePlanName.textContent = data.plan_name || "—";
+      activePlanName.textContent = data.plan_name || "-";
       activePlanPrice.textContent = formatPrice(data.billing_amount, data.billing_currency, data.billing_interval);
       activeNextBill.textContent = formatDate(data.next_billing_at);
-      activeSubId.textContent = data.external_subscription_id || "—";
+      activeSubId.textContent = data.external_subscription_id || "-";
       return;
     }
 
@@ -859,7 +859,7 @@
       pausedAccessDate.textContent = accessDate;
       pausedAccessVal.textContent = accessDate;
       pausedSinceVal.textContent = formatDate(data.paused_at);
-      pausedSubId.textContent = data.external_subscription_id || "—";
+      pausedSubId.textContent = data.external_subscription_id || "-";
       return;
     }
 

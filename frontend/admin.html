@@ -685,7 +685,7 @@
 
       <span class="sub">connected</span>
 
-      <span class="tag" id="paypal-mode">—</span>
+      <span class="tag" id="paypal-mode">-</span>
 
     </a>
 
@@ -1275,7 +1275,7 @@
 
       $("#sys-dot").className = "dot live warn";
 
-      $("#k-runs").innerHTML = "—<small>/—</small>";
+      $("#k-runs").innerHTML = "-<small>/-</small>";
 
       $("#k-runs-foot").innerHTML = "Checking sources...";
 
@@ -1363,12 +1363,12 @@
   function renderKpis() {
 
     if (!localStorage.getItem("jurismon_admin_token")) {
-      $("#k-subs").textContent = "—";
+      $("#k-subs").textContent = "-";
       $("#k-subs-foot").textContent = "Sign in to view";
-      $("#k-mrr").textContent = "—";
+      $("#k-mrr").textContent = "-";
       const modeTag = $("#paypal-mode");
       if (modeTag) {
-        modeTag.textContent = "—";
+        modeTag.textContent = "-";
         modeTag.style.background = "";
         modeTag.style.color = "";
       }
@@ -1381,15 +1381,15 @@
 
     const cancelled = subscribers.filter(s => s.status === "cancelled" || s.status === "expired").length;
 
-    $("#k-subs").textContent = overview ? overview.active_subscribers : (subscribers.length ? active : "—");
+    $("#k-subs").textContent = overview ? overview.active_subscribers : (subscribers.length ? active : "-");
 
     $("#k-subs-foot").innerHTML = overview
 
       ? `<strong>${overview.past_due_subscribers}</strong> past due, <strong>${overview.cancelled_subscribers}</strong> cancelled`
 
-      : (subscribers.length ? `<strong>${pastDue}</strong> past due, <strong>${cancelled}</strong> cancelled` : "—");
+      : (subscribers.length ? `<strong>${pastDue}</strong> past due, <strong>${cancelled}</strong> cancelled` : "-");
 
-    $("#k-mrr").textContent = overview ? money(Math.round(overview.mrr)) : (subscribers.length ? money(0) : "—");
+    $("#k-mrr").textContent = overview ? money(Math.round(overview.mrr)) : (subscribers.length ? money(0) : "-");
 
     const modeTag = $("#paypal-mode");
 
@@ -1407,7 +1407,7 @@
 
       } else {
 
-        modeTag.textContent = "—";
+        modeTag.textContent = "-";
 
         modeTag.style.background = "";
 
@@ -1484,7 +1484,7 @@
   function renderSources() {
 
     if (!localStorage.getItem("jurismon_admin_token")) {
-      document.querySelectorAll("#src-seg [data-n]").forEach(el => el.textContent = "—");
+      document.querySelectorAll("#src-seg [data-n]").forEach(el => el.textContent = "-");
       const srcBody = $("#src-body");
       if (srcBody) srcBody.innerHTML = '<tr class="empty-row"><td colspan="5">Authentication required. Sign in to view sources.</td></tr>';
       const srcRange = $("#src-range");
@@ -1666,7 +1666,7 @@
       const subBody = $("#sub-body");
       if (subBody) subBody.innerHTML = '<tr class="empty-row"><td colspan="7">Authentication required. Sign in to view subscribers.</td></tr>';
       const nSubs = $("#n-subs");
-      if (nSubs) nSubs.textContent = "—";
+      if (nSubs) nSubs.textContent = "-";
       return;
     }
 
@@ -1821,7 +1821,7 @@
       const plansEl = $("#plans");
       if (plansEl) plansEl.innerHTML = '<div style="grid-column: 1/-1; padding: 24px; text-align: center; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);">Authentication required. Sign in to view plans.</div>';
       const nPlans = $("#n-plans");
-      if (nPlans) nPlans.textContent = "—";
+      if (nPlans) nPlans.textContent = "-";
       return;
     }
 
@@ -1950,15 +1950,15 @@
 
       body.innerHTML = rows.map(c => {
         const when = c.changed_at ? new Date(c.changed_at) : null;
-        const whenStr = when && !isNaN(when) ? when.toLocaleString() : "—";
+        const whenStr = when && !isNaN(when) ? when.toLocaleString() : "-";
         const planLabel = c.plan_id ? esc(c.plan_id) : "Catalogue";
         return `<tr>
           <td>${esc(whenStr)}</td>
-          <td>${esc(c.changed_by || "—")}</td>
+          <td>${esc(c.changed_by || "-")}</td>
           <td>${planLabel}</td>
-          <td>${esc(c.field || "—")}</td>
-          <td>${c.old_value == null ? "—" : esc(c.old_value)}</td>
-          <td>${c.new_value == null ? "—" : esc(c.new_value)}</td>
+          <td>${esc(c.field || "-")}</td>
+          <td>${c.old_value == null ? "-" : esc(c.old_value)}</td>
+          <td>${c.new_value == null ? "-" : esc(c.new_value)}</td>
         </tr>`;
       }).join("");
 
@@ -2171,9 +2171,9 @@
       const hookBody = $("#hook-body");
       if (hookBody) hookBody.innerHTML = '<tr class="empty-row"><td colspan="5">Authentication required. Sign in to view webhooks.</td></tr>';
       const nFailed = $("#n-failed");
-      if (nFailed) nFailed.textContent = "—";
+      if (nFailed) nFailed.textContent = "-";
       const nHooks = $("#n-hooks");
-      if (nHooks) nHooks.textContent = "—";
+      if (nHooks) nHooks.textContent = "-";
       return;
     }
 
@@ -2336,31 +2336,31 @@
     if (sysDot) sysDot.className = "dot";
     const paypalMode = $("#paypal-mode");
     if (paypalMode) {
-      paypalMode.textContent = "—";
+      paypalMode.textContent = "-";
       paypalMode.style.background = "";
       paypalMode.style.color = "";
     }
     const runMeta = $("#run-meta");
     if (runMeta) runMeta.textContent = "Sign in to view run status.";
     const kRuns = $("#k-runs");
-    if (kRuns) kRuns.innerHTML = "—<small>/—</small>";
+    if (kRuns) kRuns.innerHTML = "-<small>/-</small>";
     const kRunsFoot = $("#k-runs-foot");
     if (kRunsFoot) kRunsFoot.textContent = "Sign in to view";
     const kBars = $("#k-bars");
     if (kBars) kBars.innerHTML = "";
     const kSubs = $("#k-subs");
-    if (kSubs) kSubs.textContent = "—";
+    if (kSubs) kSubs.textContent = "-";
     const kSubsFoot = $("#k-subs-foot");
     if (kSubsFoot) kSubsFoot.textContent = "Sign in to view";
     const kMrr = $("#k-mrr");
-    if (kMrr) kMrr.textContent = "—";
+    if (kMrr) kMrr.textContent = "-";
 
     const crawlStatus = $("#crawl-status-line");
     if (crawlStatus) crawlStatus.textContent = "Sign in to view crawl status";
     const btnRun = $("#btn-run-crawl");
     if (btnRun) btnRun.disabled = true;
 
-    document.querySelectorAll("#src-seg [data-n]").forEach(el => el.textContent = "—");
+    document.querySelectorAll("#src-seg [data-n]").forEach(el => el.textContent = "-");
     const strip = $("#strip");
     if (strip) strip.innerHTML = "";
     const srcBody = $("#src-body");
@@ -2375,12 +2375,12 @@
     const subBody = $("#sub-body");
     if (subBody) subBody.innerHTML = '<tr class="empty-row"><td colspan="7">Authentication required. Sign in to view subscribers.</td></tr>';
     const nSubs = $("#n-subs");
-    if (nSubs) nSubs.textContent = "—";
+    if (nSubs) nSubs.textContent = "-";
 
     const plansEl = $("#plans");
     if (plansEl) plansEl.innerHTML = '<div style="grid-column: 1/-1; padding: 24px; text-align: center; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);">Authentication required. Sign in to view plans.</div>';
     const nPlans = $("#n-plans");
-    if (nPlans) nPlans.textContent = "—";
+    if (nPlans) nPlans.textContent = "-";
     const trialInput = $("#plan-global-trial");
     if (trialInput) trialInput.value = "";
     const currInput = $("#plan-global-currency");
@@ -2389,9 +2389,9 @@
     const hookBody = $("#hook-body");
     if (hookBody) hookBody.innerHTML = '<tr class="empty-row"><td colspan="5">Authentication required. Sign in to view webhooks.</td></tr>';
     const nFailed = $("#n-failed");
-    if (nFailed) nFailed.textContent = "—";
+    if (nFailed) nFailed.textContent = "-";
     const nHooks = $("#n-hooks");
-    if (nHooks) nHooks.textContent = "—";
+    if (nHooks) nHooks.textContent = "-";
   }
 
   function setSignedInUI() {
@@ -2409,15 +2409,15 @@
     const runMeta = $("#run-meta");
     if (runMeta) runMeta.textContent = "Loading run status...";
     const kRuns = $("#k-runs");
-    if (kRuns) kRuns.innerHTML = "—<small>/—</small>";
+    if (kRuns) kRuns.innerHTML = "-<small>/-</small>";
     const kRunsFoot = $("#k-runs-foot");
     if (kRunsFoot) kRunsFoot.textContent = "Checking sources...";
     const kSubs = $("#k-subs");
-    if (kSubs) kSubs.textContent = "—";
+    if (kSubs) kSubs.textContent = "-";
     const kSubsFoot = $("#k-subs-foot");
     if (kSubsFoot) kSubsFoot.textContent = "Loading subscribers...";
     const kMrr = $("#k-mrr");
-    if (kMrr) kMrr.textContent = "—";
+    if (kMrr) kMrr.textContent = "-";
 
     const crawlStatus = $("#crawl-status-line");
     if (crawlStatus) crawlStatus.textContent = "Checking crawl status...";
@@ -2657,7 +2657,7 @@
           const succeeded = data.sources_succeeded != null ? data.sources_succeeded : Math.max(0, crawled - (data.sources_failed || 0));
           const failed = data.sources_failed || 0;
           const skipped = data.sources_skipped != null ? data.sources_skipped : Math.max(0, 65 - crawled);
-          statusLine.textContent = `Last crawl: ${finishedAgo} (${data.status}) — ${crawled} crawled, ${succeeded} succeeded, ${failed} failed, ${skipped} skipped`;
+          statusLine.textContent = `Last crawl: ${finishedAgo} (${data.status}): ${crawled} crawled, ${succeeded} succeeded, ${failed} failed, ${skipped} skipped`;
           if (btn) btn.disabled = false;
         }
       } else {

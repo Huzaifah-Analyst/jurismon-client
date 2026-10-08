@@ -1302,7 +1302,7 @@ class TestTermsAndPrivacyPages(unittest.TestCase):
         self.assertEqual(html.count('id="btn-logout"'), 1)
 
         # Default PayPal badge is unknown/dash, not Sandbox
-        self.assertIn('id="paypal-mode">–', html)
+        self.assertIn('id="paypal-mode">-', html)
 
         # Header status starts with loading indicator
         self.assertIn('id="sys-text">Loading portal status...<', html)

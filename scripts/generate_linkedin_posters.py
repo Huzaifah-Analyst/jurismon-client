@@ -123,7 +123,7 @@ def generate_poster_2():
     draw.ellipse([(85, 232), (97, 244)], fill=(239, 68, 68))
     draw.ellipse([(105, 232), (117, 244)], fill=(245, 158, 11))
     draw.ellipse([(125, 232), (137, 244)], fill=(34, 197, 94))
-    draw.text((160, 228), "Regulatory Diff Engine — Statutory Redline Viewer", fill=TEXT_MUTED, font=f_card_desc)
+    draw.text((160, 228), "Regulatory Diff Engine: Statutory Redline Viewer", fill=TEXT_MUTED, font=f_card_desc)
     img.paste(diff_crop.crop((0, 37, 1060, 420)), (70, 255))
 
     # Window 2: Admin Monitoring Console (Bottom screenshot)
@@ -137,7 +137,7 @@ def generate_poster_2():
     draw.ellipse([(85, 692), (97, 704)], fill=(239, 68, 68))
     draw.ellipse([(105, 692), (117, 704)], fill=(245, 158, 11))
     draw.ellipse([(125, 692), (137, 704)], fill=(34, 197, 94))
-    draw.text((160, 688), "Administrative Monitoring Console — 41/65 Sources Active Daily", fill=TEXT_MUTED, font=f_card_desc)
+    draw.text((160, 688), "Administrative Monitoring Console: 41/65 Sources Active Daily", fill=TEXT_MUTED, font=f_card_desc)
     img.paste(admin_crop.crop((0, 37, 1060, 260)), (70, 715))
 
     # Feature Highlights Pills
