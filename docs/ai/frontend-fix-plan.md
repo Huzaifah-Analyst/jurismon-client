@@ -10,13 +10,13 @@
 
 ---
 
-## Batch 1 — the 5 worst (fix first)
+## Batch 1: the 5 worst (fix first)
 
 These are the QA report's own "Top 5 worst" list, each one picked because it
 either breaks the business model, breaks trust on the first thing a visitor
 reads, or means a shipped feature silently doesn't exist in production.
 
-### 1. Paywall is cosmetic, the full locked content is already in the response — SHIPPED (`44e3863`)
+### 1. Paywall is cosmetic, the full locked content is already in the response: SHIPPED (`44e3863`)
 
 - **Where**: `api/main.py:502`, `GET /api/search`
 - **What's wrong**: the gated branch returns `"results": results`, the
@@ -67,7 +67,7 @@ reads, or means a shipped feature silently doesn't exist in production.
   sources so municipal content dominates again, which is the real fix but is
   its own piece of crawler work, or (b) if that takes time, soften the About
   page's language so it doesn't overstate what's live right now. **This item
-  needs your call before any code changes** — see "Needs a decision" below.
+  needs your call before any code changes**: see "Needs a decision" below.
 - **Verify**: after whichever path is chosen, re-sort "Newest" and confirm
   the first page of results matches what the About page claims.
 
@@ -79,7 +79,7 @@ reads, or means a shipped feature silently doesn't exist in production.
   last-active-plan guard) shows nothing in the UI at all. The admin has no
   way to know why their edit didn't take.
 - **Confirmed root cause**: not yet. Code read during the P2-02 build showed
-  a `toast(errData.detail || ...)` call on the `!res.ok` path — on paper this
+  a `toast(errData.detail || ...)` call on the `!res.ok` path: on paper this
   should already show the error. Needs a live reproduction against the
   current deployed JS to see why the toast isn't appearing (wrong selector,
   JS error earlier in the handler, a toast element that's hidden/mis-styled,
@@ -104,7 +104,7 @@ reads, or means a shipped feature silently doesn't exist in production.
 - **Verify**: `GET /api/admin/plans/changes` returns 200 on production, the
   table renders, a price edit appends a row.
 
-### 5. A single result can be 14,198 pixels tall
+### 5. A single result can be 14,198 pixels tall, SHIPPED (`c413888`)
 
 - **Where**: `frontend/index.html`, `itemHTML()`, the `.redline`/`.full-text`
   rendering of `d.plain`/`d.full`.
@@ -124,10 +124,20 @@ reads, or means a shipped feature silently doesn't exist in production.
 - **Verify**: the same "Aktualitätendienst" result, measure
   `getBoundingClientRect()` height before and after, confirm it's bounded and
   expandable.
+- **Done (Oct 8)**: `capPlainText()` and `capSegments()` added to
+  `frontend/index.html`, both cap at 240 characters, wired into `itemHTML()`
+  for both the snapshot and diff types. "Show full section" untouched,
+  still shows the complete text. Verified with a synthetic 52,000 character
+  document (both types) and against real data (DCAT XML, 1,493 chars): all
+  three render around 207 to 208px, down from the unbounded original.
+  Full suite: 306 passed. Committed in `c413888` along with the rest of the
+  reviewed Live Feed batch (skeleton, tab animation, stale banner fix, and
+  removal of every em dash/en dash from the batch per updated global style
+  rules). Not deployed yet.
 
 ---
 
-## Batch 2 — next 10
+## Batch 2: next 10
 
 Ordered High severity first, then Medium.
 
@@ -146,7 +156,7 @@ Ordered High severity first, then Medium.
 
 ---
 
-## Batch 3 — final 10 (polish, confirmed-working, and documented gaps)
+## Batch 3: final 10 (polish, confirmed-working, and documented gaps)
 
 | # | Item | Status | Action |
 |---|---|---|---|
@@ -176,15 +186,15 @@ takes longer than expected.
 
 ## Working order once you say go
 
-1. Item 1 (paywall leak) — highest severity, smallest, safest fix, do it alone first.
+1. Item 1 (paywall leak): highest severity, smallest, safest fix, do it alone first.
 2. Item 5 (14,198px result) and item 8 (placeholder flash) together, since both live in the same render path.
-3. Item 4 (deploy P2-14) — no new code, just ship what's built.
+3. Item 4 (deploy P2-14): no new code, just ship what's built.
 4. Item 9 + 10 (cache headers + compression) together, same release.
-5. Item 3 (admin silent errors) — once reproduced.
-6. Items 7, 13, 14 — independent, small, any order.
+5. Item 3 (admin silent errors): once reproduced.
+6. Items 7, 13, 14: independent, small, any order.
 7. Item 15 (dark mode) on its own.
-8. Items 2 and 12 (content mix / broken sources) — once you've decided the approach.
-9. Item 11 (latency variance) — only after a real server-side look, not guessed at.
-10. Items 24, 25 (cross-browser, full a11y audit) — last, so they test the fixed site, not the current one.
+8. Items 2 and 12 (content mix / broken sources): once you've decided the approach.
+9. Item 11 (latency variance): only after a real server-side look, not guessed at.
+10. Items 24, 25 (cross-browser, full a11y audit): last, so they test the fixed site, not the current one.
 
 Each item gets implemented, tested, and shown to you before moving to the next.

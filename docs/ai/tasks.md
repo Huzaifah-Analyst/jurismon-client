@@ -1,7 +1,7 @@
 # JurisMon Live Engineering Board
 
 > **Audience**: AI coding agents planning current and upcoming engineering tasks.  
-> **Format**: Live Kanban status board. Status, files, and deliverables only — not narrative.
+> **Format**: Live Kanban status board. Status, files, and deliverables only, not narrative.
 
 ---
 
@@ -28,13 +28,13 @@
 | :--- | :--- | :--- | :---: | :---: |
 | **P2-01** | **Customer Subscription Controls** | Pause, resume, cancel endpoints; customer account UI (`frontend/account.html`); dynamic plan resolution; migration `007`; Playwright authenticated screenshots. | **SHIPPED** | [`c3f4466`](https://github.com/Huzaifah-Analyst/jurismon-client/commit/c3f4466) |
 | **P2-02** | **Admin Pricing Controls & Dynamic Catalogue** | Admin API and UI to modify subscription pricing in `config/plans.json`. Fix module-level caching in `api/main.py` so price updates take effect immediately without server restart. Pre-verification against PayPal prevents price drift. | **SHIPPED** | [`c1f9ea2`](https://github.com/Huzaifah-Analyst/jurismon-client/commit/c1f9ea2) |
-| **P2-03** | **Catalog Expansion (88 Net-New Sources)** | Ingest 88 net-new sources from client's 142-source list. Build new `RestApiAdapter` (JSON open data) and `SparqlAdapter` (RDF linked data). | **NOT STARTED** | — |
-| **P2-04** | **Automated Email Alerts on Amendments** | Database table `user_alert_subscriptions`. Post-crawl notification hook scanning new diffs against watchlists and dispatching email digests via Resend. | **NOT STARTED** | — |
-| **P2-05** | **Saved Searches & User Watchlists** | Database table `saved_searches`. Customer CRUD endpoints (`/api/customer/saved-searches`) and frontend saved search recall dropdown. | **NOT STARTED** | — |
-| **P2-06** | **Export to CSV & Redline PDF** | Endpoints for search CSV export (`GET /api/documents/export/csv`) and legal redline comparison PDF generation (`GET /api/diffs/{id}/export/pdf`). | **NOT STARTED** | — |
-| **P2-07** | **Multi-User Organization Seats** | Corporate tiers in `config/plans.json`. Tables `organizations`, `organization_members`. Multi-seat license management. | **NOT STARTED** | — |
-| **P2-08** | **Source Health Outbound Webhooks** | Outbound alerts to Slack / `$ADMIN_EMAIL` when operational sources degrade or crawl error rates exceed 10%. | **NOT STARTED** | — |
-| **P2-09** | **Cookie Consent Banner & Analytics** | GDPR/ePrivacy compliant cookie banner with Google Consent Mode v2 and Google Analytics tag. | **NOT STARTED** | — |
+| **P2-03** | **Catalog Expansion (88 Net-New Sources)** | Ingest 88 net-new sources from client's 142-source list. Build new `RestApiAdapter` (JSON open data) and `SparqlAdapter` (RDF linked data). | **NOT STARTED** | n/a |
+| **P2-04** | **Automated Email Alerts on Amendments** | Database table `user_alert_subscriptions`. Post-crawl notification hook scanning new diffs against watchlists and dispatching email digests via Resend. | **NOT STARTED** | n/a |
+| **P2-05** | **Saved Searches & User Watchlists** | Database table `saved_searches`. Customer CRUD endpoints (`/api/customer/saved-searches`) and frontend saved search recall dropdown. | **NOT STARTED** | n/a |
+| **P2-06** | **Export to CSV & Redline PDF** | Endpoints for search CSV export (`GET /api/documents/export/csv`) and legal redline comparison PDF generation (`GET /api/diffs/{id}/export/pdf`). | **NOT STARTED** | n/a |
+| **P2-07** | **Multi-User Organization Seats** | Corporate tiers in `config/plans.json`. Tables `organizations`, `organization_members`. Multi-seat license management. | **NOT STARTED** | n/a |
+| **P2-08** | **Source Health Outbound Webhooks** | Outbound alerts to Slack / `$ADMIN_EMAIL` when operational sources degrade or crawl error rates exceed 10%. | **NOT STARTED** | n/a |
+| **P2-09** | **Cookie Consent Banner & Analytics** | GDPR/ePrivacy compliant cookie banner with Google Consent Mode v2 and Google Analytics tag. | **NOT STARTED** | n/a |
 | **P2-10** | **Repository Documentation Hygiene** | Shelve docs/ into ai/, context/, client/, reports/, assets/, and archive/; index READMEs; link repairs. | **SHIPPED** | [`d8df085`](https://github.com/Huzaifah-Analyst/jurismon-client/commit/d8df085) |
 | **P2-11** | **Public "About Us" Page (`/about`)** | Public About page (`frontend/about.html`) with 5 core architectural sections, live source counts, responsive risk table, and symmetric header navigation. | **SHIPPED** | [`c133cb3`](https://github.com/Huzaifah-Analyst/jurismon-client/commit/c133cb3) |
 | **P2-12** | **Health Check Liveness Probe (`/api/health`)** | Unauthenticated `/api/health` endpoint with genuine database check, uptime and version reporting, 503 degraded error state without credential leakage, and full test suite coverage. | **SHIPPED** | [`fbe9aa2`](https://github.com/Huzaifah-Analyst/jurismon-client/commit/fbe9aa2) |
