@@ -2322,6 +2322,9 @@
   } else if (params.get("subscribe_cancelled") === "1") {
     alert("PayPal subscription checkout was cancelled.");
     window.history.replaceState({}, document.title, window.location.pathname);
+  } else if (params.get("subscribe") === "1") {
+    window.history.replaceState({}, document.title, window.location.pathname);
+    openPaywallModal();
   }
 
   const target = location.hash && document.getElementById(location.hash.slice(1));
