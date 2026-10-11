@@ -111,3 +111,19 @@ belongs in client-context.md and requires its own evidence.
   was the only initial failure. No native Safari claim.
 - Files: frontend/index.html and tests/test_dialog_keyboard.py. Development commit
   containing this entry; not deployed. Live remains e33ef18.
+
+## R-04: Genuine crawl metrics, 11 October 2026
+
+- Repository reads today's UTC crawl rows and latest run in both SQLite and
+  Supabase. Production query errors surface instead of becoming invented zero
+  counts from a local database. No schema change required.
+- Admin overview/status include crawl_metrics. Dashboard counts started runs,
+  running runs and failed/partial runs; latest status/time comes from crawl_runs,
+  not source timestamps. Polling refreshes both widgets after real run completion.
+  Removed the misleading source-health bars labelled as 14-day failed runs.
+- Real isolated admin browser starts a genuine recorded run and observes completion.
+  UTC cutoff, prior-day exclusion, empty state and Supabase failure handling tested.
+- Metrics/polling/Supabase/schema selection: 28 passed in 42.67s.
+- Files: db/repository.py, api/main.py, frontend/admin.html,
+  tests/test_crawl_metrics.py. Development commit containing this entry;
+  not deployed. No live crawl triggered for this verification.

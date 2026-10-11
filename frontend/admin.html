@@ -753,7 +753,7 @@
 
     <article class="kpi">
 
-      <span class="kpi-label">Ingestion runs today</span>
+      <span class="kpi-label">Ingestion runs today (UTC)</span>
 
       <span class="kpi-value" id="k-runs"></span>
 
@@ -761,7 +761,7 @@
 
         <span id="k-runs-foot"></span>
 
-        <div class="bars" id="k-bars" role="img" aria-label="Failed runs over the last 14 days"></div>
+        <div class="bars" id="k-bars" role="img" aria-label="Source health summary"></div>
 
       </div>
 
@@ -1312,50 +1312,20 @@
 
 
 
-    const failedToday = total - ok;
-
-    $("#k-runs").innerHTML = `${ok}<small>/${total}</small>`;
-
-    $("#k-runs-foot").innerHTML = failedToday
-
-      ? `<strong>${failedToday}</strong> need attention`
-
-      : "All sources ran cleanly";
-
-
-
-    const bars = [...history, failedToday];
-
-    const max = Math.max(...bars, 3);
-
-    $("#k-bars").innerHTML = bars.map(f => {
-
-      const hPct = 100;
-
-      const failPct = Math.round((f / max) * 100);
-
-      return `<span style="height:${hPct}%" title="${f} failed"><i style="height:${failPct}%"></i></span>`;
-
-    }).join("");
-
-
-
-    const validTs = sources.filter(s => bucketOf(s.health) !== "failing" && s.ts).map(s => s.ts);
-
-    if (validTs.length > 0) {
-
-      const lastRun = Math.max(...validTs);
-
-      $("#run-meta").textContent = `Last daily run finished at ${clock(lastRun)}, ${rel(lastRun).toLowerCase()}.`;
-
-    } else {
-
-      $("#run-meta").textContent = "Source catalog loaded.";
-
-    }
+    const metrics = overview ? overview.crawl_metrics : null;
+    $("#k-runs").textContent = metrics ? metrics.started_today : "-";
+    $("#k-runs-foot").textContent = metrics
+      ? `${metrics.running_today} running; ${metrics.failed_today} failed or partial`
+      : "Run counts unavailable";
+    $("#k-bars").innerHTML = "";
+    const latest = metrics ? metrics.latest : null;
+    $("#run-meta").textContent = latest
+      ? (latest.status === "running"
+        ? `Latest crawl started ${rel(new Date(latest.started_at).getTime()).toLowerCase()} (running).`
+        : `Latest crawl: ${latest.status}${latest.finished_at ? ", finished " + rel(new Date(latest.finished_at).getTime()).toLowerCase() : ""}.`)
+      : (metrics ? "No crawl runs recorded." : "Run status unavailable.");
 
   }
-
 
 
   /* Populated by /api/admin/overview, which computes MRR server side so the
@@ -2667,6 +2637,10 @@
       if (res.ok) {
         const data = await res.json();
         if (localStorage.getItem("jurismon_admin_token") !== token || crawlStatusController !== controller) return;
+        if (overview && data.crawl_metrics) {
+          overview.crawl_metrics = data.crawl_metrics;
+          renderSystem();
+        }
         if (data.status === "none") {
           statusLine.textContent = "No crawl runs recorded.";
           if (btn) btn.disabled = false;

@@ -1136,6 +1136,24 @@ class Repository:
 
         return candidate
 
+    def get_crawl_run_metrics(self) -> Dict[str, Any]:
+        """Run counts use UTC calendar days, independently of source health."""
+        from datetime import datetime, timezone
+        day_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+        if self.supabase:
+            # Surface production read failure; do not invent zero runs from local fallback.
+            today = self.supabase.table("crawl_runs").select("id,status").gte("started_at", day_start).execute().data or []
+            latest = self.supabase.table("crawl_runs").select("*").order("started_at", desc=True).limit(1).execute().data or []
+        else:
+            with self._connect() as conn:
+                conn.row_factory = sqlite3.Row
+                today = [dict(row) for row in conn.execute("SELECT id,status FROM crawl_runs WHERE started_at >= ?", (day_start,)).fetchall()]
+                latest = [dict(row) for row in conn.execute("SELECT * FROM crawl_runs ORDER BY started_at DESC LIMIT 1").fetchall()]
+        return {"timezone": "UTC", "started_today": len(today),
+                "running_today": sum(row["status"] == "running" for row in today),
+                "failed_today": sum(row["status"] in ("failed", "partial_failure") for row in today),
+                "latest": latest[0] if latest else None}
+
     def get_latest_crawl_run(self) -> Optional[Dict[str, Any]]:
         """Returns the most recent crawl run."""
         row_dict = None

@@ -1797,6 +1797,7 @@ async def get_admin_crawl_status(
     if not latest:
         return {
             "status": "none",
+            "crawl_metrics": repo.get_crawl_run_metrics(),
             "message": "No crawl runs recorded.",
         }
     crawled = latest.get("total_sources") or 0
@@ -1805,6 +1806,7 @@ async def get_admin_crawl_status(
     skipped = latest.get("sources_skipped") if latest.get("sources_skipped") is not None else max(0, 65 - crawled)
     latest["sources_skipped"] = skipped
     latest["summary"] = f"{crawled} crawled, {succeeded} succeeded, {failed} failed, {skipped} skipped"
+    latest["crawl_metrics"] = repo.get_crawl_run_metrics()
     return latest
 
 
@@ -1833,6 +1835,7 @@ async def admin_overview(admin: dict = Depends(require_admin)):
 
     return {
         "status": "healthy",
+        "crawl_metrics": repo.get_crawl_run_metrics(),
         "total_configured": len(all_sources),
         "total_monitored_sources": len(operational),
         "operational_sources": len(operational),
