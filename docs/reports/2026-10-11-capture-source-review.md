@@ -58,4 +58,4 @@ A 200 index response is not a legal document or an ingestion proof. Temporary fa
 5. Re-ingest official legal content under stable document/source IDs; do not generate amendments against invalid prior baselines.
 6. Verify before/after counts and rollback by restoring visibility, never deleting snapshots.
 
-Schema/search/quarantine implementation and production backfill remain outstanding. Manifest artifacts are ignored locally; this report contains aggregate evidence only. The older manual crawl remains marked running from 08:19 UTC; final result is not established.
+Schema/search/quarantine implementation is committed and locally verified. Migration 009 has been applied to production, with both BOOLEAN defaults verified. Application release, explicit quarantine and source backfill are next. Manifest artifacts are ignored locally; this report contains aggregate evidence only. The older manual crawl record says running from 08:19 UTC, but a fresh process check found the crawl unit inactive and no run_crawler.py process. Checked dispatch/fallback is now implemented; the precise historical dispatch failure is unconfirmed.

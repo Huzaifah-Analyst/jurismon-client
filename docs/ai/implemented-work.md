@@ -244,3 +244,14 @@ do not present the original run as fully passing.
   dependency warning. Tests cover accepted dispatch, nonzero exit and timeout, and
   verify that fallback schedules exactly one job for the recorded run.
 - Files: api/main.py and tests/test_crawl_dispatch.py. Not yet released.
+
+### Production preparation and current authorized scope
+
+- User confirmed existing fixes and promised deliverables first; unplaced alerts/
+  watchlists and 88-source expansion remain outside this implementation batch.
+- Applied only migration 009 to production in one PostgreSQL transaction, recorded
+  its checksum, and notified PostgREST to reload schema. Verified both tables have
+  non-null BOOLEAN is_searchable default TRUE and nullable TEXT quality_reason.
+  Existing records remain visible; no quarantine or deletion occurred in this step.
+- Fresh process check: crawl unit inactive, MainPID=0, no run_crawler.py process;
+  API NoNewPrivileges=yes. Historical running record is not proof of an active crawl.
