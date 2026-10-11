@@ -491,3 +491,28 @@ Validation:
   QA #25 automated axe coverage complete; manual keyboard/screen-reader and
   inconclusive contrast review pending. New QA changes committed separately from
   the deployed e33ef18 release; no new production billing actions performed.
+
+## User-requested browser verification rerun
+
+- Playwright 1.63.0 already installed. Chromium, Firefox and WebKit launched
+  successfully; no installation needed.
+- Existing browser suite rerun against genuine isolated Uvicorn/SQLite backend:
+  97 passed in 431.36s. Includes loading skeleton, OTP stability, trial settings,
+  search/login/logout, responsive themes, admin errors and crawler polling,
+  paid state/lifecycle flows and search concurrency. External mail disabled;
+  subscription provider calls explicitly mocked.
+- Accessibility rerun: 84 real views, zero confirmed axe violations.
+  Incomplete color-contrast checks remain for manual review.
+- Deployed e33ef18 read-only browser review: six pages, mobile light/dark,
+  three engines, 36 page checks passed without JavaScript errors or overflow.
+  Live trial remains 14. Actual parking/zoning searches and login/register
+  dialogs passed on all three engines; no production registration or billing
+  changes submitted.
+- Evidence: test-results/frontend/live-user-browser-*.json and
+  test-results/live-user-flows/report.json plus screenshots; genuine local
+  paid screenshots and axe reports in test-results/qa-23-25.
+- Visually inspected settled live search and mobile paid account screenshots.
+  Historical Australian snapshots still include navigation text; existing
+  data cleanup/backfill remains pending. Native Safari/physical devices and
+  manual keyboard/screen-reader evaluation remain uncovered.
+- New accessibility fixes remain in local commit b67560f, not deployed.
