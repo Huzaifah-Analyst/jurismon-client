@@ -24,6 +24,7 @@ from fastapi import FastAPI, Request, HTTPException, Query, Depends, status, Bac
 from fastapi.responses import HTMLResponse, FileResponse, PlainTextResponse, Response, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel, Field
 
 from db.repository import Repository
@@ -94,6 +95,30 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
+
+# Compress negotiated HTML/JSON responses; small bodies stay uncompressed.
+app.add_middleware(GZipMiddleware, minimum_size=1000, compresslevel=5)
+
+
+@app.middleware("http")
+async def response_cache_policy(request: Request, call_next):
+    response = await call_next(request)
+    path = request.url.path
+    if path.startswith("/api/"):
+        if request.method in {"GET", "HEAD"} and "authorization" not in request.headers and response.status_code == 200:
+            if path == "/api/sources":
+                response.headers["Cache-Control"] = "public, max-age=60"
+            elif path == "/api/plans":
+                response.headers["Cache-Control"] = "no-cache"
+            else:
+                response.headers["Cache-Control"] = "no-store"
+        else:
+            response.headers["Cache-Control"] = "no-store"
+        response.headers.append("Vary", "Authorization")
+    elif "text/html" in response.headers.get("content-type", ""):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
 
 repo = Repository()
 paypal_provider = PayPalProvider()

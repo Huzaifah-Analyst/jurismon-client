@@ -298,3 +298,12 @@ Validation:
 - New extraction and source-label changes approved by the verification workflow; commit them separately from pending cache/compression changes.
 - Historical snapshot backfill and the empty NZ source remain unresolved; no claim that existing production records have been repaired.
 - #9/#10 remain local pending user verification. No current-batch push or deployment.
+- QA #3 committed after user verification: b868b76. Cache/compression API hunks and their tests remain uncommitted, separately awaiting review. No push/deployment for this commit.
+
+## User verification: QA #9 and #10
+
+- User ran tests/test_response_policy.py on 11 October 2026: 13 passed, one existing Starlette deprecation warning, 4.19s.
+- User measured 32,095 identity bytes and 4,305 gzip bytes.
+- User authorized commit and GitHub push, including the previously verified extraction fix b868b76.
+- Selected release files exclude user trial configuration, chat log and local context.
+- Next work: QA #11 measured search latency investigation and QA #12 per-source repair.
