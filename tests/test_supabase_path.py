@@ -137,7 +137,7 @@ class TestSupabaseIsPreferred(SupabaseRepositoryTestCase):
         self.assertEqual(repo.get_all_sources(), rows)
         self.assertIn(("sources", "order", ("name",), {}), fake.calls)
 
-    def test_upsert_source_uses_base_url_conflict_key(self):
+    def test_upsert_source_uses_stable_id_conflict_key(self):
         repo, fake = self._repo({"sources": [{"id": "site-99"}]})
 
         repo.upsert_source({
@@ -147,7 +147,7 @@ class TestSupabaseIsPreferred(SupabaseRepositoryTestCase):
 
         upserts = [c for c in fake.calls if c[1] == "upsert"]
         self.assertEqual(len(upserts), 1)
-        self.assertEqual(upserts[0][3].get("on_conflict"), "base_url")
+        self.assertEqual(upserts[0][3].get("on_conflict"), "id")
 
     def test_get_or_create_document_returns_existing_without_inserting(self):
         existing = [{"id": "doc-1", "title": "Zoning Ordinance"}]

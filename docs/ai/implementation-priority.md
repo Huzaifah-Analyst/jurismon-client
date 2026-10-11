@@ -6,11 +6,11 @@ User-approved order. Numbers below are priorities, not frontend fix-plan IDs.
 | --- | --- | --- |
 | 1 | Verify repository, deployment parity and existing order scope | Verified code and deployment; historical payment records differ from current user statement |
 | 2 | Remaining frontend bugs and dark mode | Report fixes verified and released 11 October; separate OTP delivery-failure follow-up remains |
-| 3 | Backend cache headers, compression and search latency investigation | Cache headers/compression implemented locally; latency investigation pending |
+| 3 | Backend cache headers, compression and search latency investigation | Cache/compression verified and live c837276; search concurrency fix locally verified |
 | 4 | Regression, paid subscription states, cross-browser and accessibility QA | Core checks completed; physical devices, all modal/admin-tab audits and Lighthouse remain uncovered |
 | 5 | Evidence-based case studies using available captured changes | Pending |
 | 6 | Housekeeping: About punctuation and existing chat-log changes | Pending |
-| 7 | Repair broken US city and county sources | Pending |
+| 7 | Repair broken US city and county sources | 8 of 10 broken US sources repaired locally; NYC and Santa Clara blocked; production ingestion pending |
 | 8 | Remove navigation and portal boilerplate from extracted legal text | Pending |
 | 9 | Honest coverage and exclusions section | Pending |
 | 10 | Page-by-page competitor gap list, prepared for Google Sheets | Pending |
@@ -307,3 +307,114 @@ Validation:
 - User authorized commit and GitHub push, including the previously verified extraction fix b868b76.
 - Selected release files exclude user trial configuration, chat log and local context.
 - Next work: QA #11 measured search latency investigation and QA #12 per-source repair.
+
+## Release and next fixes: 11 October 2026
+
+### Verified release
+
+- Development commit e3582ba includes user-verified #9/#10 and the #3 commit record.
+- Both GitHub remotes pushed successfully. Client main release: c837276, parent f9dbc15.
+- Ran the existing VPS deploy script. API and crawl timer active.
+- Live read-only health check: status ok, version c837276, database ok.
+- User-modified plans.json (10 days), chat log and local context excluded.
+
+### QA #11: measured search latency and concurrency
+
+- Read-only production repository samples, five requests per query, milliseconds:
+  - Empty query: 985.2, 162.2, 180.2, 197.9, 170.4.
+  - parking: 308.4, 88.5, 110.1, 110.4, 95.1.
+  - zoning: 248.3, 129.4, 102.5, 102.2, 540.3.
+- Supabase search performs two blocking SDK HTTP requests. The async search
+  endpoint called these directly, blocking the event loop while awaiting I/O.
+- Changed the endpoint to a synchronous FastAPI route, so database and account
+  access checks execute in the framework worker pool. Query semantics, exact
+  counts and access gating are preserved; no server-side response cache added.
+- Added a concurrency regression with genuine isolated SQLite: hold the search
+  read open, confirm health completes before search is released, then confirm
+  normal gated search output. This verifies isolation, not a claimed reduction
+  in a single query's database time.
+- Cold-connection and upstream variance remain. No claim of uniform sub-second
+  production latency or that the whole variance problem is resolved. The new
+  route change has not been deployed pending user verification.
+
+### QA #12: broken-source maintenance
+
+- Audited all 24 previously inactive configured sources read-only. Local probe
+  artifact: ignored test-results/source-audit-20261011.json.
+- Rechecked reachable US alternatives from the VPS because local requests and
+  production network access differed materially.
+- Updated only eight authorized source objects in sites.json. IDs, source count
+  and unrelated objects are preserved. Discovery uses narrow official legal
+  links, excluding unrelated navigation, application forms and tracking pages.
+- Each restored source has genuine adapter discovery plus actual PDF extraction
+  evidence. Health details explicitly say ingestion pending, not already ingested.
+
+| Source | Discovered documents | Verified legal PDF text | Scope |
+| --- | --- | --- | --- |
+| San Diego | 16 | Update 115: 4 pages, 4,414 cleaned characters | Official zoning amendments |
+| San Bernardino | 21 | Ordinance 4309: 19 pages, 38,032 cleaned characters, VPS OCR | Development-code amendments and ordinances |
+| Miami-Dade | 12 | District regulations: 48 pages, 128,981 cleaned characters | Published zoning district regulations |
+| Austin | 20 | Rule 161-26.15: 4 pages, 6,737 cleaned characters | Development regulatory update documents |
+| Harris | 2 | Water-well regulations: 9 pages, 8,973 cleaned characters, VPS OCR | Published water-well and stormwater regulations |
+| Dallas | 2 | Floodplain regulations: 34 pages, 73,293 cleaned characters | Published floodplain regulations and fire code |
+| Tarrant | 2 | September 2026 manual: 74 pages, 48,474 cleaned characters | Current development and engineering manuals |
+| Bexar | 1 | Court order: 2 pages, 2,519 cleaned characters | Published stormwater fee court order |
+
+- NYC homepage and adopted-rule listing respond 200, but genuine individual
+  rule pages/PDFs return 403 from both local and VPS checks. Keep inactive.
+- Santa Clara's replacement official planning domain still returns 403 from
+  VPS and local checks. Keep inactive. No CAPTCHA/access-control bypass used.
+- Fourteen other inactive international/API sources remain separately unresolved:
+  Alberta, Calgary, Quebec, Montreal, London, Glasgow, Edinburgh Gazette,
+  Melbourne, UK catalogue API, both Canada Justice sources, NZ API, EU CELLAR,
+  German XML index. The initial audit is recorded; not all are proven permanently
+  inaccessible. NZ API needs a client key; the German index now responds but
+  points to XML ZIP archives unsupported by the current ingestion path.
+- Austin document.cfm and Bexar DocumentCenter return PDF without .pdf suffix.
+  Crawler now inspects Content-Type and PDF signature before HTML extraction,
+  reusing the fetched response. Regression verifies both advertised PDF and
+  octet-stream PDF handler bodies through genuine isolated SQLite ingestion.
+- Captured public-link-only fixtures support repeatable adapter regression.
+  No document binaries, secrets or sessions committed.
+- No live crawl, source database writes or historical backfill performed. These
+  fixes do not establish exhaustive coverage or make all 65 sources operational.
+
+### Verification and next user check
+
+- Targeted extraction, concurrency, response policy, schema contract, Supabase
+  branches, adapters, customer gating, crawler, notifications and API regression
+  run together after the source repairs. Results recorded below.
+- New #11/#12 code and documentation remain local for the agreed user review
+  before commit. Previously verified #3/#9/#10 are already pushed and deployed.
+- User command: .\venv\Scripts\python.exe -m pytest tests/test_search_concurrency.py tests/test_source_repairs.py -v -p no:cacheprovider --basetemp=test-results/user-search-source-check
+
+- Final combined regression: 196 passed, one existing Starlette deprecation warning, 15.33s. Selected tracked-file whitespace check passed.
+
+## Browser verification requested by user: QA #11/#12
+
+- Opened real Chromium against the existing local review server at 478px width.
+  parking/zoning repeated three times each: six genuine HTTP 200 responses,
+  truthful empty state, no page JavaScript errors and no page overflow.
+- Genuine admin form login succeeded. Browser checked all eight repaired source
+  IDs, URLs, active flags and health labels against config, and confirmed NYC
+  and Santa Clara remain inactive. Austin filter rendered the genuine source row.
+- Initially local SQLite still showed 41: its stored source records were stale.
+  Attempting the real update revealed upsert_source conflicted on base_url,
+  causing a primary-key error when a stable source ID received a replacement URL.
+- Fixed Supabase conflict selection to ID when supplied, retaining base_url for
+  callers without ID. SQLite updates by stable ID and persists real health,
+  activity, jurisdiction and status fields, preserving omitted fields and existing
+  document relationships. No schema changes or production data writes.
+- Regression stores an old source/document, updates its URL/status, verifies one
+  source and preserved document relation; Supabase conflict test updated.
+- After the fix, synced exactly eight genuine configurations into isolated local
+  review SQLite. Browser verified operational count 49, total 65. This represents
+  verified source configuration, not completed ingestion or complete coverage.
+- 124 relevant regression tests passed, one existing warning, 16.27s.
+- Added actual Chromium concurrency regression: delayed genuine SQLite search
+  remains open while a second browser tab loads health. Both concurrency tests
+  passed, 4.24s. Production single-query latency variance remains unresolved.
+- Local review server restarted to load the persistence fix and health checked.
+- Screenshots/evidence are ignored test-results/browser-review-11-12: mobile-search.png,
+  admin-austin-source.png, admin-sources.png and report.json. New changes remain local.
+- Trial configuration remains the user's 10 days; no trial-setting edit performed.

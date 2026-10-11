@@ -249,32 +249,46 @@ class Repository:
         """Inserts or updates a municipal source."""
         if self.supabase:
             try:
-                res = self.supabase.table("sources").upsert(source_data, on_conflict="base_url").execute()
+                conflict_key = "id" if source_data.get("id") else "base_url"
+                res = self.supabase.table("sources").upsert(source_data, on_conflict=conflict_key).execute()
                 return res.data[0] if res.data else None
             except Exception as e:
                 logger.error(f"Supabase upsert source error: {e}")
 
-        # SQLite Fallback
+        # A configured source keeps its ID when its official URL moves.
         import uuid
-        source_id = str(source_data.get("id") or uuid.uuid4())
-        name = source_data.get("name", "Unnamed")
-        base_url = source_data.get("base_url")
-        adapter_type = source_data.get("adapter_type", "custom")
-        selectors_cfg = json.dumps(source_data.get("selectors_config", {}))
-
         with self._connect() as conn:
+            conn.row_factory = sqlite3.Row
             cur = conn.cursor()
+            if source_data.get("id"):
+                existing = cur.execute("SELECT * FROM sources WHERE id=?", (source_data["id"],)).fetchone()
+            else:
+                existing = cur.execute("SELECT * FROM sources WHERE base_url=?", (source_data.get("base_url"),)).fetchone()
+            payload = dict(existing) if existing else {
+                "id": str(source_data.get("id") or uuid.uuid4()),
+                "name": "Unnamed", "state": None, "county": None,
+                "adapter_type": "custom", "selectors_config": "{}",
+                "is_active": True, "health_status": "operational", "status_detail": None,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            }
+            payload.update(source_data)
+            if isinstance(payload.get("selectors_config"), dict):
+                payload["selectors_config"] = json.dumps(payload["selectors_config"])
+            columns = ("id", "name", "state", "county", "base_url", "adapter_type",
+                       "selectors_config", "is_active", "health_status", "status_detail", "created_at")
             cur.execute("""
-                INSERT INTO sources (id, name, base_url, adapter_type, selectors_config, created_at)
-                VALUES (?, ?, ?, ?, ?, ?)
-                ON CONFLICT(base_url) DO UPDATE SET
-                    name=excluded.name,
-                    adapter_type=excluded.adapter_type,
-                    selectors_config=excluded.selectors_config
-            """, (source_id, name, base_url, adapter_type, selectors_cfg, datetime.now(timezone.utc).isoformat()))
+                INSERT INTO sources (id, name, state, county, base_url, adapter_type,
+                    selectors_config, is_active, health_status, status_detail, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    name=excluded.name, state=excluded.state, county=excluded.county,
+                    base_url=excluded.base_url, adapter_type=excluded.adapter_type,
+                    selectors_config=excluded.selectors_config,
+                    is_active=excluded.is_active, health_status=excluded.health_status,
+                    status_detail=excluded.status_detail
+            """, tuple(payload.get(column) for column in columns))
             conn.commit()
-
-        return {"id": source_id, "name": name, "base_url": base_url}
+        return {"id": payload["id"], "name": payload["name"], "base_url": payload["base_url"]}
 
     def get_active_sources(self) -> List[Dict[str, Any]]:
         """Retrieves active (operational) monitored municipal sources."""

@@ -49,7 +49,7 @@ def test_crawler_skips_catalogue_and_empty_but_stores_legal_text(monkeypatch):
         monkeypatch.setattr(run_crawler,"load_sites_config",lambda:[source])
         monkeypatch.setattr(run_crawler,"Repository",lambda:repository)
         monkeypatch.setattr(run_crawler,"get_adapter",lambda kind:SimpleNamespace(crawl=lambda config:SimpleNamespace(success=True,documents=documents)))
-        monkeypatch.setattr(run_crawler.RequestsCrawler,"fetch_url",lambda self,url:SimpleNamespace(text=bodies[url],content=bodies[url].encode()))
+        monkeypatch.setattr(run_crawler.RequestsCrawler,"fetch_url",lambda self,url:SimpleNamespace(text=bodies[url],content=bodies[url].encode(),headers={}))
         monkeypatch.setattr(run_crawler,"send_crawl_report",lambda **kwargs:None)
         run_crawler.main()
         result=repository.search_snapshots_and_diffs("")

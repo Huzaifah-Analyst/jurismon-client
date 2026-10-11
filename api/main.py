@@ -506,11 +506,15 @@ def format_result_items(search_data: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 
 @app.get("/api/search")
-async def search_endpoint(
+def search_endpoint(
     q: str = Query(default="", description="Search keyword or section number"),
     auth_user: Optional[dict] = Depends(get_current_customer_optional),
 ):
-    """Instant search querying statutory text snapshots and calculated diffs."""
+    """Run synchronous database and access checks in FastAPI's worker pool.
+
+    Supabase uses a blocking HTTP client. Keeping this route synchronous stops
+    database waits from blocking unrelated requests on the event loop.
+    """
     results = repo.search_snapshots_and_diffs(query=q)
     items = format_result_items(results)
 

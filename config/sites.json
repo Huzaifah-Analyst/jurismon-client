@@ -50,14 +50,14 @@
   {
     "id": "site-05-hctx",
     "name": "Harris County Engineering & Permits",
-    "base_url": "https://www.eng.hctx.net",
+    "base_url": "https://oce.harriscountytx.gov/Divisions/Watershed-Protection/Regulations-Standards-Forms",
     "adapter_type": "custom",
     "selectors_config": {
-      "link_selector": "a[href*='.pdf'], a[href*='permits'], a[href*='regulations']"
+      "link_selector": "a[href$='/water_well_regs.pdf'], a[href$='/SWQ_regs.pdf']"
     },
-    "is_active": false,
-    "health_status": "cloudflare_blocked",
-    "status_detail": "Protected by Cloudflare Turnstile / CAPTCHA (Out of Scope)"
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "Official regulatory listing and legal document verified from VPS on 2026-10-11; ingestion pending"
   },
   {
     "id": "site-06-maricopa",
@@ -74,14 +74,14 @@
   {
     "id": "site-07-sandiegocounty",
     "name": "San Diego County Planning",
-    "base_url": "https://www.sandiegocounty.gov",
+    "base_url": "https://www.sandiegocounty.gov/content/sdc/pds/zoning/CodeUpdates/",
     "adapter_type": "custom",
     "selectors_config": {
-      "link_selector": "a[href*='.pdf'], a[href*='zoning']"
+      "link_selector": "a[href*='/zoning/'][href$='.pdf']:not([href*='formfields']):not([href*='Suggestion'])"
     },
-    "is_active": false,
-    "health_status": "dead_link",
-    "status_detail": "HTTP 404 / Broken DNS link on municipality server"
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "Official zoning amendment listing and Update 115 PDF verified from VPS on 2026-10-11; ingestion pending"
   },
   {
     "id": "site-08-ocfl",
@@ -98,14 +98,14 @@
   {
     "id": "site-09-miamidade",
     "name": "Miami-Dade County Regulatory",
-    "base_url": "https://www.miamidade.gov",
+    "base_url": "https://www.miamidade.gov/zoning/districts.asp",
     "adapter_type": "custom",
     "selectors_config": {
-      "link_selector": "a[href*='.pdf'], a[href*='ordinance']"
+      "link_selector": "a[href*='/zoning/documents/'][href$='.pdf']"
     },
-    "is_active": false,
-    "health_status": "dead_link",
-    "status_detail": "HTTP 404 / Broken DNS link on municipality server"
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "Official zoning district listing and regulations PDF verified from VPS on 2026-10-11; ingestion pending"
   },
   {
     "id": "site-10-kingcounty",
@@ -146,14 +146,14 @@
   {
     "id": "site-13-austintexas",
     "name": "City of Austin Code & Ordinances",
-    "base_url": "https://www.austintexas.gov/page/code-ordinances",
+    "base_url": "https://www.austintexas.gov/development-services/development-policy-corner",
     "adapter_type": "custom",
     "selectors_config": {
-      "link_selector": "a[href*='.pdf'], a[href*='ordinance']"
+      "link_selector": "a[href*='/edims/document.cfm']"
     },
-    "is_active": false,
-    "health_status": "dead_link",
-    "status_detail": "HTTP 404 / Broken DNS link on municipality server"
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "Official regulatory update listing and rule PDF verified from VPS on 2026-10-11; ingestion pending"
   },
   {
     "id": "site-14-fultoncountyga",
@@ -170,14 +170,14 @@
   {
     "id": "site-15-dallascounty",
     "name": "Dallas County Planning",
-    "base_url": "https://www.dallascounty.org",
+    "base_url": "https://www.dallascounty.org/departments/pubworks/permits-development.php",
     "adapter_type": "custom",
     "selectors_config": {
-      "link_selector": "a[href*='.pdf']"
+      "link_selector": "a[href*='Floodplain-Management-Regulations'][href$='.pdf'], a[href$='/Dallas-County-Fire-Code.pdf']"
     },
-    "is_active": false,
-    "health_status": "dead_link",
-    "status_detail": "HTTP 404 / Broken DNS link on municipality server"
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "Official regulatory listing and legal document verified from VPS on 2026-10-11; ingestion pending"
   },
   {
     "id": "site-16-rctlma",
@@ -194,14 +194,14 @@
   {
     "id": "site-17-sbcounty",
     "name": "San Bernardino County Land Use",
-    "base_url": "https://lu.sbcounty.gov",
+    "base_url": "https://lus.sbcounty.gov/planning-home/development-code/",
     "adapter_type": "custom",
     "selectors_config": {
-      "link_selector": "a[href*='.pdf']"
+      "link_selector": "a[href*='/DevelopmentCode/'][href$='.pdf'], a[href*='Ordinance-No-'][href$='.pdf']"
     },
-    "is_active": false,
-    "health_status": "dead_link",
-    "status_detail": "HTTP 404 / Broken DNS link on municipality server"
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "Official development-code listing and ordinance PDF verified from VPS on 2026-10-11; ingestion pending"
   },
   {
     "id": "site-18-waynecounty",
@@ -218,26 +218,26 @@
   {
     "id": "site-19-tarrantcounty",
     "name": "Tarrant County Administrator",
-    "base_url": "https://www.tarrantcounty.com",
+    "base_url": "https://www.tarrantcountytx.gov/en/engineering-services/development/subdivision-and-land-use-regulations.html",
     "adapter_type": "custom",
     "selectors_config": {
-      "link_selector": "a[href*='.pdf']"
+      "link_selector": "a[href*='DevelopmentRegulationsManual'][href$='.pdf'], a[href*='EngineeringStandardsManual'][href$='.pdf']"
     },
-    "is_active": false,
-    "health_status": "dead_link",
-    "status_detail": "HTTP 404 / Broken DNS link on municipality server"
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "Official current development manuals and legal PDF verified from VPS on 2026-10-11; ingestion pending"
   },
   {
     "id": "site-20-bexar",
     "name": "Bexar County Texas",
-    "base_url": "https://www.bexar.org",
+    "base_url": "https://www.bexar.org/3219/Post-Construction",
     "adapter_type": "custom",
     "selectors_config": {
-      "link_selector": "a[href*='.pdf']"
+      "link_selector": "a[href*='/DocumentCenter/View/7066/']"
     },
-    "is_active": false,
-    "health_status": "cloudflare_blocked",
-    "status_detail": "Protected by Cloudflare Turnstile / CAPTCHA (Out of Scope)"
+    "is_active": true,
+    "health_status": "operational",
+    "status_detail": "Official regulatory listing and legal document verified from VPS on 2026-10-11; ingestion pending"
   },
   {
     "id": "site-21-sccgov",

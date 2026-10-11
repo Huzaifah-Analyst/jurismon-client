@@ -20,6 +20,7 @@ from typing import Optional, List, Dict, Any
 
 from crawler.adapters import get_adapter
 from crawler.requests_crawler import RequestsCrawler
+from crawler.url_normalizer import URLNormalizer
 from extractor.pdf_extractor import PDFExtractor
 from extractor.html_extractor import HTMLExtractor
 from diff_engine.engine import DiffEngine
@@ -136,19 +137,26 @@ def main(run_id: Optional[str] = None):
                             cleaned_text, raw_text, ocr_applied = PDFExtractor.extract_from_bytes(content_bytes)
                         else:
                             resp = requests_fetcher.fetch_url(doc_item.url)
-                            extraction_url = doc_item.url
-                            embedded_url = HTMLExtractor.embedded_document_url(resp.text, extraction_url)
-                            if embedded_url:
-                                resp = requests_fetcher.fetch_url(embedded_url)
-                                extraction_url = embedded_url
-                            content_bytes = resp.content
+                            # Official document handlers such as Austin's document.cfm
+                            # return PDFs without a .pdf suffix. Inspect the response
+                            # before decoding binary content as HTML.
+                            if URLNormalizer.is_pdf(doc_item.url, resp.headers.get("content-type", "")) or resp.content.startswith(b"%PDF-"):
+                                content_bytes = resp.content
+                                cleaned_text, raw_text, ocr_applied, _ = PDFExtractor.extract_from_bytes(content_bytes)
+                            else:
+                                extraction_url = doc_item.url
+                                embedded_url = HTMLExtractor.embedded_document_url(resp.text, extraction_url)
+                                if embedded_url:
+                                    resp = requests_fetcher.fetch_url(embedded_url)
+                                    extraction_url = embedded_url
+                                content_bytes = resp.content
+                                cleaned_text, raw_text = HTMLExtractor.extract_from_html(
+                                    resp.text,
+                                    target_selector=(source_cfg.get("selectors_config") or {}).get("content_selector"),
+                                    source_url=extraction_url,
+                                )
+                                ocr_applied = False
                             content_hash = compute_sha256(content_bytes)
-                            cleaned_text, raw_text = HTMLExtractor.extract_from_html(
-                                resp.text,
-                                target_selector=(source_cfg.get("selectors_config") or {}).get("content_selector"),
-                                source_url=extraction_url,
-                            )
-                            ocr_applied = False
 
                         if not cleaned_text.strip():
                             logger.warning("Skipping document with no extracted text: %s", doc_item.url)
