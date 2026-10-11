@@ -356,3 +356,9 @@ do not present the original run as fully passing.
   device/screen-reader/200% zoom QA, connected Google Sheet, and selected competitor
   scope/rate. No ordered alerts/88-source expansion or fabricated market-validation
   evidence was added. Current backlog records these separately from shipped work.
+
+## 2026-10-11 — Phase 2 Parts 1 and 2 verification
+- Added sequential real-browser customer lifecycle verification and admin edit-discard regression coverage in tests/test_phase2_browser_acceptance.py.
+- Ran 77 targeted backend/browser checks and 60 browser checks successfully; external PayPal/email boundaries isolated.
+- Recorded all 18 checklist results and exact remaining coverage in docs/reports/2026-10-11-phase-2-parts-1-2-verification.md. Real inbox/Sandbox billing and several complete browser scenarios remain unverified; no production configuration changed.
+
