@@ -173,3 +173,17 @@ Existing frontend selection: 84 passed, plus the initial coverage test's catalog
 count assumption failure (286.08s). Corrected coverage test passed in the separate
 34-check selection recorded above. The full selection ran before that test correction;
 do not present the original run as fully passing.
+
+## R-14/R-15 preparation: Competitor gaps, 11 October 2026
+
+- Reviewed official ZoneWire home, API docs, pricing, states, meetings, blog and
+  comparison pages, plus Bassett's current early-access page. Paid behavior was not
+  tested. Pricing/home counts and API availability wording differ; noted explicitly.
+- Created 19-row Google Sheets import CSV with page links, actual JurisMon matches/
+  gaps, useful/deferred recommendations, priority, dependencies and effort estimates.
+- Prepared optional scope/acceptance/delivery ordering and budget formula. Preserved
+  historical $100/$150/$25 quotes; no new invented commercial offer or payment claim.
+- Verified CSV round-trip: header plus 19 rows. No connected Google Sheets session;
+  CSV is importable, not claimed delivered to a sheet. Final selection/rate pending.
+- Files: docs/client/competitor-gap-list-2026-10-11.csv and
+  docs/client/competitor-implementation-scope.md. Development commit containing entry.

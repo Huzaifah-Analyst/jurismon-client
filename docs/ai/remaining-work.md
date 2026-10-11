@@ -28,8 +28,8 @@ Fresh evidence: [rigorous v2 report](../reports/2026-10-11-rigorous-testing-v2.m
 | --- | --- | --- |
 | R-12 | Dedicated honest coverage and exclusions section | Implemented locally: home claims configured/marked-operational sources, links to About coverage/exclusions; capture history and effective-date limits explicit. Removed unsupported alerts and monetary risk claims. Real-count browser check passed. Pending release. |
 | R-13 | Written case studies and Case Studies page | Promised free/included, reiterated by client on 10 October. Not delivered. Use real source documents, dates and verified legal changes; current noisy records cannot substantiate market validation. No invented cases or claimed volume. |
-| R-14 | Page-by-page competitor gap list for Google Sheets | Promised 10 October. List missing features, existing matches, useful versus unnecessary ideas, effort and priorities. Reverify competitor pages when doing this work; past chat comparisons are historical observations. |
-| R-15 | Scope, deliverables, timeline and budget for selected competitor gaps | After R-14 and client selection. Analysis does not authorize new feature implementation. |
+| R-14 | Page-by-page competitor gap list for Google Sheets | 19-row importable CSV prepared from current official ZoneWire/Bassett pages; matches, gaps, priorities, effort and evidence limits recorded. Google Sheets import/delivery pending; no connected sheet session available. |
+| R-15 | Scope, deliverables, timeline and budget for selected competitor gaps | Concrete optional scopes/acceptance/effort and budget method drafted in docs/client/competitor-implementation-scope.md. Final selected bundle and agreed rate needed; no invented quote or budget. |
 | R-16 | Housekeeping | About risk-range punctuation; index/status consistency. Preserve uncommitted client correspondence and settings. Do not publish raw chat or credentials as documentation cleanup. |
 
 The previously approved sequence after repairs/QA remains case studies,
