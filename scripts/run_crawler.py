@@ -136,10 +136,23 @@ def main(run_id: Optional[str] = None):
                             cleaned_text, raw_text, ocr_applied = PDFExtractor.extract_from_bytes(content_bytes)
                         else:
                             resp = requests_fetcher.fetch_url(doc_item.url)
+                            extraction_url = doc_item.url
+                            embedded_url = HTMLExtractor.embedded_document_url(resp.text, extraction_url)
+                            if embedded_url:
+                                resp = requests_fetcher.fetch_url(embedded_url)
+                                extraction_url = embedded_url
                             content_bytes = resp.content
                             content_hash = compute_sha256(content_bytes)
-                            cleaned_text, raw_text = HTMLExtractor.extract_from_html(resp.text)
+                            cleaned_text, raw_text = HTMLExtractor.extract_from_html(
+                                resp.text,
+                                target_selector=(source_cfg.get("selectors_config") or {}).get("content_selector"),
+                                source_url=extraction_url,
+                            )
                             ocr_applied = False
+
+                        if not cleaned_text.strip():
+                            logger.warning("Skipping document with no extracted text: %s", doc_item.url)
+                            continue
 
                         # 2. Database check if repo connected
                         if repo.is_connected():

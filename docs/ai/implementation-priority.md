@@ -6,7 +6,7 @@ User-approved order. Numbers below are priorities, not frontend fix-plan IDs.
 | --- | --- | --- |
 | 1 | Verify repository, deployment parity and existing order scope | Verified code and deployment; historical payment records differ from current user statement |
 | 2 | Remaining frontend bugs and dark mode | Report fixes verified and released 11 October; separate OTP delivery-failure follow-up remains |
-| 3 | Backend cache headers, compression and search latency investigation | Pending |
+| 3 | Backend cache headers, compression and search latency investigation | Cache headers/compression implemented locally; latency investigation pending |
 | 4 | Regression, paid subscription states, cross-browser and accessibility QA | Core checks completed; physical devices, all modal/admin-tab audits and Lighthouse remain uncovered |
 | 5 | Evidence-based case studies using available captured changes | Pending |
 | 6 | Housekeeping: About punctuation and existing chat-log changes | Pending |
@@ -219,3 +219,82 @@ item #2, pushing GitHub changes and making the result live.
   frontend states or the content-quality defects are fixed.
 - Final release notes are committed/pushed to the development remote separately
   so the runtime release references can be recorded after deployment.
+
+
+## How the previous release was implemented
+
+| Work | Implementation | Verification |
+| --- | --- | --- |
+| Trial-setting sync | Customer activation and email copy read config/plans.json through the catalogue helper. Frontend home/account/Terms read /api/plans. Existing account expiry is preserved. | Isolated 14/34/45/67/zero-day cases, genuine admin PATCH, stored expiry and email assertions. |
+| Loading/auth feedback | Initial skeleton precedes session hydration; request versions reject stale responses; successful auth changes render a status message. | Delayed and out-of-order genuine API responses; login/logout browser checks. |
+| Crawl polling | Repeat every three seconds while running; stop at terminal state or logout and abort stale requests. | Genuine local crawl rows and authenticated admin requests. |
+| Theme/mobile fixes | Shared content-hashed semantic color stylesheet; mobile header/pill containment; admin status wrapping and Privacy table wrapping. | Light/dark viewport checks, engine smoke tests, final live six-page checks after fonts loaded. |
+| OTP stability | Reserved error space and restored input focus after a rejected code. | Real wrong-code 400 at mobile and desktop widths. |
+| QA #2 honest scope | Replaced complete-municipal and perfect-extraction claims with actual local/international scope and limitations; source counts read the API. | Browser checks, genuine source records and unavailable-count behavior. |
+| Release | Selected reviewed files, excluded user's config/chat changes, made single-parent client release commits, pushed both remotes and ran the existing VPS deploy script. | Final live version f9dbc15, database ok, API/timer active, 12 mobile light/dark views passed. |
+
+## Current work: QA full-table #3, #9 and #10
+
+### #3: extraction and source labels
+
+Evidence: read-only production samples confirmed nested sources.name, German
+RSS catalogue text, Canada CKAN wrappers and an empty NZ snapshot. Captured the
+public pages and the actual Australian legal-text iframe for regression cases.
+Sanitized committed fixture subtrees omit scripts, forms, session metadata and
+nonces; original captures remain ignored local artifacts.
+
+Changes:
+- API formatting reads the actual nested Supabase source name, or SQLite's flat
+  source_name. Missing names say Source unavailable, not an invented authority.
+- The extractor rejects the known German RSS update catalogue and CKAN resource
+  wrappers; feed/RDF catalogue XML is rejected as metadata, not legal text.
+- XML legislation uses a non-networking XML parser with entity expansion off,
+  selecting the statutory body. XHTML still follows HTML noise stripping.
+- Legal article headers are retained; navigation, tabs and breadcrumbs removed.
+  Source content_selector is honored by the crawler without editing sites.json.
+- The Australian official registry's same-host embedded legal HTML is fetched
+  before extraction, so wrapper navigation is not stored as statute text.
+- Empty extracted responses are skipped before document/snapshot writes.
+
+Limits: existing stored snapshots/diffs are unchanged. Re-extraction/backfill
+of historical dirty rows is not complete. The configured NZ XML URL returned a
+zero-byte body; rejecting that body does not repair the upstream URL. No live
+crawl, source-config edits or historical data writes were performed.
+
+### #9: response cache policy
+
+- All HTML responses: no-cache, preserving FileResponse ETag/Last-Modified.
+- Anonymous public sources counts: public, max-age=60.
+- Public plan catalogue: no-cache, so admin changes revalidate.
+- Search, auth, admin, errors, mutations and requests with Authorization:
+  no-store. API Vary includes Authorization to separate public/private results.
+- Existing Nginx static-asset policy remains unchanged. This is response policy,
+  not a server-side query cache or a measured latency improvement.
+
+### #10: negotiated response compression
+
+- FastAPI GZipMiddleware, minimum body size 1000 bytes, compression level 5.
+- Clients must accept gzip; identity clients and small bodies stay uncompressed.
+- Vary: Accept-Encoding retained; decompressed JSON matches the identity body.
+- Real isolated admin sources payload measured 32,095 identity bytes vs 4,322
+  gzip wire bytes. This is a local payload measurement, not production latency.
+
+Validation:
+- Broad regression: 385 passed, 3 engine cases deselected, one existing Starlette
+  deprecation warning in 157.33s. Additional AU/XHTML extraction coverage was
+  added after the broad run collected tests.
+- Final targeted extraction/cache/compression suite: 33 passed, one existing
+  warning in 4.19s. Includes original extractor tests, captured government pages,
+  genuine isolated SQLite ingestion and genuine admin-authenticated compression.
+- Current changes are local and awaiting user review before commit/release.
+  Existing config/plans.json (10 days), chat-log and local context are preserved.
+
+- Final cache/compression browser smoke: Chromium, Firefox and WebKit, 3 passed in 12.52s. No production release was made for this current batch.
+- Local review server started at http://127.0.0.1:8000 with isolated SQLite and external providers disabled. Genuine curl checks: home 200 with gzip/no-cache/ETag, plans 200 with no-cache, search 200 with no-store. Current batch remains uncommitted for user review.
+
+## User verification: QA #3
+
+- User ran tests/test_extraction_quality.py on 11 October 2026: 14 passed in 2.17s.
+- New extraction and source-label changes approved by the verification workflow; commit them separately from pending cache/compression changes.
+- Historical snapshot backfill and the empty NZ source remain unresolved; no claim that existing production records have been repaired.
+- #9/#10 remain local pending user verification. No current-batch push or deployment.

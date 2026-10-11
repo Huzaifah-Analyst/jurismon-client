@@ -384,6 +384,13 @@ async def serve_sitemap_xml():
     return Response(content=content, media_type="application/xml")
 
 
+def result_source_name(document: Dict[str, Any]) -> str:
+    source = document.get("sources") or {}
+    if isinstance(source, list):
+        source = source[0] if source else {}
+    return document.get("source_name") or source.get("name") or "Source unavailable"
+
+
 def format_result_items(search_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Maps internal diffs and snapshots into the unified frontend card contract."""
     items = []
@@ -393,7 +400,7 @@ def format_result_items(search_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         doc_info = d.get("documents", {})
         doc_title = doc_info.get("title", "Municipal Document")
         doc_url = doc_info.get("pdf_url", "#")
-        source_name = doc_info.get("source_name") or "Municipal Regulatory Authority"
+        source_name = result_source_name(doc_info)
         created_at = d.get("generated_at") or "2026-09-27T00:00:00Z"
 
         for mod in payload.get("modified", []):
@@ -453,7 +460,7 @@ def format_result_items(search_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         doc_info = s.get("documents", {})
         doc_title = doc_info.get("title", "Municipal Document")
         doc_url = doc_info.get("pdf_url", "#")
-        source_name = doc_info.get("source_name") or "Municipal Regulatory Authority"
+        source_name = result_source_name(doc_info)
         created_at = s.get("crawled_at") or "2026-09-27T00:00:00Z"
         clean_text = s.get("cleaned_text", "")
         preview = clean_text[:240] + "..." if len(clean_text) > 240 else clean_text
