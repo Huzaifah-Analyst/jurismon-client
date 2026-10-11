@@ -329,3 +329,30 @@ do not present the original run as fully passing.
 - Google Sheets connected-session lookup returned no sessions; competitor CSV
   remains ready for import, not delivered to a live sheet. Native-zoom profile
   experiment did not change actual Chromium zoom; it does not close that QA gap.
+
+## Final release acceptance, 11 October 2026
+
+- Development implementation commit 408c97f published to origin. Clean client
+  release e2693b7 pushed to client/main and deployed using the VPS script. Service
+  and timer active; health version e2693b7, database ok. Documentation updates after
+  acceptance do not imply a separate application deployment.
+- Synced/read-back exactly eight reviewed source rows from released config. San
+  Diego is degraded and still active for retry; public API reports 48 sources marked
+  operational of 65 configured, with 16 inactive names/statuses only (no URLs/config).
+- Genuine final live verification: 14 page/mode views across seven pages, light/dark
+  mobile; two published evidence-backed cases; authenticated admin; trial 14; zero
+  axe violations, no horizontal overflow or JavaScript errors. Chromium, Firefox
+  and WebKit closed-dialog/trap/Escape/focus-return lifecycle passed.
+- Initial live home axe measurement during finite result-card entry animations
+  flagged contrast; repeated after animations settled passed. No CSS or failure
+  filtering changed to obtain that pass. Axe incomplete items remain manual QA.
+- Evidence: ignored test-results/remaining-live/verification.json and per-page axe
+  JSON, production-backfill-final.json, production-case-evidence.json, and reversible
+  quarantine manifest. Raw production excerpts/URLs export was rejected by automatic
+  approval review; safer aggregate-only audit and internal supporting-section checks
+  succeeded. No blocked content export was retried indirectly.
+- Still external/manual: San Diego PDF availability, sixteen excluded endpoint
+  replacements/adapters, controlled real inbox, PayPal Sandbox credentials, native
+  device/screen-reader/200% zoom QA, connected Google Sheet, and selected competitor
+  scope/rate. No ordered alerts/88-source expansion or fabricated market-validation
+  evidence was added. Current backlog records these separately from shipped work.
