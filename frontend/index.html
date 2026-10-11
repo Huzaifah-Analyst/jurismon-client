@@ -1144,7 +1144,7 @@
 </footer>
 
 <!-- AUTH MODAL -->
-<div id="auth-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+<div id="auth-modal" class="modal-overlay" inert aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
   <div class="modal-card">
     <h2 id="auth-modal-title" class="visually-hidden">Create Account</h2>
     <button type="button" class="modal-close" id="auth-modal-close" aria-label="Close modal">&times;</button>
@@ -1214,7 +1214,7 @@
 </div>
 
 <!-- PAYWALL / SUBSCRIPTION MODAL -->
-<div id="paywall-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="paywall-modal-title">
+<div id="paywall-modal" class="modal-overlay" inert aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="paywall-modal-title">
   <div class="modal-card" style="max-width:500px;">
     <button type="button" class="modal-close" id="paywall-modal-close" aria-label="Close modal">&times;</button>
     <div style="margin-bottom:18px;">
@@ -1848,6 +1848,58 @@
   let pendingEmail = "";
   let verifyMode = "signup"; // "signup" or "reset"
 
+  let activeDialog = null;
+  let dialogOpener = null;
+  let pointerOpener = null;
+  document.addEventListener("pointerdown", event => {
+    pointerOpener = event.target.closest("button, a[href]");
+  });
+  const backgroundInert = new Map();
+  function activateDialog(dialog) {
+    if (activeDialog === dialog) return;
+    if (activeDialog) deactivateDialog(activeDialog);
+    dialogOpener = pointerOpener || document.activeElement;
+    pointerOpener = null;
+    activeDialog = dialog;
+    dialog.inert = false;
+    dialog.removeAttribute("aria-hidden");
+    dialog.classList.add("is-active");
+    for (const element of document.body.children) {
+      if (element === dialog || element.tagName === "SCRIPT") continue;
+      backgroundInert.set(element, element.inert);
+      element.inert = true;
+    }
+    dialog.querySelector("button, input, [tabindex='0']").focus();
+  }
+  function deactivateDialog(dialog) {
+    dialog.classList.remove("is-active");
+    dialog.inert = true;
+    dialog.setAttribute("aria-hidden", "true");
+    if (activeDialog !== dialog) return;
+    for (const [element, previous] of backgroundInert) element.inert = previous;
+    backgroundInert.clear();
+    activeDialog = null;
+    if (dialogOpener && dialogOpener.isConnected) dialogOpener.focus();
+  }
+  document.addEventListener("keydown", event => {
+    pointerOpener = null;
+    if (!activeDialog) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      activeDialog === authModal ? closeAuthModal() : closePaywallModal();
+    } else if (event.key === "Tab") {
+      const controls = [...activeDialog.querySelectorAll("button, input, select, textarea, a[href], [tabindex]")]
+        .filter(element => !element.disabled && element.tabIndex >= 0 && element.getClientRects().length);
+      if (!controls.length) { event.preventDefault(); return; }
+      const first = controls[0], last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault(); last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault(); first.focus();
+      }
+    }
+  });
+
   function openAuthModal(tab = "register") {
     authModal.classList.remove("is-verifying");
     authError.style.display = "none";
@@ -1859,7 +1911,7 @@
     $(".modal-tabs").style.display = "flex";
     $("#form-verify").style.display = "none";
     setAuthTab(tab);
-    authModal.classList.add("is-active");
+    activateDialog(authModal);
   }
 
   function showVerifyScreen(email, mode = "signup") {
@@ -1907,7 +1959,7 @@
   }
 
   function closeAuthModal() {
-    authModal.classList.remove("is-active");
+    deactivateDialog(authModal);
     authModal.classList.remove("is-verifying");
     $(".modal-tabs").style.display = "flex";
     $("#form-verify").style.display = "none";
@@ -1916,11 +1968,11 @@
   function openPaywallModal() {
     paywallError.style.display = "none";
     paywallError.textContent = "";
-    paywallModal.classList.add("is-active");
+    activateDialog(paywallModal);
   }
 
   function closePaywallModal() {
-    paywallModal.classList.remove("is-active");
+    deactivateDialog(paywallModal);
   }
 
   window.triggerAuthOrPaywall = () => {

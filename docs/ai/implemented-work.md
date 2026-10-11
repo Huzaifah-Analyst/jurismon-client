@@ -96,3 +96,18 @@ belongs in client-context.md and requires its own evidence.
 - Development commit: the commit containing this R-02 entry (locate with
   `git log --oneline --grep="fix: handle authentication email delivery failures"`).
   Not pushed or deployed in this repair. Production remains e33ef18.
+
+## R-03: Dialog keyboard lifecycle, 11 October 2026
+
+- Auth and paywall overlays begin inert/aria-hidden. A shared controller opens
+  one dialog, remembers background inert state and restores it on close.
+  Focus moves inside, wraps on Tab/Shift+Tab, and returns after Escape/backdrop/
+  close-button handling. Pointer opener tracking fixes WebKit's non-focusing clicks.
+- Genuine browser keyboard regression checks both dialogs across Chromium,
+  Firefox and WebKit. Closed overlays receive no focus through 30 Tab presses.
+- Initial verification found a WebKit focus-return failure; corrected and reran.
+  Final keyboard/accessibility selection: 7 passed in 90.97s. Existing auth delivery
+  selection previously passed 8 cases alongside two keyboard cases; WebKit failure
+  was the only initial failure. No native Safari claim.
+- Files: frontend/index.html and tests/test_dialog_keyboard.py. Development commit
+  containing this entry; not deployed. Live remains e33ef18.
