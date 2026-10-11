@@ -5,9 +5,9 @@ User-approved order. Numbers below are priorities, not frontend fix-plan IDs.
 | Priority | Work | Status |
 | --- | --- | --- |
 | 1 | Verify repository, deployment parity and existing order scope | Verified code and deployment; historical payment records differ from current user statement |
-| 2 | Remaining frontend bugs and dark mode | Reopened after user review: trial configuration, OTP delivery, loading and auth feedback need another pass |
+| 2 | Remaining frontend bugs and dark mode | Report fixes verified and released 11 October; separate OTP delivery-failure follow-up remains |
 | 3 | Backend cache headers, compression and search latency investigation | Pending |
-| 4 | Regression, paid subscription states, cross-browser and accessibility QA | Pending |
+| 4 | Regression, paid subscription states, cross-browser and accessibility QA | Core checks completed; physical devices, all modal/admin-tab audits and Lighthouse remain uncovered |
 | 5 | Evidence-based case studies using available captured changes | Pending |
 | 6 | Housekeeping: About punctuation and existing chat-log changes | Pending |
 | 7 | Repair broken US city and county sources | Pending |
@@ -198,3 +198,24 @@ item #2, pushing GitHub changes and making the result live.
 - Continuing the live pass after web fonts loaded found Privacy processor-table
   overflow at 375px. Fixed mobile column sizing and wrapping. Four 320/375px,
   light/dark checks passed in 8.92s. This is a further narrow release correction.
+
+
+### Final verified release, 11 October 2026
+
+- Privacy correction dev commit: 4364149. Final client release: f9dbc15.
+- Both GitHub remotes received the reviewed code. Final client release deployed
+  successfully; systemd API and crawl timer active. Production catalogue stays
+  14 days; the user's local 10-day catalogue file remains excluded/preserved.
+- Final public browser review passed all six pages in light and dark at 375px
+  after fonts were ready: 12 views, no horizontal page overflow and no page
+  JavaScript errors. Live trial CTA verified 14; About scope and API counts
+  verified. Artifact: ignored test-results/frontend/live-release-review.json.
+- Production health was verified against the final release by this browser run:
+  version f9dbc15, database ok. Price-history endpoint was also authenticated
+  and verified 200 after the primary code deployment.
+- Verification complete for the recorded coverage. Source repairs/extraction,
+  backend performance, exhaustive modal/admin-tab accessibility, Lighthouse
+  and physical mobile devices remain separate work. No claim that all possible
+  frontend states or the content-quality defects are fixed.
+- Final release notes are committed/pushed to the development remote separately
+  so the runtime release references can be recorded after deployment.
