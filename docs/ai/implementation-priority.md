@@ -418,3 +418,76 @@ Validation:
 - Screenshots/evidence are ignored test-results/browser-review-11-12: mobile-search.png,
   admin-austin-source.png, admin-sources.png and report.json. New changes remain local.
 - Trial configuration remains the user's 10 days; no trial-setting edit performed.
+
+## User-authorized deployment and QA #23/#24/#25
+
+### Deployment of verified #11/#12 fixes
+
+- User explicitly requested deployment after browser verification.
+- Development commit f63acc9; clean client main release e33ef18, parent c837276.
+  Both remotes pushed and existing VPS deploy script completed successfully.
+- Synced exactly the eight verified source configurations into existing production
+  source IDs via Supabase conflict on ID. Did not run a crawl or change billing.
+- Production health: version e33ef18, database ok; public sources 49/65; trial14.
+- Genuine live Chromium checks: six pages at mobile width, light/dark, 12 checks
+  passed with no page JavaScript errors or horizontal overflow after fonts loaded.
+- Existing historical extraction/backfill, remaining inactive sources and upstream
+  latency variance are still pending. Source activation does not prove ingestion.
+
+### QA #23: paid account states
+
+- Expanded existing genuine local SQLite subscription-state checks to active,
+  suspended/paused, cancelled within paid period and cancelled expired.
+- All four states checked in light/dark at 375px and 1280px on three engines:
+  48 state views, genuine API authentication and server-returned search access.
+- Added UI pause, resume, cancellation abort, cancellation confirm and expiry
+  transitions on each engine. Actions use genuine API endpoints and persisted
+  local database state. PayPal operations explicitly mocked, lifecycle email
+  disabled. No real charge, subscription mutation or external email used.
+- Expired cancellation checked for denied access, not merely a visible badge.
+
+### QA #24: browser engines
+
+- Chromium, Firefox and WebKit run actual authenticated search and account flows
+  against a real isolated Uvicorn server. Search is typed in the page; logout
+  changes to genuine gated results. No response or UI-state mocks.
+- Initial combined state/lifecycle/engine run: 54 passed, 33 deselected, 234.85s.
+- WebKit is engine coverage, not a run of native Safari on macOS/iOS. Physical
+  mobile Safari/Chrome and native Safari remain uncovered in this Windows setup.
+
+### QA #25: automated accessibility audit and fixes
+
+- Vendored unmodified axe-core 4.10.3 for repeatable offline QA, retaining its
+  MPL/copyright notice. It is a test dependency, not shipped to customer pages.
+- Run the complete default axe ruleset, including best-practice checks, after
+  fonts and finite UI transitions settle; retain violations and incomplete nodes.
+- Audit real signed-out six-page views; login/register/OTP/wrong-code/reset and
+  plan dialogs; trial and all four paid states; cancellation dialog; authenticated
+  admin, Plans tab and inline plan editor. Mobile/desktop and light/dark.
+- Found and fixed missing admin login/edit-field labels, invalid chart/list
+  semantics, duplicate region names, unfocusable horizontally scrolling tables,
+  inactive badge contrast, missing account h1 headings and cancellation heading
+  order. Auth dialog's referenced heading did not exist; added a real accessible
+  heading that follows the selected login/register/verification mode.
+- Axe checks supplement manual keyboard/screen-reader evaluation. They are not
+  a Lighthouse performance audit, complete accessibility certification or proof
+  that every possible dynamic state was reached.
+- Evidence: ignored test-results/qa-23-25/account screenshots and accessibility
+  JSON reports. New QA fixes are local; deployed release remains e33ef18.
+- Full regression: 451 passed, one dependency deprecation warning, in 491.31s.
+- Final post-ARIA accessibility audit: 4 passed in 102.59s, 84 views with zero
+  confirmed violations. Incomplete automated checks remain for manual review.
+
+- Expanded default axe audit and post-fix lifecycle rerun: 7 passed in 102.08s.
+  Audit covers 21 real views per viewport/theme combination, 84 views total,
+  with zero automated violations. Inconclusive contrast checks (single-digit
+  counters, native select and overlapping modal backgrounds) are retained for
+  manual review, not counted as proven passes.
+- Full default axe exposed additional missing heading/region semantics. Avatar
+  and keyboard-hint accessible labels received valid roles after review of
+  incomplete ARIA checks; the final audit verified these follow-ups.
+- QA #23 local paid-state/lifecycle verification complete with provider mocks.
+  QA #24 three-engine coverage complete; native Safari/physical devices pending.
+  QA #25 automated axe coverage complete; manual keyboard/screen-reader and
+  inconclusive contrast review pending. New QA changes committed separately from
+  the deployed e33ef18 release; no new production billing actions performed.

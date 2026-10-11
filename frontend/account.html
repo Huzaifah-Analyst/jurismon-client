@@ -387,7 +387,7 @@
 
   <!-- STATE 1: SIGNED OUT (LOGIN GATE) -->
   <div id="state-signed-out" class="card" style="display:none; max-width:440px; margin:20px auto;">
-    <h2 class="card-title">Sign in to your account</h2>
+    <h1 class="card-title">Sign in to your account</h1>
     <p class="card-desc">Access your JurisMon subscription and billing controls.</p>
     <div id="login-error" class="notice notice-red" style="display:none;"></div>
     <form id="form-login">
@@ -416,7 +416,7 @@
   <div id="state-no-subscription" class="card" style="display:none;">
     <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
       <div>
-        <h2 class="card-title">Account Overview</h2>
+        <h1 class="card-title">Account Overview</h1>
         <p class="card-desc">Your current access level and membership status.</p>
       </div>
       <span class="badge badge-trial" id="no-sub-badge">Free Trial</span>
@@ -450,7 +450,7 @@
   <div id="state-active" class="card" style="display:none;">
     <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
       <div>
-        <h2 class="card-title" id="active-plan-title">Subscription Details</h2>
+        <h1 class="card-title" id="active-plan-title">Subscription Details</h1>
         <p class="card-desc">Your subscription is active and renews automatically.</p>
       </div>
       <span class="badge badge-active" id="active-badge">Active</span>
@@ -485,7 +485,7 @@
   <div id="state-paused" class="card" style="display:none;">
     <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
       <div>
-        <h2 class="card-title" id="paused-plan-title">Subscription Details</h2>
+        <h1 class="card-title" id="paused-plan-title">Subscription Details</h1>
         <p class="card-desc">Billing is suspended. You will not be charged while paused.</p>
       </div>
       <span class="badge badge-paused">Paused</span>
@@ -526,7 +526,7 @@
   <div id="state-cancelled-in-period" class="card" style="display:none;">
     <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
       <div>
-        <h2 class="card-title" id="cancelled-in-period-title">Subscription Details</h2>
+        <h1 class="card-title" id="cancelled-in-period-title">Subscription Details</h1>
         <p class="card-desc">Recurring billing has been cancelled.</p>
       </div>
       <span class="badge badge-cancelled">Cancelled</span>
@@ -564,7 +564,7 @@
   <div id="state-cancelled-expired" class="card" style="display:none;">
     <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
       <div>
-        <h2 class="card-title" id="cancelled-expired-title">Subscription Details</h2>
+        <h1 class="card-title" id="cancelled-expired-title">Subscription Details</h1>
         <p class="card-desc">Your subscription has expired.</p>
       </div>
       <span class="badge badge-expired">Expired</span>
@@ -585,7 +585,7 @@
 
   <!-- STATE 8: API ERROR -->
   <div id="state-error" class="card" style="display:none;">
-    <h2 class="card-title" style="color:var(--danger);">Unable to load account details</h2>
+    <h1 class="card-title" style="color:var(--danger);">Unable to load account details</h1>
     <p class="card-desc" id="error-message">A network error occurred while communicating with the server.</p>
     <div class="actions-bar">
       <button type="button" class="btn btn-primary" id="btn-error-retry">Try Again</button>
@@ -596,7 +596,7 @@
   <!-- CANCEL CONFIRMATION MODAL -->
   <div class="modal-backdrop" id="cancel-modal" role="dialog" aria-modal="true" aria-labelledby="cancel-modal-title">
     <div class="modal-card">
-      <h3 class="modal-title" id="cancel-modal-title">Cancel Subscription?</h3>
+      <h2 class="modal-title" id="cancel-modal-title">Cancel Subscription?</h2>
       <p class="modal-body" id="cancel-modal-desc">
         Your subscription will be cancelled and automatic billing will cease immediately.
         <br><br>

@@ -238,6 +238,10 @@ def test_browser_authenticated_mobile_search_and_account(local_browser):
     page.on("pageerror", lambda error: errors.append(str(error)))
     page.goto(base + "/")
     expect(page.locator('[data-count="snapshot"]')).to_have_text("3")
+    with page.expect_response(lambda response: response.url.endswith("/api/search?q=zoning")) as search:
+        page.locator('#q').fill('zoning')
+    assert search.value.status == 200
+    expect(page.locator('.result')).to_have_count(3)
     page.locator('#btn-nav-logout').click()
     expect(page.locator('#auth-status')).to_have_text('Signed out successfully.')
     expect(page.locator('#btn-nav-login')).to_be_visible()
@@ -249,9 +253,11 @@ def test_browser_authenticated_mobile_search_and_account(local_browser):
     assert errors == []
 
 
+@pytest.mark.parametrize("local_browser", ["chromium", "firefox", "webkit"], indirect=True)
+@pytest.mark.parametrize("width", [375, 1280])
 @pytest.mark.parametrize("mode", ["light", "dark"])
 @pytest.mark.parametrize("status,state", [("active", "state-active"), ("suspended", "state-paused"), ("cancelled", "state-cancelled-in-period"), ("cancelled_expired", "state-cancelled-expired")])
-def test_real_subscription_account_states(local_browser, mode, status, state):
+def test_real_subscription_account_states(local_browser, mode, status, state, width):
     from datetime import datetime, timezone, timedelta
     page, base, repository = local_browser
     login_customer(page, base, repository)
@@ -261,10 +267,22 @@ def test_real_subscription_account_states(local_browser, mode, status, state):
         "cancelled" if status == "cancelled_expired" else status,
         user_email=user["email"], user_id=user["id"], next_billing_at=billing)
     page.emulate_media(color_scheme=mode)
-    page.set_viewport_size({"width": 375, "height": 812})
+    page.set_viewport_size({"width": width, "height": 812})
     page.goto(base + "/account")
     expect(page.locator('#' + state)).to_be_visible()
     assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+
+    token = page.evaluate("localStorage.getItem('jurismon_token')")
+    response = page.request.get(base + "/api/search?q=zoning", headers={"Authorization": "Bearer " + token})
+    assert response.ok
+    assert response.json()["is_gated"] is (status == "cancelled_expired")
+    expected_reason = {"active": "active_subscription", "suspended": "paused_access_until",
+                       "cancelled": "cancelled_access_until", "cancelled_expired": "cancelled_expired"}[status]
+    assert response.json()["access"]["reason"] == expected_reason
+    artifact = Path("test-results/qa-23-25/account")
+    artifact.mkdir(parents=True, exist_ok=True)
+    engine = page.context.browser.browser_type.name
+    page.screenshot(path=str(artifact / f"{engine}-{width}-{mode}-{status}.png"), full_page=True)
 
 
 def test_real_pending_search_and_logout_loading(local_browser):

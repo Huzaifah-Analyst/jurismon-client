@@ -1117,7 +1117,7 @@
     <button class="btn-outline" type="button" id="clear">Clear search</button>
   </div>
 
-  <footer class="hints" aria-label="Keyboard shortcuts">
+  <footer class="hints" role="group" aria-label="Keyboard shortcuts">
     <span><kbd>/</kbd> Search</span>
     <span><kbd>↑</kbd><kbd>↓</kbd> Move between results</span>
     <span><kbd>Enter</kbd> Show full section</span>
@@ -1146,6 +1146,7 @@
 <!-- AUTH MODAL -->
 <div id="auth-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
   <div class="modal-card">
+    <h2 id="auth-modal-title" class="visually-hidden">Create Account</h2>
     <button type="button" class="modal-close" id="auth-modal-close" aria-label="Close modal">&times;</button>
     <div class="modal-tabs">
       <button type="button" class="modal-tab is-active" id="tab-register">Create Account</button>
@@ -1865,6 +1866,7 @@
     authModal.classList.add("is-verifying");
     pendingEmail = email;
     verifyMode = mode;
+    $("#auth-modal-title").textContent = mode === "reset" ? "Reset your password" : "Confirm your email";
     authError.style.display = "none";
     if (authNotice) authNotice.style.display = "none";
     $(".modal-tabs").style.display = "none";
@@ -1932,6 +1934,7 @@
   function setAuthTab(tab) {
     authModal.classList.remove("is-verifying");
     const isReg = tab === "register";
+    $("#auth-modal-title").textContent = isReg ? "Create Account" : "Log In";
     $("#tab-register").classList.toggle("is-active", isReg);
     $("#tab-login").classList.toggle("is-active", !isReg);
     $("#form-register").style.display = isReg ? "block" : "none";

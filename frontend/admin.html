@@ -423,7 +423,7 @@
 
   .b-bad { background: var(--bad-bg); color: var(--bad-ink); }
 
-  .b-idle { background: var(--hover); color: var(--muted); }
+  .b-idle { background: var(--hover); color: var(--neutral-ink); }
 
   .b-run { background: var(--hover); color: var(--ink); }
 
@@ -692,7 +692,7 @@
 
     </a>
 
-    <span class="avatar" id="admin-avatar" aria-label="Signed in as admin" style="display:none;">MM</span>
+    <span class="avatar" id="admin-avatar" role="img" aria-label="Signed in as admin" style="display:none;">MM</span>
 
     <button id="btn-logout" class="chip" style="display:none; cursor:pointer; background:var(--surface); color:var(--bad-ink); font-weight:500; border-color:var(--line);" title="Sign out of Admin Session">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
@@ -761,7 +761,7 @@
 
         <span id="k-runs-foot"></span>
 
-        <div class="bars" id="k-bars" aria-label="Failed runs over the last 14 days"></div>
+        <div class="bars" id="k-bars" role="img" aria-label="Failed runs over the last 14 days"></div>
 
       </div>
 
@@ -795,7 +795,7 @@
 
       <div class="strip-wrap">
 
-        <div class="strip" id="strip" role="list" aria-label="Health of each source"></div>
+        <div class="strip" id="strip" role="group" aria-label="Health of each source"></div>
 
         <div class="legend">
 
@@ -837,7 +837,7 @@
 
 
 
-      <div class="table-scroll">
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Source records">
 
         <table>
 
@@ -946,7 +946,7 @@
 
         </div>
 
-        <div class="table-scroll">
+        <div class="table-scroll" tabindex="0" role="region" aria-label="Subscription records">
 
           <table>
 
@@ -999,7 +999,7 @@
 
         </div>
 
-        <div class="table-scroll">
+        <div class="table-scroll" tabindex="0" role="region" aria-label="Plan catalogue">
 
           <table>
 
@@ -1037,7 +1037,7 @@
 
         </div>
 
-        <div class="table-scroll">
+        <div class="table-scroll" tabindex="0" role="region" aria-label="Price change history">
 
           <table>
 
@@ -1100,25 +1100,25 @@
 <style>.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}</style>
 
 <!-- Admin Password & Auth Gate Modal -->
-<div id="auth-gate" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(15,23,42,0.75); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:20px;">
+<div id="auth-gate" role="dialog" aria-modal="true" aria-labelledby="admin-auth-title" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(15,23,42,0.75); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:20px;">
   <div style="background:var(--surface); border:1px solid var(--line); border-radius:12px; max-width:420px; width:100%; padding:32px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.15), 0 10px 10px -5px rgba(0,0,0,0.08);">
     <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
       <img src="/static/assets/logo.png" alt="JurisMon Admin" style="height:36px; width:auto; display:block; object-fit:contain;">
       <div>
-        <h2 style="font-size:17px; font-weight:600; color:var(--ink); margin:0;">JurisMon Admin Access</h2>
+        <h2 id="admin-auth-title" style="font-size:17px; font-weight:600; color:var(--ink); margin:0;">JurisMon Admin Access</h2>
         <p style="font-size:13px; color:var(--muted); margin:2px 0 0;">Protected administrative console</p>
       </div>
     </div>
 
     <form id="login-form" onsubmit="return false;" style="display:flex; flex-direction:column; gap:14px;">
       <div>
-        <label style="display:block; font-size:12.5px; font-weight:500; color:var(--ink); margin-bottom:6px;">Admin Email</label>
+        <label for="login-email" style="display:block; font-size:12.5px; font-weight:500; color:var(--ink); margin-bottom:6px;">Admin Email</label>
         <input type="email" id="login-email" value="admin@jurismon.com" required style="width:100%; height:40px; padding:0 12px; border:1px solid var(--line-strong); border-radius:6px; font-size:14px; background:var(--bg);">
       </div>
 
       <div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-          <label style="font-size:12.5px; font-weight:500; color:var(--ink); margin:0;">Password</label>
+          <label for="login-password" style="font-size:12.5px; font-weight:500; color:var(--ink); margin:0;">Password</label>
           <a href="#" id="link-forgot-pw" style="font-size:12px; color:var(--muted); text-decoration:underline;">Forgot password?</a>
         </div>
         <input type="password" id="login-password" placeholder="Enter admin password" required autofocus style="width:100%; height:40px; padding:0 12px; border:1px solid var(--line-strong); border-radius:6px; font-size:14px;">
@@ -1474,7 +1474,7 @@
 
     stripEl.innerHTML = sources.map(s =>
 
-      `<button class="cell ${bucketOf(s.health) === "healthy" ? "" : bucketOf(s.health)}" type="button" role="listitem"
+      `<button class="cell ${bucketOf(s.health) === "healthy" ? "" : bucketOf(s.health)}" type="button"
 
          data-id="${s.id}" title="${esc(s.jurisdiction)}: ${healthBadge(s.health)[1]}"
 
@@ -1846,11 +1846,11 @@
 
           <div class="plan-top" style="margin-bottom: 12px; gap: 8px;">
             <div style="flex: 1;">
-              <label style="display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 4px;">Plan Name</label>
+              <label for="edit-plan-name-${esc(p.id)}" style="display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 4px;">Plan Name</label>
               <input type="text" id="edit-plan-name-${esc(p.id)}" value="${esc(p.name)}" maxlength="80" style="width: 100%; height: 28px; padding: 0 8px; font-size: 13.5px; font-weight: 600; color: var(--ink); border: 1px solid var(--line-strong); border-radius: var(--r-md); background: var(--surface);">
             </div>
             <div>
-              <label style="display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 4px;">Status</label>
+              <label for="edit-plan-active-${esc(p.id)}" style="display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 4px;">Status</label>
               <select id="edit-plan-active-${esc(p.id)}" style="height: 28px; padding: 0 6px; font-size: 12.5px; color: var(--ink); border: 1px solid var(--line-strong); border-radius: var(--r-md); background: var(--surface);">
                 <option value="true" ${p.is_active !== false ? 'selected' : ''}>Active</option>
                 <option value="false" ${p.is_active === false ? 'selected' : ''}>Inactive</option>
@@ -1859,7 +1859,7 @@
           </div>
 
           <div style="margin-bottom: 12px;">
-            <label style="display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 4px;">Display Price (${esc(p.interval)})</label>
+            <label for="edit-plan-price-${esc(p.id)}" style="display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 4px;">Display Price (${esc(p.interval)})</label>
             <div style="display: flex; align-items: center; gap: 6px;">
               <span style="font-size: 16px; font-weight: 600; color: var(--ink);">$</span>
               <input type="number" step="0.01" min="0.01" max="100000" id="edit-plan-price-${esc(p.id)}" value="${p.price}" style="width: 110px; height: 30px; padding: 0 8px; font-size: 15px; font-weight: 600; color: var(--ink); border: 1px solid var(--line-strong); border-radius: var(--r-md); background: var(--surface);">
@@ -1868,7 +1868,7 @@
           </div>
 
           <div style="margin-bottom: 14px;">
-            <label style="display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 4px;">PayPal Plan ID</label>
+            <label for="edit-plan-paypal-${esc(p.id)}" style="display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 4px;">PayPal Plan ID</label>
             <input type="text" id="edit-plan-paypal-${esc(p.id)}" value="${esc(p.paypal || p.paypal_plan_id)}" style="width: 100%; height: 28px; padding: 0 8px; font-size: 12px; font-family: monospace; color: var(--ink); border: 1px solid var(--line-strong); border-radius: var(--r-md); background: var(--surface);">
           </div>
 
