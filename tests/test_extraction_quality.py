@@ -82,3 +82,30 @@ def test_xhtml_still_strips_navigation_and_scripts():
     cleaned,raw=HTMLExtractor.extract_from_html(content)
     assert "Section 1" in cleaned
     assert "Navigation only" not in cleaned and "Tracking only" not in cleaned
+
+
+@pytest.mark.parametrize('url', ['https://example.invalid/law.pdf', 'https://example.invalid/document.cfm'])
+def test_crawler_persists_actual_pdf_extraction(tmp_path, monkeypatch, url):
+    import pymupdf
+    from types import SimpleNamespace
+    from db.repository import Repository
+    from scripts import run_crawler
+    repository = Repository(db_path=str(tmp_path / 'pdf.db'))
+    repository.supabase = None
+    pdf = pymupdf.open()
+    page = pdf.new_page()
+    page.insert_text((72, 72), 'Section 1. Minimum setback shall be 25 feet in all residential districts.')
+    content = pdf.tobytes()
+    pdf.close()
+    source = {'id': 'pdf-source', 'name': 'PDF QA', 'base_url': 'https://example.invalid', 'adapter_type': 'custom', 'is_active': True}
+    document = SimpleNamespace(url=url, title='Setback Ordinance', document_type='pdf')
+    monkeypatch.setattr(run_crawler, 'load_sites_config', lambda: [source])
+    monkeypatch.setattr(run_crawler, 'Repository', lambda: repository)
+    monkeypatch.setattr(run_crawler, 'get_adapter', lambda kind: SimpleNamespace(crawl=lambda config: SimpleNamespace(success=True, documents=[document])))
+    monkeypatch.setattr(run_crawler.RequestsCrawler, 'fetch_pdf_bytes', lambda self, url: content)
+    monkeypatch.setattr(run_crawler.RequestsCrawler, 'fetch_url', lambda self, url: SimpleNamespace(content=content, headers={'content-type': 'application/pdf'}))
+    monkeypatch.setattr(run_crawler, 'send_crawl_report', lambda **kwargs: None)
+    run_crawler.main()
+    result = repository.search_snapshots_and_diffs('setback')
+    assert len(result['snapshots']) == 1
+    assert '25 feet' in result['snapshots'][0]['cleaned_text']

@@ -23,6 +23,7 @@ from crawler.requests_crawler import RequestsCrawler
 from crawler.url_normalizer import URLNormalizer
 from extractor.pdf_extractor import PDFExtractor
 from extractor.html_extractor import HTMLExtractor
+from extractor.capture_quality import capture_issue
 from diff_engine.engine import DiffEngine
 from db.repository import Repository
 from notifications.crawl_report import send_crawl_report
@@ -134,7 +135,7 @@ def main(run_id: Optional[str] = None):
                             content_hash = compute_sha256(content_bytes)
 
                             # Extract text with layout awareness and OCR fallback
-                            cleaned_text, raw_text, ocr_applied = PDFExtractor.extract_from_bytes(content_bytes)
+                            cleaned_text, raw_text, ocr_applied, _ = PDFExtractor.extract_from_bytes(content_bytes)
                         else:
                             resp = requests_fetcher.fetch_url(doc_item.url)
                             # Official document handlers such as Austin's document.cfm
@@ -158,8 +159,9 @@ def main(run_id: Optional[str] = None):
                                 ocr_applied = False
                             content_hash = compute_sha256(content_bytes)
 
-                        if not cleaned_text.strip():
-                            logger.warning("Skipping document with no extracted text: %s", doc_item.url)
+                        issue = capture_issue(doc_item.url, cleaned_text)
+                        if issue:
+                            logger.warning("Skipping non-document capture (%s): %s", issue, doc_item.url)
                             continue
 
                         # 2. Database check if repo connected
@@ -194,7 +196,7 @@ def main(run_id: Optional[str] = None):
                                 )
 
                                 # 3. If previous snapshot exists, generate Diff
-                                if latest_snap and new_snap:
+                                if latest_snap and new_snap and not capture_issue(doc_item.url, latest_snap.get("cleaned_text", "")):
                                     old_text = latest_snap.get("cleaned_text", "")
                                     diff_res = diff_engine.compare(old_text=old_text, new_text=cleaned_text)
                                     repo.save_diff(

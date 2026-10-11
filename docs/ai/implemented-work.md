@@ -144,3 +144,32 @@ belongs in client-context.md and requires its own evidence.
 - Files: frontend/index.html, frontend/about.html, tests/test_coverage_browser.py.
   Development commit containing this entry; not deployed. This does not close
   case studies or validate every historical document.
+
+## R-05 partial: PDF ingestion and historical audit, 11 October 2026
+
+- Found and fixed `.pdf` branch unpacking three values from a four-value extractor.
+  Genuine generated PDFs now store legal text through suffix and MIME/signature paths.
+- Added conservative capture_issue checks for empty text, known Germany catalogue,
+  Canada dataset/resource wrappers and Australian registry furniture. Ingestion rejects
+  these captures and does not create amendment diffs against contaminated baselines.
+  Known XML/HTML guards and embedded Australian legal-document following remain.
+- Added read-only paginated historical audit CLI for SQLite and Supabase, emitting
+  snapshot IDs/versions/reasons without text, credentials or destructive writes.
+  This produces a reviewable remediation manifest; it is not a cleanup/backfill.
+- Extraction/audit/source-repair/extractor/crawler selection: 49 passed in 3.06s.
+  Both backend read paths and unchanged snapshot history tested. Earlier sandbox
+  run hit pytest temporary-directory permissions; escalated rerun passed.
+- Production read-only API check still shows polluted historical records from before
+  this repair; existing manual crawl remains running. No source ingestion or legal
+  case study is marked verified from source-health metadata.
+- Files: scripts/run_crawler.py, extractor/capture_quality.py,
+  scripts/audit_capture_quality.py, tests/test_capture_quality.py,
+  tests/test_extraction_quality.py. Development commit containing this entry;
+  not deployed. R-05 remains open for historical remediation and source backfill.
+
+### Broader browser verification after coverage changes
+
+Existing frontend selection: 84 passed, plus the initial coverage test's catalogue
+count assumption failure (286.08s). Corrected coverage test passed in the separate
+34-check selection recorded above. The full selection ran before that test correction;
+do not present the original run as fully passing.
