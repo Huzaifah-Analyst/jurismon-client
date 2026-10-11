@@ -109,3 +109,26 @@ def test_crawler_persists_actual_pdf_extraction(tmp_path, monkeypatch, url):
     result = repository.search_snapshots_and_diffs('setback')
     assert len(result['snapshots']) == 1
     assert '25 feet' in result['snapshots'][0]['cleaned_text']
+
+
+def test_source_subset_crawl_rejects_unknown_and_skips_unselected(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    from db.repository import Repository
+    from scripts import run_crawler
+    repo = Repository(db_path=str(tmp_path / 'subset.db'))
+    repo.supabase = None
+    sources = [{'id': value, 'name': value, 'adapter_type': 'custom', 'is_active': True} for value in ('selected', 'unselected')]
+    calls = []
+    monkeypatch.setattr(run_crawler, 'load_sites_config', lambda: sources)
+    monkeypatch.setattr(run_crawler, 'Repository', lambda: repo)
+    def crawl(config):
+        calls.append(config['id'])
+        return SimpleNamespace(success=True, documents=[])
+    monkeypatch.setattr(run_crawler, 'get_adapter', lambda kind: SimpleNamespace(crawl=crawl))
+    monkeypatch.setattr(run_crawler, 'send_crawl_report', lambda **kwargs: None)
+    with pytest.raises(ValueError, match='Unknown source IDs'):
+        run_crawler.main(source_ids=['missing'])
+    assert not calls
+    run_crawler.main(source_ids=['selected'])
+    assert calls == ['selected']
+    assert repo.get_latest_crawl_run()['total_sources'] == 1

@@ -203,3 +203,30 @@ do not present the original run as fully passing.
 - Evidence: ignored test-results/remaining-search-measure.json. Files:
   frontend/index.html, tests/test_search_requests.py. Development commit containing
   entry; not deployed. Database query-plan tuning remains optional follow-up.
+
+## R-05 continuation: Reversible capture quarantine, 11 October 2026
+
+- Added is_searchable/quality_reason to snapshots and diffs in SQLite and matching
+  migration 009 (PostgreSQL BOOLEAN default TRUE). Existing captures remain searchable
+  until explicitly reviewed; original text, IDs, timestamps and versions are preserved.
+- Both backend search paths and their counts exclude quarantined rows. Visibility
+  operations preserve other review reasons, hide dependent diffs, and restore a diff
+  only after all referenced snapshots are visible. Production write errors surface;
+  no accidental local fallback mutates a different database.
+- Audit CLI defaults to read-only, --apply quarantines a fresh conservative audit,
+  --restore-manifest restores only that operation. Operation ID/manifest saved before
+  writes so partial failures remain reviewable/restorable. No delete operation.
+- Source-only crawler CLI supports repeatable --source IDs and rejects unknown IDs
+  before database writes. It enables verifying repaired sources without launching
+  an unbounded whole-catalogue run; default scheduled scope is unchanged.
+- Verification: before quarantine additions, full suite 477 passed in 514.64s,
+  one existing dependency warning; former Firefox timeout not reproduced. After
+  additions, quarantine/audit/extraction/Supabase/schema/API selection: 118 passed,
+  one warning in 15.77s; real browser/ingestion selection 37 passed in 5.61s.
+  Final affected selection after row-count/subset adjustments: 51 passed in 7.36s.
+- Read-only live evidence: 3755 snapshots checked, 2343 known non-document patterns
+  flagged; all eight repaired source IDs had zero stored documents at the read.
+  See docs/reports/2026-10-11-capture-source-review.md. Sixteen unresolved endpoints
+  reviewed; index 200 responses alone did not justify activating sources.
+- Production migration connection verified via SELECT 1 without exposing credentials.
+  Migration/application/release status will be appended after actual execution.

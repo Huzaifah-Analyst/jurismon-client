@@ -106,6 +106,12 @@ class Repository:
                     generated_at TEXT
                 )
             """)
+            for table in ("snapshots", "diffs"):
+                columns = {row[1] for row in cur.execute(f"PRAGMA table_info({table})")}
+                if "is_searchable" not in columns:
+                    cur.execute(f"ALTER TABLE {table} ADD COLUMN is_searchable INTEGER NOT NULL DEFAULT 1")
+                if "quality_reason" not in columns:
+                    cur.execute(f"ALTER TABLE {table} ADD COLUMN quality_reason TEXT")
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS subscriptions (
                     id TEXT PRIMARY KEY,
@@ -447,12 +453,12 @@ class Repository:
                     snapshots_res = self.supabase.table("snapshots").select(
                         "id, document_id, version, cleaned_text, crawled_at, documents(title, pdf_url, source_id, sources(name, state))",
                         count="exact"
-                    ).order("crawled_at", desc=True).limit(limit).execute()
+                    ).eq("is_searchable", True).order("crawled_at", desc=True).limit(limit).execute()
 
                     diffs_res = self.supabase.table("diffs").select(
                         "id, document_id, diff_payload, added_clauses_count, removed_clauses_count, generated_at, documents(title, pdf_url, sources(name, state))",
                         count="exact"
-                    ).order("generated_at", desc=True).limit(limit).execute()
+                    ).eq("is_searchable", True).order("generated_at", desc=True).limit(limit).execute()
                 else:
                     # limit() must precede text_search(): the builder returned by
                     # text_search has no limit(), and the resulting AttributeError
@@ -463,14 +469,14 @@ class Repository:
                     snapshots_res = self.supabase.table("snapshots").select(
                         "id, document_id, version, cleaned_text, crawled_at, documents(title, pdf_url, source_id, sources(name, state))",
                         count="exact"
-                    ).limit(limit).text_search(
+                    ).eq("is_searchable", True).limit(limit).text_search(
                         "search_vector", clean_q, options={"type": "plain"}
                     ).execute()
 
                     diffs_res = self.supabase.table("diffs").select(
                         "id, document_id, diff_payload, added_clauses_count, removed_clauses_count, generated_at, documents(title, pdf_url, sources(name, state))",
                         count="exact"
-                    ).limit(limit).text_search(
+                    ).eq("is_searchable", True).limit(limit).text_search(
                         "diff_vector", clean_q, options={"type": "plain"}
                     ).execute()
 
@@ -499,6 +505,7 @@ class Repository:
                     FROM snapshots s
                     JOIN documents d ON s.document_id = d.id
                     LEFT JOIN sources src ON d.source_id = src.id
+                    WHERE s.is_searchable = 1
                     ORDER BY s.crawled_at DESC
                     LIMIT ?
                 """, (limit,))
@@ -512,6 +519,7 @@ class Repository:
                     FROM diffs df
                     JOIN documents d ON df.document_id = d.id
                     LEFT JOIN sources src ON d.source_id = src.id
+                    WHERE df.is_searchable = 1
                     ORDER BY df.generated_at DESC
                     LIMIT ?
                 """, (limit,))
@@ -525,7 +533,7 @@ class Repository:
                     FROM snapshots s
                     JOIN documents d ON s.document_id = d.id
                     LEFT JOIN sources src ON d.source_id = src.id
-                    WHERE s.cleaned_text LIKE ?
+                    WHERE s.is_searchable = 1 AND s.cleaned_text LIKE ?
                     ORDER BY s.crawled_at DESC
                     LIMIT ?
                 """, (like_q, limit))
@@ -538,7 +546,7 @@ class Repository:
                     FROM diffs df
                     JOIN documents d ON df.document_id = d.id
                     LEFT JOIN sources src ON d.source_id = src.id
-                    WHERE df.diff_payload LIKE ?
+                    WHERE df.is_searchable = 1 AND df.diff_payload LIKE ?
                     ORDER BY df.generated_at DESC
                     LIMIT ?
                 """, (like_q, limit))
@@ -581,9 +589,9 @@ class Repository:
                 })
 
             if not clean_q:
-                cur.execute("SELECT COUNT(*) FROM snapshots")
+                cur.execute("SELECT COUNT(*) FROM snapshots WHERE is_searchable = 1")
                 total_snapshots_count = cur.fetchone()[0]
-                cur.execute("SELECT COUNT(*) FROM diffs")
+                cur.execute("SELECT COUNT(*) FROM diffs WHERE is_searchable = 1")
                 total_diffs_count = cur.fetchone()[0]
             else:
                 total_snapshots_count = len(formatted_snaps)
@@ -1135,6 +1143,41 @@ class Repository:
                 logger.warning(f"Error parsing started_at '{started_at_str}' for crawl run: {parse_err}")
 
         return candidate
+
+    def set_capture_visibility(self, snapshot_ids: List[str], searchable: bool, reason: str) -> Dict[str, int]:
+        """Hide reviewed captures and dependent diffs without deleting history."""
+        import uuid
+        ids = list(dict.fromkeys(str(uuid.UUID(value)) for value in snapshot_ids))
+        if not ids:
+            return {"snapshots": 0, "diffs": 0}
+        if self.supabase:
+            # No local fallback for production mutations: partial failure must surface.
+            related = self.supabase.table("diffs").select("id,previous_snapshot_id,current_snapshot_id,is_searchable,quality_reason").or_(
+                "current_snapshot_id.in.(" + ",".join(ids) + "),previous_snapshot_id.in.(" + ",".join(ids) + ")"
+            ).execute().data or []
+            diff_ids = [row["id"] for row in related if row.get("is_searchable", True)]
+            changed_diffs = []
+            if not searchable and diff_ids:
+                changed_diffs = self.supabase.table("diffs").update({"is_searchable": False, "quality_reason": reason}).in_("id", diff_ids).eq("is_searchable", True).execute().data or []
+            update = self.supabase.table("snapshots").update({"is_searchable": searchable, "quality_reason": None if searchable else reason}).in_("id", ids)
+            update = update.eq("quality_reason", reason) if searchable else update.eq("is_searchable", True)
+            saved = update.execute().data or []
+            if searchable and related:
+                references = list({value for row in related for value in (row.get("previous_snapshot_id"), row.get("current_snapshot_id")) if value})
+                hidden = self.supabase.table("snapshots").select("id").in_("id", references).eq("is_searchable", False).execute().data or []
+                hidden_ids = {row["id"] for row in hidden}
+                diff_ids = [row["id"] for row in related if row.get("quality_reason") == reason and not hidden_ids.intersection({row.get("previous_snapshot_id"), row.get("current_snapshot_id")})]
+                if diff_ids:
+                    changed_diffs = self.supabase.table("diffs").update({"is_searchable": True, "quality_reason": None}).in_("id", diff_ids).eq("quality_reason", reason).execute().data or []
+            return {"snapshots": len(saved), "diffs": len(changed_diffs)}
+        placeholders = ",".join("?" for _ in ids)
+        with self._connect() as conn:
+            condition = "quality_reason=?" if searchable else "is_searchable=1"
+            parameters = (int(searchable), None if searchable else reason, *ids, *((reason,) if searchable else ()))
+            snapshots = conn.execute(f"UPDATE snapshots SET is_searchable=?,quality_reason=? WHERE id IN ({placeholders}) AND {condition}", parameters).rowcount
+            eligible = " AND is_searchable=1" if not searchable else " AND quality_reason=? AND NOT EXISTS (SELECT 1 FROM snapshots s WHERE s.id IN (diffs.previous_snapshot_id,diffs.current_snapshot_id) AND s.is_searchable=0)"
+            diffs = conn.execute(f"UPDATE diffs SET is_searchable=?,quality_reason=? WHERE (current_snapshot_id IN ({placeholders}) OR previous_snapshot_id IN ({placeholders})){eligible}", (int(searchable), None if searchable else reason, *ids, *ids, *((reason,) if searchable else ()))).rowcount
+        return {"snapshots": snapshots, "diffs": diffs}
 
     def get_crawl_run_metrics(self) -> Dict[str, Any]:
         """Run counts use UTC calendar days, independently of source health."""

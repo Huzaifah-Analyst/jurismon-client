@@ -63,11 +63,19 @@ def compute_sha256(content: bytes) -> str:
     return hashlib.sha256(content).hexdigest()
 
 
-def main(run_id: Optional[str] = None):
+def main(run_id: Optional[str] = None, source_ids: Optional[List[str]] = None):
     logger.info("=== Starting JurisMon Daily Ingestion & Diff Run ===")
     start_time = time.time()
     sources = load_sites_config()
     
+    if source_ids:
+        selected = set(source_ids)
+        known = {source.get("id") for source in sources}
+        if selected - known:
+            raise ValueError("Unknown source IDs: " + ", ".join(sorted(selected - known)))
+        sources = [source for source in sources if source.get("id") in selected]
+        logger.info("Selected source-only crawl: %s", ", ".join(sorted(selected)))
+
     if not sources:
         logger.warning("No sources configured to crawl. Exiting.")
         return
@@ -196,7 +204,7 @@ def main(run_id: Optional[str] = None):
                                 )
 
                                 # 3. If previous snapshot exists, generate Diff
-                                if latest_snap and new_snap and not capture_issue(doc_item.url, latest_snap.get("cleaned_text", "")):
+                                if latest_snap and new_snap and latest_snap.get("is_searchable", True) and not capture_issue(doc_item.url, latest_snap.get("cleaned_text", "")):
                                     old_text = latest_snap.get("cleaned_text", "")
                                     diff_res = diff_engine.compare(old_text=old_text, new_text=cleaned_text)
                                     repo.save_diff(
@@ -259,4 +267,8 @@ def main(run_id: Optional[str] = None):
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--source", action="append", help="Crawl only this configured source ID; repeat for a subset")
+    args = parser.parse_args()
+    main(source_ids=args.source)

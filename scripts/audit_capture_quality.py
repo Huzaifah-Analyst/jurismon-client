@@ -1,7 +1,8 @@
 """Read-only historical-capture audit. Produces a reviewable repair manifest.
 
 Usage: python scripts/audit_capture_quality.py --output test-results/capture-audit.json
-No snapshots or diffs are deleted or rewritten. Full source text and secrets are
+Default audit performs no database writes. --apply changes only search visibility.
+No snapshot text or diff payloads are deleted or rewritten. Full source text and secrets are
 excluded from the manifest; IDs let a reviewed cleanup preserve an audit trail.
 """
 import argparse
@@ -45,11 +46,38 @@ def audit(repository):
     return {'audited_at': datetime.now(timezone.utc).isoformat(), 'checked': checked, 'flagged': len(issues), 'issues': issues, 'mode': 'read_only', 'limits': 'Known empty/catalogue/wrapper patterns only; unflagged text is not certified legal content.'}
 
 
+def change_visibility(repository, manifest, restore=False):
+    reason = manifest.get("applied_reason") or (None if restore else "capture_audit:" + datetime.now(timezone.utc).isoformat())
+    if not reason or not reason.startswith("capture_audit:"):
+        raise ValueError("Restore requires an applied audit manifest")
+    ids = [row["id"] for row in manifest["issues"]]
+    affected = {"snapshots": 0, "diffs": 0}
+    for start in range(0, len(ids), 100):
+        counts = repository.set_capture_visibility(ids[start:start + 100], restore, reason)
+        for key in affected:
+            affected[key] += counts[key]
+    return {**manifest, "mode": "restored" if restore else "quarantined", "applied_reason": reason, "affected": affected}
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
+    actions = parser.add_mutually_exclusive_group()
+    actions.add_argument('--apply', action='store_true', help='Quarantine fresh audited captures, preserving history')
+    actions.add_argument('--restore-manifest', type=Path, help='Restore only visibility changed by this manifest')
     args = parser.parse_args()
-    result = audit(Repository())
+    repository = Repository()
+    if args.restore_manifest:
+        result = change_visibility(repository, json.loads(args.restore_manifest.read_text(encoding='utf-8-sig')), restore=True)
+    else:
+        result = audit(repository)
+        # Save the reviewed IDs before any operation that could partly fail.
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps(result, indent=2), encoding='utf-8')
+        if args.apply:
+            result["applied_reason"] = "capture_audit:" + datetime.now(timezone.utc).isoformat()
+            args.output.write_text(json.dumps(result, indent=2), encoding='utf-8')
+            result = change_visibility(repository, result)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2), encoding='utf-8')
-    print(f"Checked {result['checked']}; flagged {result['flagged']}; no database writes.")
+    print(f"Checked {result['checked']}; flagged {result['flagged']}; mode {result['mode']}.")
