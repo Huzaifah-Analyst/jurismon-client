@@ -131,8 +131,9 @@ def main(run_id: Optional[str] = None, source_ids: Optional[List[str]] = None):
                     failure_details.append({"source_name": source_name, "error": str(result.error_message)})
                     continue
 
-                sources_succeeded += 1
                 logger.info(f"Discovered {len(result.documents)} documents for {source_name}")
+                processing_errors = []
+                usable_documents = 0
 
                 for doc_item in result.documents:
                     total_docs_processed += 1
@@ -170,6 +171,7 @@ def main(run_id: Optional[str] = None, source_ids: Optional[List[str]] = None):
                         issue = capture_issue(doc_item.url, cleaned_text)
                         if issue:
                             logger.warning("Skipping non-document capture (%s): %s", issue, doc_item.url)
+                            processing_errors.append({"url": doc_item.url, "error": issue})
                             continue
 
                         # 2. Database check if repo connected
@@ -190,6 +192,8 @@ def main(run_id: Optional[str] = None, source_ids: Optional[List[str]] = None):
                                 # Check if unchanged
                                 if latest_snap and latest_snap.get("content_hash") == content_hash:
                                     logger.info(f"Document '{doc_item.title}' unchanged (hash match). Skipping.")
+                                    if latest_snap.get("is_searchable", True):
+                                        usable_documents += 1
                                     continue
 
                                 # New or Changed: Create snapshot
@@ -202,6 +206,9 @@ def main(run_id: Optional[str] = None, source_ids: Optional[List[str]] = None):
                                     cleaned_text=cleaned_text,
                                     ocr_applied=ocr_applied,
                                 )
+                                if not new_snap:
+                                    raise RuntimeError("Snapshot persistence was not confirmed")
+                                usable_documents += 1
 
                                 # 3. If previous snapshot exists, generate Diff
                                 if latest_snap and new_snap and latest_snap.get("is_searchable", True) and not capture_issue(doc_item.url, latest_snap.get("cleaned_text", "")):
@@ -215,11 +222,20 @@ def main(run_id: Optional[str] = None, source_ids: Optional[List[str]] = None):
                                     )
                                     total_diffs_created += 1
                                     logger.info(f"Diff generated for '{doc_item.title}': {diff_res.summary}")
+                            else:
+                                raise RuntimeError("Document persistence was not confirmed")
                         else:
                             logger.info(f"[Dry Run] Cleaned {len(cleaned_text)} chars from {doc_item.title} (hash: {content_hash[:8]})")
 
                     except Exception as doc_err:
                         logger.warning(f"Error processing doc {doc_item.url}: {doc_err}")
+                        processing_errors.append({"url": doc_item.url, "error": str(doc_err)[:500]})
+
+                if processing_errors or usable_documents == 0:
+                    sources_failed += 1
+                    failure_details.append({"source_name": source_name, "error": "Document ingestion incomplete" if processing_errors else "No usable stored legal documents", "documents": processing_errors})
+                else:
+                    sources_succeeded += 1
 
             except Exception as source_err:
                 sources_failed += 1

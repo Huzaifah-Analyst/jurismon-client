@@ -255,3 +255,31 @@ do not present the original run as fully passing.
   Existing records remain visible; no quarantine or deletion occurred in this step.
 - Fresh process check: crawl unit inactive, MainPID=0, no run_crawler.py process;
   API NoNewPrivileges=yes. Historical running record is not proof of an active crawl.
+
+## Verified production release and cleanup, 11 October 2026
+
+- Full isolated regression before release: 486 passed in 521.69s, one existing
+  dependency warning. Clean client release 0c8d0a4 pushed and deployed using the VPS
+  script; service/timer active, production health database ok, trial setting 14.
+- Genuine live Chromium checked six public pages in light/dark at mobile width,
+  plus authenticated admin: zero axe violations, no overflow or JavaScript errors.
+  Incomplete axe checks remain manual QA. Closed dialogs, focus trap, Escape and
+  return focus passed on live Chromium, Firefox and WebKit. Evidence ignored under
+  test-results/remaining-live; no mocked frontend or paid lifecycle requests.
+- Applied fresh conservative quarantine: 3755 snapshots audited; 2343 snapshots
+  and 1852 dependent diffs hidden from search. No records/text deleted. Restore
+  manifest saved before mutation on VPS and copied locally to ignored
+  test-results/production-capture-quarantine.json. Reason timestamp
+  capture_audit:2026-10-11T13:20:23.079757+00:00. Unflagged is not certified legal.
+
+## R-06 continuation: Report actual ingestion failures
+
+- Successful link discovery no longer counts as a successful source when document
+  fetching/extraction/persistence fails or no usable stored documents exist.
+  Verified unchanged searchable documents count as success; rejected captures and
+  per-document failures are retained in crawl error details. documents_found still
+  means discovered/attempted documents, not new snapshots.
+- A failed snapshot/document persistence confirmation is now reported explicitly.
+- Affected extraction, dispatch, capture and metrics tests: 37 passed in 12.29s.
+  Covers failed fetch, empty discovery, mixed rejected/legal captures, real PDFs and
+  unchanged legal documents. This follow-up is not in release 0c8d0a4 yet.

@@ -55,6 +55,9 @@ def test_crawler_skips_catalogue_and_empty_but_stores_legal_text(monkeypatch):
         result=repository.search_snapshots_and_diffs("")
         assert len(result["snapshots"])==1
         assert result["snapshots"][0]["cleaned_text"]=="Section 1\nMinimum setback is 25 feet."
+        run = repository.get_latest_crawl_run()
+        assert run['status'] == 'failed' and run['sources_succeeded'] == 0
+        assert run['sources_failed'] == 1
 
 
 def test_real_au_registry_follows_embedded_law_and_rejects_wrapper():
@@ -109,6 +112,10 @@ def test_crawler_persists_actual_pdf_extraction(tmp_path, monkeypatch, url):
     result = repository.search_snapshots_and_diffs('setback')
     assert len(result['snapshots']) == 1
     assert '25 feet' in result['snapshots'][0]['cleaned_text']
+    assert repository.get_latest_crawl_run()['status'] == 'completed'
+    # A successfully rechecked unchanged legal document is still a source success.
+    run_crawler.main()
+    assert repository.get_latest_crawl_run()['sources_succeeded'] == 1
 
 
 def test_source_subset_crawl_rejects_unknown_and_skips_unselected(tmp_path, monkeypatch):
@@ -132,3 +139,26 @@ def test_source_subset_crawl_rejects_unknown_and_skips_unselected(tmp_path, monk
     run_crawler.main(source_ids=['selected'])
     assert calls == ['selected']
     assert repo.get_latest_crawl_run()['total_sources'] == 1
+    assert repo.get_latest_crawl_run()['status'] == 'failed'
+
+
+def test_document_fetch_failure_is_not_reported_as_success(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    from db.repository import Repository
+    from scripts import run_crawler
+    repo = Repository(db_path=str(tmp_path / 'failed-fetch.db'))
+    repo.supabase = None
+    source = {'id': 'failed-fetch', 'name': 'Failed fetch', 'adapter_type': 'custom', 'is_active': True}
+    document = SimpleNamespace(url='https://example.invalid/law.pdf', title='Law', document_type='pdf')
+    monkeypatch.setattr(run_crawler, 'load_sites_config', lambda: [source])
+    monkeypatch.setattr(run_crawler, 'Repository', lambda: repo)
+    monkeypatch.setattr(run_crawler, 'get_adapter', lambda kind: SimpleNamespace(crawl=lambda config: SimpleNamespace(success=True, documents=[document])))
+    def fail(*args):
+        raise RuntimeError('Official document fetch failed')
+    monkeypatch.setattr(run_crawler.RequestsCrawler, 'fetch_pdf_bytes', fail)
+    monkeypatch.setattr(run_crawler, 'send_crawl_report', lambda **kwargs: None)
+    run_crawler.main()
+    run = repo.get_latest_crawl_run()
+    assert run['status'] == 'failed'
+    assert run['sources_failed'] == 1 and run['sources_succeeded'] == 0
+    assert repo.search_snapshots_and_diffs('')['total_snapshots'] == 0
