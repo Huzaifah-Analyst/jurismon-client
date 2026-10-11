@@ -1041,7 +1041,8 @@
 
   <section class="hero" aria-labelledby="title">
 
-    <h1 id="title">Search amendments across U.S. municipal jurisdictions</h1>
+    <h1 id="title">Search captured government documents</h1>
+    <p><a href="/about#coverage">Coverage and exclusions</a></p>
 
     <p class="status"><span class="dot" aria-hidden="true"></span><span id="status-text"></span></p>
 
@@ -1220,7 +1221,7 @@
     <div style="margin-bottom:18px;">
       <span style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:var(--primary);">JurisMon Subscription</span>
       <h2 id="paywall-modal-title" style="margin:4px 0 6px; font-size:22px; font-weight:600; color:var(--ink);">JurisMon Professional</h2>
-      <p style="margin:0; font-size:14px; color:var(--muted);">Continuous regulatory drift monitoring across all active municipal &amp; statutory portals.</p>
+      <p style="margin:0; font-size:14px; color:var(--muted);">Compare captured versions from selected public government sources.</p>
     </div>
 
     <div id="paywall-error" class="form-error"></div>
@@ -1256,7 +1257,7 @@
 
     <ul style="margin:16px 0 20px; padding-left:20px; font-size:13.5px; color:var(--text); line-height:1.7;">
       <li>Instant full-text clause search &amp; legal delta redlines</li>
-      <li>Monitored municipal portals updated daily</li>
+      <li>Daily scheduled crawl attempts on configured sources</li>
       <li>Automated PayPal verification &amp; immediate account activation</li>
     </ul>
 
@@ -1397,7 +1398,7 @@
       document.getElementById(id).textContent = trialCta();
     }
     document.getElementById("register-trial-description").textContent = configuredTrialDays > 0
-      ? `After email confirmation, your ${configuredTrialDays}-day free trial includes full access across all operational municipal portals, clause diffs and snapshots. No credit card required upfront.`
+      ? `After email confirmation, your ${configuredTrialDays}-day free trial includes full access across captured government documents, clause diffs and snapshots. No credit card required upfront.`
       : "Confirm your email to create your account. Subscribe for full access.";
     if (verifyMode === "signup" && !document.getElementById("btn-submit-verify").disabled) {
       document.getElementById("btn-submit-verify").textContent = verifyCta();
@@ -1485,8 +1486,8 @@
       } else {
         banner.classList.remove("is-expired");
         const coverage = sourcesLoaded
-          ? ` across ${counts.operational} live jurisdictions, ${counts.total} tracked` : "";
-        bannerText.innerHTML = `<strong>Free Preview Mode:</strong> Showing initial municipal changes. ${configuredTrialDays > 0 ? `Start your ${configuredTrialDays}-day free trial` : "Create an account and subscribe"} for full text${coverage}.`;
+          ? ` across ${counts.operational} sources marked operational, ${counts.total} configured` : "";
+        bannerText.innerHTML = `<strong>Free Preview Mode:</strong> Showing a limited preview of captured documents. ${configuredTrialDays > 0 ? `Start your ${configuredTrialDays}-day free trial` : "Create an account and subscribe"} for full text${coverage}.`;
         bannerCta.textContent = trialCta();
         bannerCta.onclick = () => openAuthModal("register");
       }
@@ -1528,7 +1529,7 @@
         if (navLinkEl) navLinkEl.style.display = "";
         if (countEl) countEl.textContent = `${counts.operational} / ${counts.total}`;
         if (titleEl) {
-          titleEl.textContent = `Search amendments across ${counts.operational} live jurisdictions, ${counts.total} tracked`;
+          titleEl.textContent = `Search amendments across ${counts.operational} sources marked operational, ${counts.total} configured`;
         }
       } else {
         const total = data.count ?? data.total_configured;
@@ -1540,7 +1541,7 @@
 
         if (navLinkEl) navLinkEl.style.display = "none";
         if (titleEl) {
-          titleEl.textContent = `Search amendments across ${live} live jurisdictions, ${total} tracked`;
+          titleEl.textContent = `Search amendments across ${live} sources marked operational, ${total} configured`;
         }
       }
       sourcesLoaded = true;
@@ -1563,14 +1564,14 @@
     }
     if (isAdminView) {
       const recent = DATA.filter(d => d.type === "diff" && d.hoursAgo <= 24).length;
-      statEl.innerHTML = `<strong>${counts.operational} operational portals</strong> ingesting daily (${counts.cloudflare} Cloudflare protected, ${counts.dead} expired municipality links). ${recent} statutory changes detected.`;
+      statEl.innerHTML = `<strong>${counts.operational} sources marked operational</strong>, ${counts.total} configured (${counts.cloudflare} Cloudflare protected, ${counts.dead} dead links). Health status does not establish successful ingestion.`;
     } else {
       const total = counts.total;
       const live = counts.operational;
-      const recordsStr = totalIndexedRecords ? ` ${totalIndexedRecords} statutory records indexed.` : "";
+      const recordsStr = totalIndexedRecords ? ` ${totalIndexedRecords} captured records available in this result set.` : "";
       const portalsStr = live
-        ? `Monitoring ${live} live municipal and county portals daily, ${total} tracked.`
-        : `Monitoring ${total} municipal and county portals daily.`;
+        ? `${live} sources marked operational, ${total} configured. US local portals and international national registries.`
+        : `${total} configured government sources. Operational status does not establish successful ingestion.`;
       statEl.innerHTML = `${portalsStr}${recordsStr}`;
     }
   }

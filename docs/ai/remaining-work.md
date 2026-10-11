@@ -26,7 +26,7 @@ Fresh evidence: [rigorous v2 report](../reports/2026-10-11-rigorous-testing-v2.m
 
 | ID | Remaining work | Commitment / dependency |
 | --- | --- | --- |
-| R-12 | Dedicated honest coverage and exclusions section | Client's 10 October priority. About intro improved, but homepage still calls the mixed local/international catalogue municipal/county. Review all claims, distinguish configured/operational/ingested, and explain capture-time history limits. |
+| R-12 | Dedicated honest coverage and exclusions section | Implemented locally: home claims configured/marked-operational sources, links to About coverage/exclusions; capture history and effective-date limits explicit. Removed unsupported alerts and monetary risk claims. Real-count browser check passed. Pending release. |
 | R-13 | Written case studies and Case Studies page | Promised free/included, reiterated by client on 10 October. Not delivered. Use real source documents, dates and verified legal changes; current noisy records cannot substantiate market validation. No invented cases or claimed volume. |
 | R-14 | Page-by-page competitor gap list for Google Sheets | Promised 10 October. List missing features, existing matches, useful versus unnecessary ideas, effort and priorities. Reverify competitor pages when doing this work; past chat comparisons are historical observations. |
 | R-15 | Scope, deliverables, timeline and budget for selected competitor gaps | After R-14 and client selection. Analysis does not authorize new feature implementation. |

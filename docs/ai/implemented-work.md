@@ -127,3 +127,20 @@ belongs in client-context.md and requires its own evidence.
 - Files: db/repository.py, api/main.py, frontend/admin.html,
   tests/test_crawl_metrics.py. Development commit containing this entry;
   not deployed. No live crawl triggered for this verification.
+
+## R-12 and R-16 copy: Honest coverage, 11 October 2026
+
+- Added dedicated About coverage/exclusions section, linked on homepage. Explains
+  configured versus recorded operational status versus captured documents, mixed
+  local/international scope, restricted/unreachable sources, incomplete historical
+  captures and legal-effective-date limits. No source count implies ingestion.
+- Corrected homepage, preview/trial and plan copy. Removed About's unsupported
+  monetary risk range and claim that unavailable amendment email alerts are live.
+- Browser check uses actual repository counts (including automatically seeded
+  catalogue), follows the coverage link and checks limitations. Initial test assumed
+  an empty catalogue; fixed its assumption rather than changing application data.
+- Coverage plus real-PDF/extractor/source repair checks: 34 passed in 4.92s.
+  Broader frontend browser regression is recorded separately when complete.
+- Files: frontend/index.html, frontend/about.html, tests/test_coverage_browser.py.
+  Development commit containing this entry; not deployed. This does not close
+  case studies or validate every historical document.
