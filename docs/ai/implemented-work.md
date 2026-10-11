@@ -65,3 +65,34 @@ For each R-ID, record date, concrete change, files/approach, actual verification
 limitations, development commit and deployed version (or not deployed). Update
 remaining-work.md only when the stated acceptance check is met. Payment status
 belongs in client-context.md and requires its own evidence.
+
+## R-02: Authentication email failure handling, 11 October 2026
+
+- Signup and confirmation resend now return HTTP 503 when the mail provider
+  rejects delivery, throws, or code persistence fails. The registration form
+  remains visible on failure, rather than claiming a code was sent.
+- Shared dispatch helper in `api/main.py` persists replacement codes only after
+  provider acceptance, using the existing SQLite/Supabase repository method.
+  Failed initial signup leaves an unverified account with no active code or trial;
+  retry can complete registration. Failed resend keeps the old code and expiry.
+- Forgot-password uses the same helper and preserves prior usable codes on failure.
+  Its response remains identical for known/unknown emails to avoid account
+  enumeration. Reset screen and resend notification say a request was made,
+  without claiming an email was sent. Existing rate limits remain.
+- Added eight meaningful regression cases in `tests/test_auth_delivery.py`,
+  including provider false/exception, initial retry, persistence refusal and a
+  genuine Chromium flow against temporary SQLite/real API: failed signup,
+  successful retry, failed resend, old-code verification, and reset feedback.
+  Existing authentication tests now explicitly mock successful provider acceptance.
+- Verification: authentication/trial/API/Supabase/schema selection: 121 passed
+  in 40.40s. After extending the reset browser check, delivery/notification/
+  subscription selection: 49 passed in 20.46s. Each reports one existing
+  Starlette/httpx deprecation warning. These are overlapping selections, not
+  170 unique tests. No full-suite claim, external email, or billing call.
+- Provider acceptance does not prove inbox arrival; controlled mailbox QA remains
+  R-11. Delivery and database persistence are separate operations: an accepted
+  email followed by failed persistence receives no success response. Concurrent
+  successful replacements retain the existing latest-code behavior.
+- Development commit: the commit containing this R-02 entry (locate with
+  `git log --oneline --grep="fix: handle authentication email delivery failures"`).
+  Not pushed or deployed in this repair. Production remains e33ef18.

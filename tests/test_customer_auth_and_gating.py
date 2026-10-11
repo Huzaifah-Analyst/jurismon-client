@@ -16,6 +16,9 @@ from db.repository import Repository
 class TestCustomerAuthAndGating(unittest.TestCase):
 
     def setUp(self):
+        mail_patch = patch.object(main.mailer, "send", return_value=True)
+        mail_patch.start()
+        self.addCleanup(mail_patch.stop)
         catalogue = main.get_plan_catalogue()
         catalogue["trial_days"] = 14
         catalogue_patch = patch.object(main, "get_plan_catalogue", return_value=catalogue)

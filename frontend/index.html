@@ -1883,7 +1883,7 @@
 
     if (mode === "reset") {
       if (title) title.textContent = "Reset your password";
-      if (subtitle) subtitle.innerHTML = "Enter the code sent to your email and your new password.";
+      if (subtitle) subtitle.innerHTML = "Password reset requested. If you receive a code, enter it below with your new password. If no email arrives, try again later.";
       if (pwdGroup) pwdGroup.style.display = "block";
       if (pwdInput) {
         pwdInput.required = true;
@@ -2100,7 +2100,7 @@
       });
       const data = await res.json();
       if (res.ok) {
-        alert(verifyMode === "reset" ? "A new password reset code has been sent to " + pendingEmail : "A new confirmation code has been sent to " + pendingEmail);
+        alert(data.message || "Code requested. Please check your email.");
         const codeInput = $("#verify-code");
         codeInput.value = "";
         codeInput.focus();

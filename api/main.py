@@ -901,6 +901,22 @@ async def paypal_webhook(request: Request):
 # CUSTOMER AUTHENTICATION ROUTES
 # ==========================================
 
+def _send_auth_code(email: str, code: str, expires_at: str, **message) -> bool:
+    """Keep the previous code unless the provider accepts its replacement."""
+    try:
+        if not mailer.send(to=[email], **message):
+            return False
+        return bool(repo.set_verification_code(email, code, expires_at))
+    except Exception:
+        logger.error("Authentication code dispatch or persistence failed")
+        return False
+
+
+def _require_auth_code(email: str, code: str, expires_at: str, **message):
+    if not _send_auth_code(email, code, expires_at, **message):
+        raise HTTPException(status_code=503, detail="Unable to send a confirmation code right now. Please try again. Any previous code remains valid until it expires.")
+
+
 @app.post("/api/auth/register")
 async def customer_register(req: CustomerRegisterRequest):
     """Customer registration requiring email confirmation before a configured trial."""
@@ -939,8 +955,7 @@ async def customer_register(req: CustomerRegisterRequest):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="An account with this email already exists. Please log in.",
             )
-        # Account exists but unverified: update code and resend
-        repo.set_verification_code(email, code, expires_at)
+        # Keep its previous code until replacement dispatch succeeds.
         user = existing
     else:
         pwd_hash = get_password_hash(password)
@@ -950,8 +965,6 @@ async def customer_register(req: CustomerRegisterRequest):
             full_name=(req.full_name or "").strip() or None,
             trial_days=trial_days,
             is_verified=0,
-            verification_code=code,
-            verification_code_expires_at=expires_at,
         )
 
     # Dispatch confirmation email via Resend
@@ -965,10 +978,9 @@ async def customer_register(req: CustomerRegisterRequest):
       <p style="color:#64748b; font-size:12.5px; line-height:1.5;">This code will expire in 15 minutes. If you did not sign up for JurisMon, please disregard this email.</p>
     </div>
     """
-    mailer.send(
+    _require_auth_code(email, code, expires_at,
         subject="Your JurisMon Confirmation Code",
         html=html_body,
-        to=[email],
         text=f"Your JurisMon confirmation code is: {code} (expires in 15 minutes). Please {trial_activation_copy(trial_days)}.",
     )
     logger.info("Verification code dispatched for %s", email)
@@ -1050,7 +1062,6 @@ async def customer_resend_code(req: ResendCodeRequest):
     trial_days = configured_trial_days()
     code = f"{secrets.randbelow(900000) + 100000}"
     expires_at = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
-    repo.set_verification_code(email, code, expires_at)
 
     html_body = f"""
     <div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif; max-width:520px; margin:0 auto; padding:24px; border:1px solid #e2e8f0; border-radius:8px; background:#ffffff;">
@@ -1062,10 +1073,9 @@ async def customer_resend_code(req: ResendCodeRequest):
       <p style="color:#64748b; font-size:12.5px; line-height:1.5;">This code will expire in 15 minutes.</p>
     </div>
     """
-    mailer.send(
+    _require_auth_code(email, code, expires_at,
         subject="Your JurisMon Confirmation Code",
         html=html_body,
-        to=[email],
         text=f"Your JurisMon confirmation code is: {code} (expires in 15 minutes). Please {trial_activation_copy(trial_days)}.",
     )
 
@@ -1114,7 +1124,6 @@ async def customer_forgot_password(req: ForgotPasswordRequest):
     if user:
         code = f"{secrets.randbelow(900000) + 100000}"
         expires_at = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
-        repo.set_verification_code(email, code, expires_at)
 
         html_body = f"""
         <div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif; max-width:520px; margin:0 auto; padding:24px; border:1px solid #e2e8f0; border-radius:8px; background:#ffffff;">
@@ -1126,17 +1135,17 @@ async def customer_forgot_password(req: ForgotPasswordRequest):
           <p style="color:#64748b; font-size:12.5px; line-height:1.5;">This code will expire in 15 minutes. If you did not request a password reset, you can safely ignore this email.</p>
         </div>
         """
-        mailer.send(
+        accepted = _send_auth_code(email, code, expires_at,
             subject="Reset your JurisMon password",
             html=html_body,
-            to=[email],
             text=f"Your JurisMon password reset code is: {code} (expires in 15 minutes). If you did not request this, please ignore.",
         )
-        logger.info("Password reset code dispatched for %s", email)
+        if accepted:
+            logger.info("Password reset code accepted for %s", email)
 
     return {
         "status": "success",
-        "message": "If an account exists with this email, a password reset code has been sent.",
+        "message": "Password reset requested. If you receive a code, enter it below. If no email arrives, try again later.",
     }
 
 
