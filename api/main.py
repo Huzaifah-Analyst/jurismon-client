@@ -1737,6 +1737,10 @@ def _run_background_crawl(run_id: str):
         logger.error(f"Background crawl execution error for {run_id}: {e}")
 
 
+def _systemd_crawl_available():
+    return sys.platform.startswith("linux") and shutil.which("systemctl") is not None and os.path.exists("/etc/systemd")
+
+
 @app.post("/api/admin/crawl/run")
 async def trigger_admin_crawl(
     background_tasks: BackgroundTasks,
@@ -1753,17 +1757,14 @@ async def trigger_admin_crawl(
     run_id = repo.start_crawl_run()
 
     # In production on Linux with systemctl, trigger jurismon-crawl.service out-of-process
-    is_systemd = (
-        sys.platform.startswith("linux")
-        and shutil.which("systemctl") is not None
-        and os.path.exists("/etc/systemd")
-    )
-    if is_systemd:
+    if _systemd_crawl_available():
         try:
-            subprocess.Popen(
-                ["sudo", "systemctl", "start", "jurismon-crawl.service"],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+            from starlette.concurrency import run_in_threadpool
+            await run_in_threadpool(
+                subprocess.run,
+                ["sudo", "-n", "systemctl", "start", "--no-block", "jurismon-crawl.service"],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                check=True, timeout=10,
             )
             return {
                 "status": "started",
@@ -1771,7 +1772,7 @@ async def trigger_admin_crawl(
                 "message": "Crawl run triggered via jurismon-crawl.service.",
             }
         except Exception as e:
-            logger.error(f"Failed to start jurismon-crawl.service via systemctl: {e}")
+            logger.error("Systemd crawl dispatch failed (%s); using background execution", type(e).__name__)
             background_tasks.add_task(_run_background_crawl, run_id)
             return {
                 "status": "started",

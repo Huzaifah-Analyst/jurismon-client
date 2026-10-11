@@ -230,3 +230,17 @@ do not present the original run as fully passing.
   reviewed; index 200 responses alone did not justify activating sources.
 - Production migration connection verified via SELECT 1 without exposing credentials.
   Migration/application/release status will be appended after actual execution.
+
+## R-06: Check crawl dispatch before acknowledging start, 11 October 2026
+
+- Production had a running crawl record while the systemd crawl unit was inactive.
+  The previous Popen path discarded stderr and did not check the command exit code;
+  process creation alone could acknowledge a failed dispatch. The precise historical
+  failure is not proven by that observation.
+- Dispatch now awaits a checked, noninteractive systemctl command in a worker thread
+  with a ten-second timeout and --no-block. Rejected/timed-out dispatch schedules the
+  existing background runner with the same run ID instead of silently losing the job.
+- Verification: dispatch, API and metrics selection 75 passed in 18.09s, one existing
+  dependency warning. Tests cover accepted dispatch, nonzero exit and timeout, and
+  verify that fallback schedules exactly one job for the recorded run.
+- Files: api/main.py and tests/test_crawl_dispatch.py. Not yet released.
