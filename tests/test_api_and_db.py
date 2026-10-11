@@ -975,7 +975,8 @@ class TestForgotPasswordAndReset(unittest.TestCase):
         self.assertIsNotNone(user.get("trial_ends_at"))
         trial_end = datetime.fromisoformat(user["trial_ends_at"].replace("Z", "+00:00"))
         now = datetime.now(timezone.utc)
-        self.assertTrue(trial_end > now + timedelta(days=13))
+        from api.main import configured_trial_days
+        self.assertAlmostEqual((trial_end - now).total_seconds() / 86400, configured_trial_days(), delta=0.01)
 
         login_res = self.client.post("/api/auth/login", json={
             "email": test_email,
@@ -1231,8 +1232,10 @@ class TestTermsAndPrivacyPages(unittest.TestCase):
         self.assertIn("Historical Retention &amp; Legal Precedent", content)
         self.assertIn("Risk &amp; Impact Analysis", content)
         self.assertIn("Statutory Delta Analysis", content)
-        self.assertIn("Never Miss a Statutory Delta Again", content)
-        self.assertIn("41 live jurisdictions, 65 tracked", content)
+        self.assertIn("Review Captured Regulatory Changes", content)
+        self.assertIn("international national registries", content)
+        self.assertIn("Loading source coverage...", content)
+        self.assertNotIn("41 live jurisdictions, 65 tracked", content)
         self.assertNotIn("65+", content)
 
     def test_about_html_contains_no_literal_65_plus(self):

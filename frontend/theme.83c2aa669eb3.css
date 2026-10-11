@@ -1,0 +1,114 @@
+/* Shared semantic colors. Page layouts retain their existing styles. */
+:root {
+  color-scheme: light;
+  --on-ink: #ffffff;
+  --on-accent: #ffffff;
+  --ink-sub: var(--muted);
+  --ink-hover: #1e293b;
+  --primary: #154da8;
+  --primary-hover: #0f3c85;
+  --success-bg: #f0fdf4;
+  --success-strong-bg: #dcfce7;
+  --success-ink: #166534;
+  --success-border: #bbf7d0;
+  --success-strong-border: #86efac;
+  --warning-bg: #fffbeb;
+  --warning-strong-bg: #fef3c7;
+  --warning-ink: #92400e;
+  --warning-text: #78350f;
+  --warning-border: #fde68a;
+  --warning-strong-border: #fcd34d;
+  --danger: #b91c1c;
+  --danger-hover: #b91c1c;
+  --danger-solid: #dc2626;
+  --danger-bg: #fef2f2;
+  --danger-strong-bg: #fee2e2;
+  --danger-ink: #991b1b;
+  --danger-border: #fca5a5;
+  --danger-strong-border: #f87171;
+  --rose-bg: #fff1f2;
+  --rose-ink: #9f1239;
+  --rose-text: #881337;
+  --rose-border: #fecdd3;
+  --rose-strong-border: #fda4af;
+  --info-bg: #eff6ff;
+  --info-ink: #1e40af;
+  --info-border: #bfdbfe;
+  --neutral-ink: #475569;
+  --result-hover: #fcfdfe;
+  --row-hover: #fbfcfe;
+  --panel-bg: #0f172a;
+  --panel-text: #f8fafc;
+  --panel-border: #1e293b;
+  --panel-muted: #cbd5e1;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #0b1220;
+    --surface: #111c2e;
+    --ink: #f1f5f9;
+    --text: #cbd5e1;
+    --muted: #a5b4c7;
+    --faint: #94a3b8;
+    --line: #2c3c52;
+    --line-strong: #4b607c;
+    --hover: #1b2b42;
+    --on-ink: #0b1220;
+    --ink-hover: #cbd5e1;
+    --primary: #93c5fd;
+    --primary-hover: #bfdbfe;
+    --success-bg: #102e24;
+    --success-strong-bg: #143a2b;
+    --success-ink: #86efac;
+    --success-border: #276749;
+    --success-strong-border: #34835e;
+    --warning-bg: #332713;
+    --warning-strong-bg: #443317;
+    --warning-ink: #fcd34d;
+    --warning-text: #fde68a;
+    --warning-border: #806222;
+    --warning-strong-border: #97772c;
+    --danger: #fca5a5;
+    --danger-bg: #351a22;
+    --danger-strong-bg: #48232b;
+    --danger-ink: #fca5a5;
+    --danger-border: #87404d;
+    --danger-strong-border: #b45365;
+    --rose-bg: #351b2b;
+    --rose-ink: #fda4af;
+    --rose-text: #fecdd3;
+    --rose-border: #87405c;
+    --rose-strong-border: #a64d70;
+    --info-bg: #142b49;
+    --info-ink: #93c5fd;
+    --info-border: #345984;
+    --neutral-ink: #b7c6da;
+    --result-hover: #17253a;
+    --row-hover: #17253a;
+    --add-bg: var(--success-bg);
+    --add-ink: var(--success-ink);
+    --add-bar: var(--success-border);
+    --del-bg: var(--rose-bg);
+    --del-ink: var(--rose-ink);
+    --del-bar: var(--rose-strong-border);
+    --mix-bar: #94a3b8;
+    --ok-bg: var(--success-bg);
+    --ok-ink: var(--success-ink);
+    --ok-cell: #34835e;
+    --warn-bg: var(--warning-bg);
+    --warn-ink: var(--warning-ink);
+    --warn-cell: #97772c;
+    --bad-bg: var(--rose-bg);
+    --bad-ink: var(--rose-ink);
+    --bad-cell: #a64d70;
+  }
+
+  /* The existing raster wordmark was designed on white. */
+  .brand img { background: #ffffff; border-radius: 3px; }
+  input, select, textarea { background-color: var(--surface); color: var(--text); }
+  input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
+}
+
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }

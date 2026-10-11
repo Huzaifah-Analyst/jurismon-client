@@ -51,7 +51,7 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  a { color: #154DA8; text-decoration: underline; text-underline-offset: 2px; }
+  a { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
   a:hover { color: var(--ink); }
 
   .wrap { max-width: 840px; margin: 0 auto; padding: 0 24px; width: 100%; }
@@ -102,13 +102,13 @@
   }
 
   .draft-badge {
-    background: #fffbeb;
-    border: 1px solid #fde68a;
+    background: var(--warning-bg);
+    border: 1px solid var(--warning-border);
     border-radius: var(--r-md);
     padding: 10px 14px;
     margin-bottom: 24px;
     font-size: 13px;
-    color: #92400e;
+    color: var(--warning-ink);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -154,8 +154,8 @@
   li { margin-bottom: 8px; }
 
   .callout-disclaimer {
-    background: #fff1f2;
-    border: 1px solid #fda4af;
+    background: var(--rose-bg);
+    border: 1px solid var(--rose-strong-border);
     border-left: 4px solid #e11d48;
     border-radius: var(--r-md);
     padding: 16px 18px;
@@ -165,12 +165,12 @@
     margin: 0 0 8px;
     font-size: 15px;
     font-weight: 600;
-    color: #9f1239;
+    color: var(--rose-ink);
   }
   .callout-disclaimer p {
     margin: 0;
     font-size: 13.5px;
-    color: #881337;
+    color: var(--rose-text);
     line-height: 1.6;
   }
 
@@ -214,6 +214,7 @@
     .site-footer-links { gap: 8px 12px; }
   }
 </style>
+<link rel="stylesheet" href="/static/theme.83c2aa669eb3.css">
 </head>
 <body>
 
@@ -249,12 +250,12 @@
 
       <h2>2. Free Trial &amp; Search Access</h2>
       <p>
-        JurisMon provides a complimentary 14-day free trial upon initial registration and verification of a valid work email address. No credit card or upfront billing credential is required to activate the trial.
+        <span id="terms-trial-offer">Any available trial duration is shown during registration. Email verification is required to activate an account.</span>
       </p>
       <ul>
-        <li>During the 14-day trial period, the account receives full, unmasked access to all indexed statutory diffs, clause amendments, and historical municipal snapshots.</li>
-        <li>Upon expiration of the 14-day trial, access automatically transitions into gated teaser mode (restricting search results to introductory excerpts) unless an active paid subscription is established.</li>
-        <li>Submitting a password reset or modifying credentials does not extend, reset, or restart the 14-day trial window.</li>
+        <li>During the trial period, the account receives full, unmasked access to all indexed statutory diffs, clause amendments, and historical municipal snapshots.</li>
+        <li>Upon expiration of the trial, access automatically transitions into gated teaser mode (restricting search results to introductory excerpts) unless an active paid subscription is established.</li>
+        <li>Submitting a password reset or modifying credentials does not extend, reset, or restart the trial window.</li>
       </ul>
 
       <h2>3. Subscription Terms &amp; Billing</h2>
@@ -330,5 +331,20 @@
   </div>
 </footer>
 
+<script>
+(async () => {
+  try {
+    const response = await fetch("/api/plans");
+    if (!response.ok) return;
+    const catalogue = await response.json();
+    if (!Number.isInteger(catalogue.trial_days) || catalogue.trial_days < 0) return;
+    document.getElementById("terms-trial-offer").textContent = catalogue.trial_days > 0
+      ? `JurisMon provides a complimentary ${catalogue.trial_days}-day free trial upon initial registration and verification of a valid work email address. No credit card or upfront billing credential is required to activate the trial.`
+      : "No complimentary free trial is currently offered. Verify a valid work email address to activate your account, then subscribe for full access.";
+  } catch (error) {
+    console.warn("Could not load trial terms:", error);
+  }
+})();
+</script>
 </body>
 </html>

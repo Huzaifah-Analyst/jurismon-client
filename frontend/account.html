@@ -87,14 +87,14 @@
     }
     .btn-primary {
       background: var(--ink);
-      color: #ffffff;
+      color: var(--on-ink);
       border-color: var(--ink);
     }
     .btn-primary:hover:not(:disabled) {
-      background: #1e293b;
+      background: var(--ink-hover);
     }
     .btn-outline {
-      background: #ffffff;
+      background: var(--surface);
       color: var(--ink);
       border-color: var(--line-strong);
     }
@@ -102,29 +102,29 @@
       background: var(--hover);
     }
     .btn-amber {
-      background: #fffbeb;
-      color: #92400e;
-      border-color: #fde68a;
+      background: var(--warning-bg);
+      color: var(--warning-ink);
+      border-color: var(--warning-border);
     }
     .btn-amber:hover:not(:disabled) {
-      background: #fef3c7;
+      background: var(--warning-strong-bg);
     }
     .btn-danger {
-      background: #fff;
-      color: #b91c1c;
-      border-color: #fca5a5;
+      background: var(--surface);
+      color: var(--danger);
+      border-color: var(--danger-border);
     }
     .btn-danger:hover:not(:disabled) {
-      background: #fef2f2;
-      border-color: #f87171;
+      background: var(--danger-bg);
+      border-color: var(--danger-strong-border);
     }
     .btn-danger-solid {
-      background: #dc2626;
-      color: #ffffff;
-      border-color: #dc2626;
+      background: var(--danger-solid);
+      color: var(--on-accent);
+      border-color: var(--danger-solid);
     }
     .btn-danger-solid:hover:not(:disabled) {
-      background: #b91c1c;
+      background: var(--danger-hover);
     }
     .btn:disabled {
       opacity: 0.6;
@@ -168,29 +168,29 @@
       text-transform: capitalize;
     }
     .badge-active {
-      background: #dcfce7;
-      color: #166534;
-      border-color: #86efac;
+      background: var(--success-strong-bg);
+      color: var(--success-ink);
+      border-color: var(--success-strong-border);
     }
     .badge-paused {
-      background: #fef3c7;
-      color: #92400e;
-      border-color: #fcd34d;
+      background: var(--warning-strong-bg);
+      color: var(--warning-ink);
+      border-color: var(--warning-strong-border);
     }
     .badge-cancelled {
-      background: #fee2e2;
-      color: #991b1b;
-      border-color: #fca5a5;
+      background: var(--danger-strong-bg);
+      color: var(--danger-ink);
+      border-color: var(--danger-border);
     }
     .badge-trial {
-      background: #eff6ff;
-      color: #1e40af;
-      border-color: #bfdbfe;
+      background: var(--info-bg);
+      color: var(--info-ink);
+      border-color: var(--info-border);
     }
     .badge-expired {
-      background: #f1f5f9;
-      color: #475569;
-      border-color: #cbd5e1;
+      background: var(--hover);
+      color: var(--neutral-ink);
+      border-color: var(--line-strong);
     }
     .prop-grid {
       display: grid;
@@ -231,24 +231,24 @@
       border: 1px solid transparent;
     }
     .notice-amber {
-      background: #fffbeb;
-      color: #92400e;
-      border-color: #fde68a;
+      background: var(--warning-bg);
+      color: var(--warning-ink);
+      border-color: var(--warning-border);
     }
     .notice-rose {
-      background: #fff1f2;
-      color: #9f1239;
-      border-color: #fecdd3;
+      background: var(--rose-bg);
+      color: var(--rose-ink);
+      border-color: var(--rose-border);
     }
     .notice-blue {
-      background: #eff6ff;
-      color: #1e40af;
-      border-color: #bfdbfe;
+      background: var(--info-bg);
+      color: var(--info-ink);
+      border-color: var(--info-border);
     }
     .notice-red {
-      background: #fef2f2;
-      color: #991b1b;
-      border-color: #fca5a5;
+      background: var(--danger-bg);
+      color: var(--danger-ink);
+      border-color: var(--danger-border);
     }
     .actions-bar {
       display: flex;
@@ -263,8 +263,8 @@
       position: fixed;
       bottom: 24px;
       right: 24px;
-      background: #0f172a;
-      color: #ffffff;
+      background: var(--ink);
+      color: var(--on-ink);
       padding: 12px 18px;
       border-radius: var(--r-md);
       font-size: 13.5px;
@@ -328,7 +328,7 @@
       border: 1px solid var(--line-strong);
       border-radius: var(--r-md);
       outline: none;
-      background: #ffffff;
+      background: var(--surface);
       color: var(--ink);
     }
     .form-input:focus {
@@ -364,6 +364,7 @@
       .btn { width: 100%; }
     }
   </style>
+<link rel="stylesheet" href="/static/theme.83c2aa669eb3.css">
 </head>
 <body>
 
@@ -401,7 +402,7 @@
       <button type="submit" id="btn-submit-login" class="btn btn-primary" style="width:100%; margin-top:8px;">Sign In</button>
     </form>
     <div style="margin-top:16px; font-size:13px; color:var(--muted); text-align:center;">
-      Don't have an account? <a href="/#register" style="color:var(--primary); text-decoration:none; font-weight:500;">Start 14-day free trial</a>
+      Don't have an account? <a id="signed-out-trial-link" href="/#register" style="color:var(--primary); text-decoration:none; font-weight:500;">Create Account</a>
     </div>
   </div>
 
@@ -423,7 +424,7 @@
 
     <div class="notice notice-blue" id="no-sub-notice">
       <div>
-        <strong id="no-sub-trial-headline">14-Day Free Trial</strong>
+        <strong id="no-sub-trial-headline">Free Trial</strong>
         <p id="no-sub-trial-desc" style="margin-top:4px;">You currently have full access to municipal zoning records during your free trial.</p>
       </div>
     </div>
@@ -584,7 +585,7 @@
 
   <!-- STATE 8: API ERROR -->
   <div id="state-error" class="card" style="display:none;">
-    <h2 class="card-title" style="color:#b91c1c;">Unable to load account details</h2>
+    <h2 class="card-title" style="color:var(--danger);">Unable to load account details</h2>
     <p class="card-desc" id="error-message">A network error occurred while communicating with the server.</p>
     <div class="actions-bar">
       <button type="button" class="btn btn-primary" id="btn-error-retry">Try Again</button>
@@ -759,6 +760,19 @@
   }
 
   // Check auth and load subscription
+  async function loadTrialOffer() {
+    try {
+      const response = await fetch("/api/plans");
+      if (!response.ok) return;
+      const catalogue = await response.json();
+      if (Number.isInteger(catalogue.trial_days) && catalogue.trial_days > 0) {
+        document.getElementById("signed-out-trial-link").textContent = `Start ${catalogue.trial_days}-day free trial`;
+      }
+    } catch (error) {
+      console.warn("Could not load trial offer:", error);
+    }
+  }
+  loadTrialOffer();
   async function init() {
     const token = localStorage.getItem("jurismon_token");
     if (!token) {

@@ -16,6 +16,11 @@ from db.repository import Repository
 class TestCustomerAuthAndGating(unittest.TestCase):
 
     def setUp(self):
+        catalogue = main.get_plan_catalogue()
+        catalogue["trial_days"] = 14
+        catalogue_patch = patch.object(main, "get_plan_catalogue", return_value=catalogue)
+        catalogue_patch.start()
+        self.addCleanup(catalogue_patch.stop)
         self._tmp = tempfile.mkdtemp(prefix="jurismon_customer_test_")
         self.test_db = os.path.join(self._tmp, "test_customer.db")
         self._saved_repo = main.repo

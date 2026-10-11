@@ -105,6 +105,19 @@ _catalogue_mtime: Optional[float] = None
 _catalogue_lock = threading.Lock()
 
 
+def configured_trial_days() -> int:
+    """Current admin-configured duration, read at each trial activation."""
+    days = get_plan_catalogue().get("trial_days", 0)
+    if not isinstance(days, int) or isinstance(days, bool) or not 0 <= days <= 90:
+        raise HTTPException(status_code=503, detail="Trial configuration is unavailable.")
+    return days
+
+
+def trial_activation_copy(days: int) -> str:
+    return (f"activate your account and start your {days}-day free trial"
+            if days > 0 else "activate your account. Subscribe for full access")
+
+
 def _load_plan_catalogue() -> Dict[str, Any]:
     """Reads config/plans.json, the single source of truth for what we sell.
 
@@ -507,7 +520,8 @@ async def search_endpoint(
                 item["segments"] = [["eq", preview]]
             item["full"] = (
                 "Full statutory text and clause delta history are locked. "
-                "Sign up for a 14-day free trial or subscribe to JurisMon Professional ($49/mo) to unlock complete access."
+                + (f"Sign up for a {configured_trial_days()}-day free trial to unlock complete access."
+                 if configured_trial_days() > 0 else "Subscribe to unlock complete access.")
             )
             item["is_locked"] = True
         # The raw `results` dict (full diffs and snapshots, including the
@@ -853,7 +867,7 @@ async def paypal_webhook(request: Request):
 
 @app.post("/api/auth/register")
 async def customer_register(req: CustomerRegisterRequest):
-    """Customer registration issuing 14-day free trial and JWT token."""
+    """Customer registration requiring email confirmation before a configured trial."""
     email = (req.email or "").strip().lower()
     if not email or "@" not in email:
         raise HTTPException(
@@ -878,6 +892,7 @@ async def customer_register(req: CustomerRegisterRequest):
             detail="Password must be 72 bytes or fewer.",
         )
 
+    trial_days = configured_trial_days()
     code = f"{secrets.randbelow(900000) + 100000}"
     expires_at = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
 
@@ -897,7 +912,7 @@ async def customer_register(req: CustomerRegisterRequest):
             email=email,
             password_hash=pwd_hash,
             full_name=(req.full_name or "").strip() or None,
-            trial_days=14,
+            trial_days=trial_days,
             is_verified=0,
             verification_code=code,
             verification_code_expires_at=expires_at,
@@ -907,7 +922,7 @@ async def customer_register(req: CustomerRegisterRequest):
     html_body = f"""
     <div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif; max-width:520px; margin:0 auto; padding:24px; border:1px solid #e2e8f0; border-radius:8px; background:#ffffff;">
       <h2 style="color:#0f172a; margin-top:0; font-size:20px;">Confirm your JurisMon email</h2>
-      <p style="color:#334155; font-size:14px; line-height:1.6;">Thank you for registering. Please enter the 6-digit confirmation code below to activate your account and start your 14-day free trial:</p>
+      <p style="color:#334155; font-size:14px; line-height:1.6;">Thank you for registering. Please enter the 6-digit confirmation code below to {trial_activation_copy(trial_days)}:</p>
       <div style="font-size:32px; font-weight:700; letter-spacing:8px; color:#154DA8; background:#f8fafc; border:1px solid #cbd5e1; padding:16px; text-align:center; border-radius:8px; margin:24px 0; font-family:monospace;">
         {code}
       </div>
@@ -918,7 +933,7 @@ async def customer_register(req: CustomerRegisterRequest):
         subject="Your JurisMon Confirmation Code",
         html=html_body,
         to=[email],
-        text=f"Your JurisMon confirmation code is: {code} (expires in 15 minutes).",
+        text=f"Your JurisMon confirmation code is: {code} (expires in 15 minutes). Please {trial_activation_copy(trial_days)}.",
     )
     logger.info("Verification code dispatched for %s", email)
 
@@ -931,7 +946,7 @@ async def customer_register(req: CustomerRegisterRequest):
 
 @app.post("/api/auth/verify-code")
 async def customer_verify_code(req: VerifyCodeRequest):
-    """Verifies confirmation code, activates 14-day free trial, and issues JWT access token."""
+    """Verifies confirmation code, activates the configured trial, and issues a JWT."""
     email = (req.email or "").strip().lower()
     code = (req.code or "").strip()
     if not email or not code:
@@ -940,7 +955,7 @@ async def customer_verify_code(req: VerifyCodeRequest):
             detail="Email and confirmation code are required.",
         )
 
-    result = repo.verify_user_email(email, code, trial_days=14)
+    result = repo.verify_user_email(email, code, trial_days=configured_trial_days())
     if not result.get("success"):
         err = result.get("error")
         if err == "code_expired":
@@ -996,6 +1011,7 @@ async def customer_resend_code(req: ResendCodeRequest):
     if user.get("is_verified", 0) == 1:
         return {"status": "already_verified", "message": "Email is already verified. Please log in."}
 
+    trial_days = configured_trial_days()
     code = f"{secrets.randbelow(900000) + 100000}"
     expires_at = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
     repo.set_verification_code(email, code, expires_at)
@@ -1003,7 +1019,7 @@ async def customer_resend_code(req: ResendCodeRequest):
     html_body = f"""
     <div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif; max-width:520px; margin:0 auto; padding:24px; border:1px solid #e2e8f0; border-radius:8px; background:#ffffff;">
       <h2 style="color:#0f172a; margin-top:0; font-size:20px;">Your new JurisMon confirmation code</h2>
-      <p style="color:#334155; font-size:14px; line-height:1.6;">Please enter the confirmation code below to activate your account:</p>
+      <p style="color:#334155; font-size:14px; line-height:1.6;">Please enter the confirmation code below to {trial_activation_copy(trial_days)}:</p>
       <div style="font-size:32px; font-weight:700; letter-spacing:8px; color:#154DA8; background:#f8fafc; border:1px solid #cbd5e1; padding:16px; text-align:center; border-radius:8px; margin:24px 0; font-family:monospace;">
         {code}
       </div>
@@ -1014,7 +1030,7 @@ async def customer_resend_code(req: ResendCodeRequest):
         subject="Your JurisMon Confirmation Code",
         html=html_body,
         to=[email],
-        text=f"Your JurisMon confirmation code is: {code} (expires in 15 minutes).",
+        text=f"Your JurisMon confirmation code is: {code} (expires in 15 minutes). Please {trial_activation_copy(trial_days)}.",
     )
 
     return {
@@ -1144,8 +1160,8 @@ async def customer_reset_password(req: ResetPasswordRequest):
 
     # If the user was not yet verified, activate their trial now using the exact same activation path
     if not was_verified:
-        repo.activate_user_trial(email, trial_days=14)
-        logger.info("Unverified user %s verified and 14-day trial activated via password reset", email)
+        repo.activate_user_trial(email, trial_days=configured_trial_days())
+        logger.info("Unverified user %s verified and configured trial activated via password reset", email)
 
     logger.info("Password successfully reset for %s", email)
     return {

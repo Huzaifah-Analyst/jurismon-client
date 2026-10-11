@@ -5,8 +5,8 @@
 > `docs/ai/frontend-audit.md`. 25 findings total: 16 real problems, 6
 > confirmed-working checks, 3 coverage gaps (documented, not bugs).
 >
-> **This is a plan only. Nothing here is implemented yet.** Fixes land one
-> at a time, in this order, each one verified before moving to the next.
+> Findings below retain their historical reproduction details. Current
+> implementation status is recorded per item and in `implementation-priority.md`.
 
 ---
 
@@ -72,6 +72,12 @@ reads, or means a shipped feature silently doesn't exist in production.
   the first page of results matches what the About page claims.
 
 ### 3. Admin silently swallows its own error messages
+
+**Rechecked Oct 10:** the current local code displays both genuine plan 409
+messages correctly (price mismatch and last active plan), in light and dark
+Chromium sessions. Toast opacity reaches 1 and the save button re-enables.
+No defect reproduced, no handler patch made. The current catalogue-settings
+PATCH route has no 409 branch. Historical finding retained below for context.
 
 - **Where**: `frontend/admin.html`, the plan-save handler (`handleSavePlan`)
   and the catalogue-settings save handler.
@@ -145,14 +151,14 @@ Ordered High severity first, then Medium.
 |---|---|---|---|---|
 | 6 | Result previews read as scraped site furniture (nav menus, CKAN "Go to resource" boilerplate), not legal text | `crawler/`, `extractor/`, specific sources (German RSS source, NZ/AU open-data portals) | Partially, same class as `frontend-audit.md` §6j's AU finding, but now confirmed across multiple sources, not just one | Needs its own extractor investigation per affected source, out of frontend scope; this plan schedules it, a separate crawler-focused pass does it |
 | 7 | "Subscribe to Professional" (trial-active state) navigates home instead of opening checkout | `frontend/account.html` | Not yet, needs a read of that button's click handler | Point it at the existing paywall/plan-selection modal already used elsewhere on the site, not a new flow |
-| 8 | Hardcoded placeholder flash (0 results, generic title) visible ~1-2s on every load/nav, even when already logged in | `frontend/index.html`, initial render before data hydrates | Yes, this is audit finding #2/#4, already scoped: unbounded `/api/search` payload + no skeleton on the authenticated path specifically | The skeleton work already done locally on this branch covers signed-out load; needs the same treatment confirmed for the already-logged-in case, since QA reproduced it there specifically |
+| 8 | Logged-in placeholder flash | `frontend/index.html`, boot before session check | Fixed locally Oct 10: skeleton appears before `/api/auth/me` returns; no empty results or fabricated source-count fallback while loading | Delayed genuine session response and source API failure checked in Chromium; not deployed |
 | 9 | No `Cache-Control` on any page or API response | `api/main.py`, every `FileResponse` and JSON route | Yes, `frontend-audit.md` §1 | `Cache-Control: no-cache` on HTML (keep the existing ETag for cheap 304s); a short `max-age` or `no-store` on API JSON, scoped per endpoint |
 | 10 | No compression (gzip/br) anywhere | `api/main.py`, `deploy/nginx.conf` | Yes, `frontend-audit.md` §1 | `GZipMiddleware` in FastAPI, three lines, no new dependency |
 | 11 | Search latency varies 410ms-1538ms for the identical query | `/api/search` | No, observed only, QA report is explicit that no server-side evidence was available to attribute a cause | Needs a server-side look (query plan, connection pooling) before any fix is proposed, not blind tuning |
 | 12 | 10 of 21 US county/city sources (48%) are broken; 24/65 total non-operational | `config/sites.json`, crawler | Yes, per-source, already itemized in the admin panel's own health labels | Crawler maintenance work, source by source, not a frontend fix, feeds directly into item #2 above |
-| 13 | "Run Crawl Now" triggers a real job but the UI never polls status again, stays frozen on "started just now" | `frontend/admin.html`, crawl-trigger handler | Yes, confirmed no repeat `/api/admin/crawl/status` calls after the first | Add a polling interval (every few seconds) until the job reaches a terminal status, then stop |
-| 14 | 375px horizontal overflow on the homepage, filter-pill row not contained | `frontend/index.html`, `.pills` | Yes, the "Full snapshots 30" pill extends past the viewport | Constrain `.pills` to scroll within its own row rather than pushing the page wide, matching the pattern already used for the admin webhook table |
-| 15 | No dark mode anywhere | all pages | Yes, confirmed absent, `frontend-standard.md` requires it | Scoped as its own pass once the above are stable, add `prefers-color-scheme` variants for the existing token set, no redesign |
+| 13 | Crawl status polling | `frontend/admin.html`, crawl-trigger handler | Fixed locally Oct 10: three-second polling while running, stop at terminal status/logout; temporary errors retry and auth expiry returns to sign-in | Four real Chromium/local API regression checks passed; not deployed. See `implementation-priority.md` |
+| 14 | Mobile homepage overflow | `frontend/index.html` | Fixed locally Oct 10: current pill row already scrolls; signed-in header email caused a 464px page at 375px | Compact header, contained pills and stacked preview banner; signed-out and signed-in Chromium checks pass; not deployed |
+| 15 | Dark mode | all six pages | Implemented locally Oct 10: shared semantic tokens and `prefers-color-scheme`, with a content-hashed stylesheet | Six pages checked in light/dark at 375px and 1280px, screenshots reviewed; not deployed |
 
 ---
 
@@ -160,7 +166,7 @@ Ordered High severity first, then Medium.
 
 | # | Item | Status | Action |
 |---|---|---|---|
-| 16 | OTP error banner shifts the code field ~26px without refocusing it | Low severity, layout-shift only, not confirmed broken | Reserve the error banner's space in the layout before it's needed, so it doesn't push content |
+| 16 | OTP error banner layout shift | Fixed locally Oct 10; reproduced 27.0625px shift | Reserved feedback space and restored focus; genuine wrong-code responses tested at 375px and desktop; not deployed |
 | 17 | Only 1 webhook log entry exists (a rejected test event) | Not a defect, consistent with 0 real subscribers | No action, note and move on |
 | 18 | All auth error paths (empty fields, wrong OTP, wrong password, duplicate email, password reset) show clear, correct errors | **Confirmed working**, pass | No action |
 | 19 | Reflected-XSS payload in the search box is properly escaped | **Confirmed working**, pass | No action |
@@ -198,3 +204,15 @@ takes longer than expected.
 10. Items 24, 25 (cross-browser, full a11y audit): last, so they test the fixed site, not the current one.
 
 Each item gets implemented, tested, and shown to you before moving to the next.
+
+
+## Verification update, 11 October 2026
+
+Use the QA report full-table numbers when communicating status; its top-five
+and this older plan use different numbering. Full-table #2 is now addressed
+through honest About scope/limitations copy, with crawler repair still pending.
+Loading, authenticated mobile themes and paid/paused/cancelled account states
+were checked against a genuine local backend. Chromium/Firefox/WebKit smoke
+checks passed; axe on six light/dark page views reported no violations after
+fixing admin filter-count contrast. See implementation-priority.md for precise
+coverage, remaining limitations, test counts and release references.

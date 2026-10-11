@@ -3,29 +3,29 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>About JurisMon | Municipal Zoning Tracker, Historical Audit &amp; Statutory Diffs</title>
+<title>About JurisMon | Government Documents &amp; Captured Changes</title>
 <link rel="icon" href="/static/assets/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="/static/assets/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/static/assets/favicon-16.png">
 <link rel="apple-touch-icon" href="/static/assets/apple-touch-icon.png">
 <link rel="manifest" href="/static/assets/site.webmanifest">
 <link rel="canonical" href="https://jurismon.com/about">
-<meta name="description" content="JurisMon is an automated statutory intelligence platform offering 41 live jurisdictions, 65 tracked, historical point-in-time code retention, and section-level (§) delta alerts.">
+<meta name="description" content="JurisMon monitors selected US local government portals and international national registries, retaining captured documents and comparing versions. Coverage and extraction vary by source.">
 <meta name="robots" content="index, follow">
 <meta name="theme-color" content="#154DA8">
 
 <!-- Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="JurisMon">
-<meta property="og:title" content="About JurisMon | Municipal Zoning Tracker &amp; Statutory Diffs">
-<meta property="og:description" content="JurisMon is an automated statutory intelligence platform offering 41 live jurisdictions, 65 tracked, historical point-in-time code retention, and section-level (§) delta alerts.">
+<meta property="og:title" content="About JurisMon | Government Documents &amp; Captured Changes">
+<meta property="og:description" content="JurisMon monitors selected US local government portals and international national registries, retaining captured documents and comparing versions. Coverage and extraction vary by source.">
 <meta property="og:url" content="https://jurismon.com/about">
 <meta property="og:image" content="https://jurismon.com/static/assets/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="About JurisMon | Municipal Zoning Tracker &amp; Statutory Diffs">
-<meta name="twitter:description" content="JurisMon is an automated statutory intelligence platform offering 41 live jurisdictions, 65 tracked, historical point-in-time code retention, and section-level (§) delta alerts.">
+<meta name="twitter:title" content="About JurisMon | Government Documents &amp; Captured Changes">
+<meta name="twitter:description" content="JurisMon monitors selected US local government portals and international national registries, retaining captured documents and comparing versions. Coverage and extraction vary by source.">
 <meta name="twitter:image" content="https://jurismon.com/static/assets/og-image.png">
 
 <!-- JSON-LD -->
@@ -35,7 +35,7 @@
   "@type": "AboutPage",
   "name": "About JurisMon",
   "url": "https://jurismon.com/about",
-  "description": "JurisMon is an automated statutory intelligence platform offering 41 live jurisdictions, 65 tracked, historical point-in-time code retention, and section-level (§) delta alerts.",
+  "description": "JurisMon monitors selected US local government portals and international national registries, retaining captured documents and comparing versions. Coverage and extraction vary by source.",
   "mainEntity": {
     "@type": "Organization",
     "name": "JurisMon",
@@ -173,7 +173,7 @@
     font-size: 13.5px;
     font-weight: 500;
     color: var(--ink);
-    background: #fff;
+    background: var(--surface);
     border: 1px solid var(--line-strong);
     text-decoration: none;
     display: inline-flex;
@@ -204,9 +204,9 @@
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    background: #eff6ff;
+    background: var(--info-bg);
     color: var(--primary);
-    border: 1px solid #bfdbfe;
+    border: 1px solid var(--info-border);
     margin-bottom: 16px;
   }
   h1 {
@@ -246,7 +246,7 @@
   .section-num {
     font-size: 14px;
     font-weight: 700;
-    color: #fff;
+    color: var(--on-ink);
     background: var(--ink);
     display: inline-flex;
     align-items: center;
@@ -305,12 +305,12 @@
 
   /* Highlight Panel / Competitive Moat */
   .moat-panel {
-    background: #0f172a;
-    color: #f8fafc;
+    background: var(--panel-bg);
+    color: var(--panel-text);
     border-radius: var(--r-lg);
     padding: 32px;
     margin-bottom: 24px;
-    border: 1px solid #1e293b;
+    border: 1px solid var(--panel-border);
     box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
   }
   .moat-badge {
@@ -330,14 +330,14 @@
   .moat-title {
     font-size: 20px;
     font-weight: 700;
-    color: #ffffff;
+    color: var(--on-accent);
     margin: 0 0 12px;
     letter-spacing: -0.015em;
   }
   .moat-text {
     font-size: 15px;
     line-height: 1.65;
-    color: #cbd5e1;
+    color: var(--panel-muted);
     margin: 0;
     max-width: 880px;
   }
@@ -358,7 +358,7 @@
     border-bottom: 0;
   }
   .risk-header {
-    background: #f8fafc;
+    background: var(--bg);
     border-bottom: 2px solid var(--line);
     font-size: 11px;
     font-weight: 600;
@@ -378,7 +378,7 @@
   }
   .risk-cost-title {
     font-weight: 600;
-    color: #b91c1c;
+    color: var(--danger);
     margin-bottom: 4px;
   }
   .risk-cost-desc {
@@ -419,9 +419,9 @@
     border: 1px solid var(--del-bar);
   }
   .diff-badge-modified {
-    background: #f1f5f9;
-    color: #334155;
-    border: 1px solid #cbd5e1;
+    background: var(--hover);
+    color: var(--text);
+    border: 1px solid var(--line-strong);
   }
 
   /* CTA Band */
@@ -469,15 +469,15 @@
   }
   .btn-primary {
     background: var(--ink);
-    color: #fff;
+    color: var(--on-ink);
     border: 1px solid var(--ink);
   }
   .btn-primary:hover {
-    background: #1e293b;
-    color: #fff;
+    background: var(--ink-hover);
+    color: var(--on-ink);
   }
   .btn-outline {
-    background: #fff;
+    background: var(--surface);
     color: var(--ink);
     border: 1px solid var(--line-strong);
   }
@@ -559,6 +559,7 @@
     .moat-title { font-size: 18px; }
   }
 </style>
+<link rel="stylesheet" href="/static/theme.83c2aa669eb3.css">
 </head>
 <body>
 
@@ -578,10 +579,10 @@
 <main>
   <div class="wrap">
     <!-- Header / Lede -->
-    <div class="hero-eyebrow">Municipal Version Control System</div>
-    <h1>Municipal Zoning &amp; Statutory Delta Intelligence</h1>
+    <div class="hero-eyebrow">Government Document Monitoring</div>
+    <h1>Regulatory Documents &amp; Captured Changes</h1>
     <p class="lede">
-      JurisMon eliminates the risk of unmonitored local regulatory change. Code publishers show today's law; aggregators alert on file upload; JurisMon is a <strong>complete version-control system for municipal law</strong>.
+      JurisMon monitors selected public government sources and compares captured document versions. Its catalogue includes <strong>US city and county portals alongside international national registries</strong>. Search results reflect the documents successfully captured, and are not limited to municipal zoning.
     </p>
 
     <!-- SECTION 1 -->
@@ -596,15 +597,15 @@
       <div class="grid-3">
         <div class="feature-card">
           <h3>Platform Networks</h3>
-          <p>Direct adapter integrations for Municode, Granicus Legistar, CivicPlus, XML/Atom, and custom REST APIs.</p>
+          <p>The crawler includes adapters for Municode, Granicus Legistar, CivicPlus, XML/Atom and REST APIs. Adapter support does not guarantee that every configured portal is currently reachable or producing documents.</p>
         </div>
         <div class="feature-card">
           <h3>Official Primary Sources</h3>
-          <p>Daily automated crawling of public meeting notices, zoning agendas, board minutes, and updated codes.</p>
+          <p>Scheduled crawl attempts retrieve documents from configured public sources. Availability, access restrictions and extraction quality vary by source.</p>
         </div>
         <div class="feature-card">
           <h3>Jurisdictional Scope</h3>
-          <p>Continuous tracking across county commissioners, city councils, and local zoning boards of adjustment.</p>
+          <p>Coverage includes local US government portals and national legislative registries outside the US. Some configured sources are blocked, unreachable or awaiting repair; inclusion does not establish complete jurisdiction coverage.</p>
         </div>
       </div>
     </section>
@@ -616,16 +617,16 @@
         How the Data Is Processed: Extraction &amp; Normalization
       </h2>
       <p class="section-sub">
-        Raw government PDFs are cluttered with disclaimers, broken site navigation, and scanned image text. JurisMon’s engineering pipeline standardizes raw documents for high-precision search:
+        The extraction pipeline prepares captured text for search. Some indexed pages still contain navigation, RSS instructions or portal boilerplate; extraction improvements remain in progress:
       </p>
       <div class="grid-4">
         <div class="feature-card">
           <h3>1. Automated Ingestion</h3>
-          <p>Daily scheduled runs across <span id="ingestion-stat">41 live jurisdictions, 65 tracked</span>.</p>
+          <p>Daily scheduled runs across <span id="ingestion-stat">Loading source coverage...</span>.</p>
         </div>
         <div class="feature-card">
           <h3>2. Layout Stripping</h3>
-          <p>Removes site menus, headers, and disclaimers.</p>
+          <p>Attempts to remove repeated headers and page furniture. Remaining boilerplate can appear in search results; check the linked source document.</p>
         </div>
         <div class="feature-card">
           <h3>3. OCR Fallback</h3>
@@ -648,21 +649,21 @@
         <div class="moat-badge">COMPETITIVE MOAT</div>
         <h3 class="moat-title">Why Immutable Version Control is Our Competitive Moat</h3>
         <p class="moat-text">
-          In land-use litigation, entitlement disputes, and real estate acquisitions, knowing current law is only half the battle. Municipalities routinely overwrite web pages and update code portals without preserving public changelogs, wiping out historical record accessibility. JurisMon solves this through permanent point-in-time snapshot retention.
+          In land-use litigation, entitlement disputes, and real estate acquisitions, knowing current law is only half the battle. Municipalities routinely overwrite web pages and update code portals without preserving public changelogs, wiping out historical record accessibility. JurisMon retains captured snapshots for comparison. Capture timestamps identify when a document was collected, not its legal effective date.
         </p>
       </div>
       <div class="grid-3">
         <div class="feature-card">
           <h3>Point-in-Time Reconstruction</h3>
-          <p>Reconstruct exact municipal code states from months or years prior to prove vested rights on permit dates.</p>
+          <p>Compare document versions captured since monitoring began. JurisMon cannot reconstruct versions it never captured or certify the law in force on a permit date.</p>
         </div>
         <div class="feature-card">
           <h3>Immutable Snapshot Vault</h3>
-          <p>Every ingested document, board notice, and statutory iteration is permanently cataloged and timestamped.</p>
+          <p>Successfully stored snapshots are timestamped. Gaps in crawling or extraction can leave gaps in the captured history.</p>
         </div>
         <div class="feature-card">
           <h3>Complete Statutory Lineage</h3>
-          <p>Trace the exact evolution of a statutory section (&sect;) across time with full original source PDF references.</p>
+          <p>Review changes between captured versions and follow the available original source links. A captured change is not a guarantee of complete statutory lineage.</p>
         </div>
       </div>
     </section>
@@ -737,13 +738,13 @@
         What Changes: Section-Level (&sect;) Statutory Delta Analysis
       </h2>
       <p class="section-sub">
-        JurisMon does not force you to manually read through 180-page meeting agendas. Our proprietary diff engine compares incoming text against existing codes down to the specific section (&sect;) and paragraph level:
+        JurisMon does not force you to manually read through 180-page meeting agendas. The diff engine compares successive captured versions using section (&sect;), paragraph and word-level analysis where the extracted structure permits:
       </p>
       <div class="grid-3">
         <div class="feature-card">
           <div><span class="diff-badge diff-badge-added">+ ADDED</span></div>
           <h3>Added Clauses (&sect;)</h3>
-          <p>Instant detection of newly introduced zoning restrictions, setback requirements, or compliance definitions.</p>
+          <p>Highlights added text between captured versions. Changes may include zoning restrictions, setbacks or definitions, depending on the source.</p>
         </div>
         <div class="feature-card">
           <div><span class="diff-badge diff-badge-removed">&minus; REMOVED</span></div>
@@ -760,10 +761,10 @@
 
     <!-- CTA BAND -->
     <div class="cta-band">
-      <h2 class="cta-title">Never Miss a Statutory Delta Again</h2>
-      <p class="cta-desc">Protect your deals, clients, and projects with automated daily tracking, historical version control, and section-level alerts.</p>
+      <h2 class="cta-title">Review Captured Regulatory Changes</h2>
+      <p class="cta-desc">Search captured government documents and compare stored versions. Verify findings against the official source.</p>
       <div class="cta-actions">
-        <a href="/" class="btn btn-primary">Start Searching Municipal Updates</a>
+        <a href="/" class="btn btn-primary">Search Captured Updates</a>
         <a href="mailto:support@jurismon.com?subject=Custom%20Jurisdiction%20Coverage%20Request" class="btn btn-outline">Request Custom Jurisdiction Coverage</a>
       </div>
     </div>
@@ -792,16 +793,15 @@
     async function updateLiveCounts() {
       try {
         var res = await fetch("/api/sources");
-        if (!res.ok) return;
+        if (!res.ok) throw new Error("Source coverage unavailable");
         var data = await res.json();
-        var total = data.count ?? data.total_configured ?? 65;
-        var live = data.live_count ?? 41;
+        var total = data.count ?? data.total_configured;
+        var live = data.live_count;
+        if (!Number.isInteger(total) || !Number.isInteger(live)) throw new Error("Source counts missing");
         var statEl = document.getElementById("ingestion-stat");
-        if (statEl) {
-          statEl.textContent = live + " live jurisdictions, " + total + " tracked";
-        }
+        statEl.textContent = live + " operational sources, " + total + " configured";
       } catch (e) {
-        // Fallback remains the pre-rendered markup
+        document.getElementById("ingestion-stat").textContent = "Source coverage unavailable";
       }
     }
     if (document.readyState === "loading") {

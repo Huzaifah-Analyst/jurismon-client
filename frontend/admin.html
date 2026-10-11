@@ -117,7 +117,7 @@
 
   .brand-mark {
 
-    width: 26px; height: 26px; border-radius: var(--r-md); background: var(--ink); color: #fff;
+    width: 26px; height: 26px; border-radius: var(--r-md); background: var(--ink); color: var(--on-ink);
 
     display: grid; place-items: center; font-weight: 600; font-size: 15px; line-height: 1;
 
@@ -341,7 +341,7 @@
 
   .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgba(15, 23, 42, .06); }
 
-  .seg .n { color: var(--faint); font-weight: 400; }
+  .seg .n { color: var(--muted); font-weight: 400; }
 
   .controls .spacer { flex: 1; }
 
@@ -387,7 +387,7 @@
 
   tbody tr { transition: background-color .12s var(--ease); }
 
-  tbody tr:hover { background: #fbfcfe; }
+  tbody tr:hover { background: var(--row-hover); }
 
   td.primary { color: var(--ink); font-weight: 500; }
 
@@ -456,11 +456,11 @@
 
   .btn.danger-ghost:hover:not(:disabled) { background: var(--bad-bg); }
 
-  .btn.primary { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .btn.primary { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
 
-  .btn.danger { background: var(--bad-ink); border-color: var(--bad-ink); color: #fff; }
+  .btn.danger { background: var(--bad-ink); border-color: var(--bad-ink); color: var(--on-ink); }
 
-  .btn.danger:hover { background: #881337; }
+  .btn.danger:hover { background: var(--rose-text); }
 
   .btn:focus-visible, .cell:focus-visible, .seg button:focus-visible, .tabs button:focus-visible, .sortbtn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
@@ -497,7 +497,7 @@
 
   .tabs button[aria-selected="true"] { color: var(--ink); }
 
-  .tabs .n { font-weight: 400; color: var(--faint); }
+  .tabs .n { font-weight: 400; color: var(--muted); }
 
   .tab-line { position: absolute; bottom: -1px; left: 0; height: 2px; background: var(--ink); transition: transform .28s var(--ease), width .28s var(--ease); }
 
@@ -599,7 +599,7 @@
 
     transform: translate(-50%, 16px); opacity: 0; pointer-events: none;
 
-    background: var(--ink); color: #fff; font-size: 13.5px; font-weight: 500;
+    background: var(--ink); color: var(--on-ink); font-size: 13.5px; font-weight: 500;
 
     padding: 10px 14px; border-radius: 8px; display: flex; align-items: center; gap: 8px;
 
@@ -650,6 +650,7 @@
   }
 
 </style>
+<link rel="stylesheet" href="/static/theme.83c2aa669eb3.css">
 
 </head>
 
@@ -691,7 +692,7 @@
 
     <span class="avatar" id="admin-avatar" aria-label="Signed in as admin" style="display:none;">MM</span>
 
-    <button id="btn-logout" class="chip" style="display:none; cursor:pointer; background:#fff; color:var(--bad-ink); font-weight:500; border-color:var(--line);" title="Sign out of Admin Session">
+    <button id="btn-logout" class="chip" style="display:none; cursor:pointer; background:var(--surface); color:var(--bad-ink); font-weight:500; border-color:var(--line);" title="Sign out of Admin Session">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
       Log out
     </button>
@@ -1098,7 +1099,7 @@
 
 <!-- Admin Password & Auth Gate Modal -->
 <div id="auth-gate" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(15,23,42,0.75); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:20px;">
-  <div style="background:#ffffff; border:1px solid var(--line); border-radius:12px; max-width:420px; width:100%; padding:32px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.15), 0 10px 10px -5px rgba(0,0,0,0.08);">
+  <div style="background:var(--surface); border:1px solid var(--line); border-radius:12px; max-width:420px; width:100%; padding:32px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.15), 0 10px 10px -5px rgba(0,0,0,0.08);">
     <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
       <img src="/static/assets/logo.png" alt="JurisMon Admin" style="height:36px; width:auto; display:block; object-fit:contain;">
       <div>
@@ -1110,7 +1111,7 @@
     <form id="login-form" onsubmit="return false;" style="display:flex; flex-direction:column; gap:14px;">
       <div>
         <label style="display:block; font-size:12.5px; font-weight:500; color:var(--ink); margin-bottom:6px;">Admin Email</label>
-        <input type="email" id="login-email" value="admin@jurismon.com" required style="width:100%; height:40px; padding:0 12px; border:1px solid var(--line-strong); border-radius:6px; font-size:14px; background:#f8fafc;">
+        <input type="email" id="login-email" value="admin@jurismon.com" required style="width:100%; height:40px; padding:0 12px; border:1px solid var(--line-strong); border-radius:6px; font-size:14px; background:var(--bg);">
       </div>
 
       <div>
@@ -1123,12 +1124,12 @@
 
       <div id="login-error" style="display:none; color:var(--bad-ink); background:var(--bad-bg); border:1px solid var(--bad-cell); padding:8px 12px; border-radius:6px; font-size:12.5px;"></div>
 
-      <button type="submit" id="btn-submit-login" style="height:42px; background:var(--ink); color:#ffffff; font-weight:600; font-size:14px; border:0; border-radius:6px; cursor:pointer; margin-top:4px;">
+      <button type="submit" id="btn-submit-login" style="height:42px; background:var(--ink); color:var(--on-ink); font-weight:600; font-size:14px; border:0; border-radius:6px; cursor:pointer; margin-top:4px;">
         Sign In to Console
       </button>
     </form>
 
-    <div id="forgot-pw-box" style="display:none; margin-top:16px; padding:12px; background:#f1f5f9; border-radius:6px; font-size:12.5px; color:var(--text); line-height:1.45;">
+    <div id="forgot-pw-box" style="display:none; margin-top:16px; padding:12px; background:var(--hover); border-radius:6px; font-size:12.5px; color:var(--text); line-height:1.45;">
       <strong>Password Recovery:</strong><br>
       The admin password is stored only as a bcrypt hash in the server environment variable <code>ADMIN_PASSWORD_HASH</code>. To reset it, generate a new hash with <code>python scripts/generate_admin_hash.py</code> and update <code>ADMIN_PASSWORD_HASH</code> in your <code>.env</code> file, then restart the service.
       <div style="margin-top:8px; text-align:right;">
@@ -1401,9 +1402,9 @@
 
         modeTag.textContent = live ? "Live" : "Sandbox";
 
-        modeTag.style.background = live ? "#dcfce7" : "";
+        modeTag.style.background = live ? "var(--success-strong-bg)" : "";
 
-        modeTag.style.color = live ? "#166534" : "";
+        modeTag.style.color = live ? "var(--success-ink)" : "";
 
       } else {
 
@@ -1643,7 +1644,7 @@
 
     const row = $(`#src-body tr[data-id="${s.id}"]`);
 
-    if (row) { row.scrollIntoView({ block: "center", behavior: "smooth" }); row.animate([{ background: "#f1f5f9" }, { background: "transparent" }], { duration: 1400 }); }
+    if (row) { row.scrollIntoView({ block: "center", behavior: "smooth" }); row.animate([{ background: "var(--hover)" }, { background: "transparent" }], { duration: 1400 }); }
 
   });
 
@@ -1876,7 +1877,7 @@
 
           <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 8px;">
             <button type="button" class="btn btn-cancel-plan" data-id="${esc(p.id)}" style="font-size: 12.5px;">Cancel</button>
-            <button type="button" class="btn btn-save-plan" data-id="${esc(p.id)}" style="font-size: 12.5px; background: var(--ink); color: #fff; border-color: var(--ink);">Save</button>
+            <button type="button" class="btn btn-save-plan" data-id="${esc(p.id)}" style="font-size: 12.5px; background: var(--ink); color: var(--on-ink); border-color: var(--ink);">Save</button>
           </div>
 
         </article>`;
@@ -2452,6 +2453,7 @@
   }
 
   function logout() {
+    stopCrawlPolling();
     localStorage.removeItem("jurismon_admin_token");
     sources.length = 0;
     subscribers.length = 0;
@@ -2467,6 +2469,7 @@
   }
 
   function handleExpiredSession() {
+    stopCrawlPolling();
     localStorage.removeItem("jurismon_admin_token");
     sources.length = 0;
     subscribers.length = 0;
@@ -2622,7 +2625,18 @@
   }
 
   /* ---------- Crawl Run Management ---------- */
+  let crawlPollTimer;
+  let crawlStatusController;
+
+  function stopCrawlPolling() {
+    clearTimeout(crawlPollTimer);
+    crawlPollTimer = null;
+    if (crawlStatusController) crawlStatusController.abort();
+    crawlStatusController = null;
+  }
+
   async function checkCrawlStatus() {
+    stopCrawlPolling();
     const token = localStorage.getItem("jurismon_admin_token");
     const btn = $("#btn-run-crawl");
     const statusLine = $("#crawl-status-line");
@@ -2636,18 +2650,26 @@
       return;
     }
     const auth = { "Authorization": "Bearer " + token };
+    const controller = new AbortController();
+    crawlStatusController = controller;
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    let keepPolling = false;
 
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
       const res = await fetch("/api/admin/crawl/status", { headers: auth, signal: controller.signal });
-      clearTimeout(timeoutId);
+      if (localStorage.getItem("jurismon_admin_token") !== token || crawlStatusController !== controller) return;
+      if (res.status === 401 || res.status === 403) {
+        handleExpiredSession();
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
+        if (localStorage.getItem("jurismon_admin_token") !== token || crawlStatusController !== controller) return;
         if (data.status === "none") {
           statusLine.textContent = "No crawl runs recorded.";
           if (btn) btn.disabled = false;
         } else if (data.status === "running") {
+          keepPolling = true;
           const startedAgo = rel(new Date(data.started_at).getTime()).toLowerCase();
           statusLine.textContent = `Crawl in progress (started ${startedAgo})...`;
           if (btn) btn.disabled = true;
@@ -2661,15 +2683,28 @@
           if (btn) btn.disabled = false;
         }
       } else {
+        keepPolling = true;
         statusLine.textContent = "Crawl status unavailable";
         if (btn) btn.disabled = false;
       }
     } catch (e) {
+      if (localStorage.getItem("jurismon_admin_token") !== token || crawlStatusController !== controller) return;
+      keepPolling = true;
       console.warn("Could not fetch crawl status:", e);
       statusLine.textContent = "Crawl status unavailable";
       if (btn) btn.disabled = false;
+    } finally {
+      clearTimeout(timeoutId);
+      if (crawlStatusController === controller) {
+        crawlStatusController = null;
+        if (keepPolling && localStorage.getItem("jurismon_admin_token") === token) {
+          crawlPollTimer = setTimeout(checkCrawlStatus, 3000);
+        }
+      }
     }
   }
+
+  window.addEventListener("pagehide", stopCrawlPolling);
 
   async function triggerCrawlNow() {
     const auth = { "Authorization": "Bearer " + (localStorage.getItem("jurismon_admin_token") || "") };

@@ -172,7 +172,7 @@
 
     width: 24px; height: 24px; border-radius: var(--r-md);
 
-    background: var(--ink); color: #fff;
+    background: var(--ink); color: var(--on-ink);
 
     display: grid; place-items: center;
 
@@ -330,7 +330,7 @@
 
     background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
 
-    overflow-x: auto; scrollbar-width: none; max-width: 100%;
+    overflow-x: auto; scrollbar-width: none; max-width: 100%; min-width: 0;
 
   }
 
@@ -364,7 +364,7 @@
 
   .pill:hover:not(.is-active) { background: var(--hover); color: var(--ink); }
 
-  .pill.is-active { color: #fff; }
+  .pill.is-active { color: var(--on-ink); }
 
   .pill-count { font-weight: 400; opacity: .6; min-width: 1ch; }
 
@@ -436,9 +436,9 @@
 
   .result:first-child { border-top: 0; }
 
-  .result:hover { background: #fcfdfe; }
+  .result:hover { background: var(--result-hover); }
 
-  .result:focus-visible { background: #fbfcfe; box-shadow: inset 2px 0 0 var(--ink); }
+  .result:focus-visible { background: var(--row-hover); box-shadow: inset 2px 0 0 var(--ink); }
 
 
 
@@ -769,6 +769,7 @@
     .wrap { padding: 0 16px; }
 
     .brand-desc, .navlink, .search-kbd { display: none; }
+    #nav-user-email { display: none; }
 
     .hero { padding-top: 40px; }
 
@@ -818,25 +819,25 @@
   .gate-banner {
     margin: 20px 0 0;
     padding: 14px 18px;
-    background: #f0fdf4;
-    border: 1px solid #bbf7d0;
+    background: var(--success-bg);
+    border: 1px solid var(--success-border);
     border-radius: var(--r-lg);
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
     font-size: 14px;
-    color: #166534;
+    color: var(--success-ink);
   }
   .gate-banner.is-expired {
-    background: #fffbeb;
-    border-color: #fde68a;
-    color: #92400e;
+    background: var(--warning-bg);
+    border-color: var(--warning-border);
+    color: var(--warning-ink);
   }
   .gate-banner-btn {
     flex: none;
     background: var(--ink);
-    color: #fff;
+    color: var(--on-ink);
     border: 0;
     border-radius: var(--r-md);
     padding: 8px 14px;
@@ -943,7 +944,7 @@
     width: 100%;
     height: 44px;
     background: var(--ink);
-    color: #fff;
+    color: var(--on-ink);
     border: 0;
     border-radius: var(--r-md);
     font-size: 14.5px;
@@ -955,18 +956,19 @@
   .btn-submit:hover { opacity: .9; }
   .btn-submit:disabled { opacity: .5; cursor: not-allowed; }
   .form-error {
-    background: #fff1f2;
-    color: #9f1239;
+    background: var(--rose-bg);
+    color: var(--rose-ink);
     padding: 10px 12px;
     border-radius: var(--r-md);
     font-size: 13px;
     margin-bottom: 14px;
     display: none;
   }
+  #auth-modal.is-verifying .auth-feedback { min-height: 76px; }
   .form-notice {
-    background: #f0fdf4;
-    color: #166534;
-    border: 1px solid #bbf7d0;
+    background: var(--success-bg);
+    color: var(--success-ink);
+    border: 1px solid var(--success-border);
     padding: 10px 12px;
     border-radius: var(--r-md);
     font-size: 13px;
@@ -984,8 +986,8 @@
     transition: border-color .15s var(--ease), background .15s var(--ease);
   }
   .plan-card.is-selected {
-    border-color: #154DA8;
-    background: #f8fafc;
+    border-color: var(--primary);
+    background: var(--bg);
   }
   .plan-price {
     font-size: 22px;
@@ -993,7 +995,12 @@
     color: var(--ink);
   }
 
+  @media (max-width: 680px) {
+    .gate-banner { flex-direction: column; align-items: stretch; gap: 12px; }
+  }
+
 </style>
+<link rel="stylesheet" href="/static/theme.83c2aa669eb3.css">
 
 </head>
 
@@ -1014,7 +1021,7 @@
       <span class="navlink" style="cursor:default;"><span class="label">Operational Jurisdictions</span> <span class="navcount" id="source-count">-</span></span>
       <div id="auth-unauthed" style="display:flex; align-items:center; gap:8px;">
         <button type="button" class="btn-outline" id="btn-nav-login" style="cursor:pointer; height:32px; font-weight:500;">Log In</button>
-        <button type="button" class="btn-primary" id="btn-nav-register" style="cursor:pointer; height:32px; font-weight:500; background:var(--ink); color:#fff; border:0; border-radius:var(--r-md); padding:0 12px; font-size:13.5px;">Start 14-Day Free Trial</button>
+        <button type="button" class="btn-primary" id="btn-nav-register" style="cursor:pointer; height:32px; font-weight:500; background:var(--ink); color:var(--on-ink); border:0; border-radius:var(--r-md); padding:0 12px; font-size:13.5px;">Create Account</button>
       </div>
       <div id="auth-authed" style="display:none; align-items:center; gap:8px;">
         <span id="nav-user-badge" style="font-size:12px; padding:2px 8px; border-radius:12px; font-weight:500; background:var(--add-bg); color:var(--add-ink); border:1px solid var(--add-bar);">Trial</span>
@@ -1094,11 +1101,12 @@
 
   <div id="gate-banner" class="gate-banner" style="display:none;">
     <div id="gate-banner-text">
-      <strong>14-Day Free Trial:</strong> Sign up now for unlimited access to all statutory diffs and snapshots.
+      <strong>Account Access:</strong> Sign up now for unlimited access to all statutory diffs and snapshots.
     </div>
     <button type="button" class="gate-banner-btn" id="gate-banner-cta">Start Free Trial</button>
   </div>
 
+  <p id="auth-status" role="status" aria-live="polite" style="display:none; padding:10px 14px; border-radius:8px; background:var(--success-bg); color:var(--success-ink);"></p>
   <p class="summary" id="summary" aria-live="polite"></p>
 
   <ul class="results" id="results"></ul>
@@ -1140,11 +1148,13 @@
   <div class="modal-card">
     <button type="button" class="modal-close" id="auth-modal-close" aria-label="Close modal">&times;</button>
     <div class="modal-tabs">
-      <button type="button" class="modal-tab is-active" id="tab-register">Start 14-Day Free Trial</button>
+      <button type="button" class="modal-tab is-active" id="tab-register">Create Account</button>
       <button type="button" class="modal-tab" id="tab-login">Log In</button>
     </div>
-    <div id="auth-error" class="form-error"></div>
-    <div id="auth-notice" class="form-notice"></div>
+    <div class="auth-feedback">
+      <div id="auth-error" class="form-error" role="alert"></div>
+      <div id="auth-notice" class="form-notice" role="status"></div>
+    </div>
 
     <!-- Register Form -->
     <form id="form-register">
@@ -1160,8 +1170,8 @@
         <label for="reg-password">Password (min 8 characters)</label>
         <input type="password" id="reg-password" required minlength="8" placeholder="••••••••">
       </div>
-      <p style="font-size:12.5px; color:var(--muted); margin:4px 0 14px;">Includes immediate 14 days of full access across all operational municipal portals, clause diffs and snapshots. No credit card required upfront.</p>
-      <button type="submit" class="btn-submit" id="btn-submit-reg">Create Account &amp; Start Trial</button>
+      <p id="register-trial-description" style="font-size:12.5px; color:var(--muted); margin:4px 0 14px;">Confirm your email to create your account.</p>
+      <button type="submit" class="btn-submit" id="btn-submit-reg">Create Account</button>
     </form>
 
     <!-- Login Form -->
@@ -1173,7 +1183,7 @@
       <div class="form-group">
         <div style="display:flex; justify-content:space-between; align-items:baseline;">
           <label for="login-password">Password</label>
-          <a href="#" id="link-forgot-password" style="font-size:12.5px; color:#154DA8; text-decoration:underline;">Forgot password?</a>
+          <a href="#" id="link-forgot-password" style="font-size:12.5px; color:var(--primary); text-decoration:underline;">Forgot password?</a>
         </div>
         <input type="password" id="login-password" required placeholder="••••••••">
       </div>
@@ -1188,15 +1198,15 @@
       </div>
       <div class="form-group">
         <label for="verify-code">6-Digit Confirmation Code</label>
-        <input type="text" id="verify-code" required maxlength="6" pattern="[0-9]{6}" placeholder="123456" style="font-size:24px; letter-spacing:6px; text-align:center; font-family:monospace; font-weight:600;">
+        <input type="text" id="verify-code" required maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" aria-describedby="auth-error" placeholder="123456" style="font-size:24px; letter-spacing:6px; text-align:center; font-family:monospace; font-weight:600;">
       </div>
       <div class="form-group" id="verify-new-password-group" style="display:none;">
         <label for="reset-new-password">New Password (min 8 characters)</label>
         <input type="password" id="reset-new-password" minlength="8" placeholder="••••••••">
       </div>
-      <button type="submit" class="btn-submit" id="btn-submit-verify">Confirm &amp; Start 14-Day Free Trial</button>
+      <button type="submit" class="btn-submit" id="btn-submit-verify">Confirm Email</button>
       <div style="margin-top:14px; text-align:center; font-size:13px; color:var(--muted);">
-        Didn't receive code? <button type="button" id="btn-resend-code" style="background:none; border:none; color:#154DA8; font-weight:500; cursor:pointer; text-decoration:underline; padding:0;">Resend Code</button>
+        Didn't receive code? <button type="button" id="btn-resend-code" style="background:none; border:none; color:var(--primary); font-weight:500; cursor:pointer; text-decoration:underline; padding:0;">Resend Code</button>
       </div>
     </form>
   </div>
@@ -1207,7 +1217,7 @@
   <div class="modal-card" style="max-width:500px;">
     <button type="button" class="modal-close" id="paywall-modal-close" aria-label="Close modal">&times;</button>
     <div style="margin-bottom:18px;">
-      <span style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:#154DA8;">JurisMon Subscription</span>
+      <span style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:var(--primary);">JurisMon Subscription</span>
       <h2 id="paywall-modal-title" style="margin:4px 0 6px; font-size:22px; font-weight:600; color:var(--ink);">JurisMon Professional</h2>
       <p style="margin:0; font-size:14px; color:var(--muted);">Continuous regulatory drift monitoring across all active municipal &amp; statutory portals.</p>
     </div>
@@ -1233,7 +1243,7 @@
         <div>
           <div style="display:flex; align-items:center; gap:6px;">
             <span style="font-weight:600; color:var(--ink); font-size:15px;">Annual Billing</span>
-            <span style="font-size:11px; font-weight:600; background:#dcfce7; color:#166534; padding:2px 6px; border-radius:4px;">SAVE 20%</span>
+            <span style="font-size:11px; font-weight:600; background:var(--success-strong-bg); color:var(--success-ink); padding:2px 6px; border-radius:4px;">SAVE 20%</span>
           </div>
           <div style="font-size:13px; color:var(--muted);" id="subtext-plan-annual">$39/month, billed annually ($468/year)</div>
         </div>
@@ -1249,7 +1259,7 @@
       <li>Automated PayPal verification &amp; immediate account activation</li>
     </ul>
 
-    <button type="button" class="btn-submit" id="btn-paypal-subscribe" style="background:#0070ba; display:flex; align-items:center; justify-content:center; gap:8px;">
+    <button type="button" class="btn-submit" id="btn-paypal-subscribe" style="background:#0070ba; color:var(--on-accent); display:flex; align-items:center; justify-content:center; gap:8px;">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.067 8.478c.492.315.844.82.96 1.41.65 3.32-1.37 6.33-4.51 6.72-.44.05-.88.08-1.32.08h-2.12l-.76 4.82h-3.4l2.9-18.42h6.24c1.1 0 1.95.4 2.01 1.39z"/></svg>
       Subscribe with PayPal
     </button>
@@ -1374,12 +1384,40 @@
   /* ---------- Elements and state ---------- */
   const input = $("#q"), list = $("#results"), pills = $("#pills"), indicator = $("#indicator");
   const sortSel = $("#sort"), summary = $("#summary"), empty = $("#empty"), kbd = $("#kbd");
+  let configuredTrialDays = null;
+  function trialCta() {
+    return configuredTrialDays > 0 ? `Start ${configuredTrialDays}-Day Free Trial` : "Create Account";
+  }
+  function verifyCta() {
+    return configuredTrialDays > 0 ? `Confirm & Start ${configuredTrialDays}-Day Free Trial` : "Confirm Email";
+  }
+  function updateTrialCopy() {
+    for (const id of ["btn-nav-register", "tab-register", "btn-submit-reg"]) {
+      document.getElementById(id).textContent = trialCta();
+    }
+    document.getElementById("register-trial-description").textContent = configuredTrialDays > 0
+      ? `After email confirmation, your ${configuredTrialDays}-day free trial includes full access across all operational municipal portals, clause diffs and snapshots. No credit card required upfront.`
+      : "Confirm your email to create your account. Subscribe for full access.";
+    if (verifyMode === "signup" && !document.getElementById("btn-submit-verify").disabled) {
+      document.getElementById("btn-submit-verify").textContent = verifyCta();
+    }
+    updateGateBanner();
+    if (searchGateReason !== 'trial_expired') document.querySelectorAll('[data-trial-cta]').forEach(button => button.textContent = trialCta());
+  }
   const state = { q: "", filter: "all", sort: "newest", open: new Set(), first: true };
 
   const chevron = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const linkIcon = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 014.5 9l1-1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
 
   /* ---------- Customer Auth & Search Gating State ---------- */
+  let authNoticeTimer;
+  function showAuthNotice(message) {
+    clearTimeout(authNoticeTimer);
+    const notice = document.getElementById("auth-status");
+    notice.textContent = message;
+    notice.style.display = "block";
+    authNoticeTimer = setTimeout(() => { notice.style.display = "none"; }, 6000);
+  }
   let currentUser = null;
   let searchGated = false;
   let searchGateReason = "";
@@ -1387,7 +1425,9 @@
 
   /* ---------- API Fetching ---------- */
 
+  let searchRequestVersion = 0;
   async function fetchLiveSearch(query) {
+    const requestVersion = ++searchRequestVersion;
     showSearchSkeleton();
     try {
       const token = localStorage.getItem("jurismon_token");
@@ -1395,6 +1435,7 @@
       const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`, { headers });
       if (res.ok) {
         const json = await res.json();
+        if (requestVersion !== searchRequestVersion) return;
         DATA = json.items || [];
         totalIndexedRecords = json.total_snapshots ?? (json.results && json.results.total_snapshots) ?? DATA.length;
         searchGated = !!json.is_gated;
@@ -1409,6 +1450,7 @@
     } catch (e) {
       console.warn("Could not reach search service:", e);
     }
+    if (requestVersion !== searchRequestVersion) return;
     DATA = [];
     searchError = true;
     processData(DATA);
@@ -1436,15 +1478,15 @@
       banner.style.display = "flex";
       if (searchGateReason === "trial_expired") {
         banner.classList.add("is-expired");
-        bannerText.innerHTML = "<strong>14-Day Free Trial Expired:</strong> Subscribe to JurisMon Professional ($49/month or $468/year) to unlock unlimited regulatory drift monitoring.";
+        bannerText.innerHTML = "<strong>Free Trial Expired:</strong> Subscribe to JurisMon Professional ($49/month or $468/year) to unlock unlimited regulatory drift monitoring.";
         bannerCta.textContent = "Upgrade to Professional";
         bannerCta.onclick = () => openPaywallModal();
       } else {
         banner.classList.remove("is-expired");
-        const previewLive = counts.operational || 41;
-        const previewTotal = counts.total || 65;
-        bannerText.innerHTML = `<strong>Free Preview Mode:</strong> Showing initial municipal changes. Start your 14-day free trial for full text across ${previewLive} live jurisdictions, ${previewTotal} tracked.`;
-        bannerCta.textContent = "Start 14-Day Free Trial";
+        const coverage = sourcesLoaded
+          ? ` across ${counts.operational} live jurisdictions, ${counts.total} tracked` : "";
+        bannerText.innerHTML = `<strong>Free Preview Mode:</strong> Showing initial municipal changes. ${configuredTrialDays > 0 ? `Start your ${configuredTrialDays}-day free trial` : "Create an account and subscribe"} for full text${coverage}.`;
+        bannerCta.textContent = trialCta();
         bannerCta.onclick = () => openAuthModal("register");
       }
     } else {
@@ -1452,19 +1494,20 @@
     }
   }
 
-  /* Source counts come from the API. The defaults here are only what shows for
-     the instant before the first fetch returns. */
+  /* Source counts render only after the API has supplied them. */
 
   let counts = { total: 0, operational: 0, cloudflare: 0, dead: 0 };
   let totalIndexedRecords = 0;
   let isAdminView = false;
+  let sourcesLoaded = false;
+  let sourcesFailed = false;
 
   async function loadSourcesCount() {
     try {
       const token = localStorage.getItem("jurismon_admin_token") || localStorage.getItem("jurismon_token");
       const headers = token ? { "Authorization": `Bearer ${token}` } : {};
       const res = await fetch("/api/sources", { headers });
-      if (!res.ok) return;
+      if (!res.ok) throw new Error(`Source coverage request failed (HTTP ${res.status})`);
 
       const data = await res.json();
       const countEl = document.getElementById("source-count");
@@ -1487,32 +1530,42 @@
           titleEl.textContent = `Search amendments across ${counts.operational} live jurisdictions, ${counts.total} tracked`;
         }
       } else {
-        const total = data.count ?? data.total_configured ?? 65;
-        const live = data.live_count ?? 0;
+        const total = data.count ?? data.total_configured;
+        const live = data.live_count;
+        if (!Number.isFinite(total) || !Number.isFinite(live)) {
+          throw new Error("Source coverage response is missing its counts");
+        }
         counts = { total, operational: live, cloudflare: 0, dead: 0 };
 
         if (navLinkEl) navLinkEl.style.display = "none";
         if (titleEl) {
-          titleEl.textContent = live
-            ? `Search amendments across ${live} live jurisdictions, ${total} tracked`
-            : `Search amendments across ${total} U.S. jurisdictions`;
+          titleEl.textContent = `Search amendments across ${live} live jurisdictions, ${total} tracked`;
         }
       }
+      sourcesLoaded = true;
+      sourcesFailed = false;
+      updateGateBanner();
       updateStatusText();
     } catch (e) {
       console.warn("Could not fetch live source count:", e);
+      sourcesFailed = true;
+      updateStatusText();
     }
   }
 
   function updateStatusText() {
     const statEl = $("#status-text");
     if (!statEl) return;
+    if (!sourcesLoaded) {
+      statEl.textContent = sourcesFailed ? "Source coverage unavailable." : "Loading source coverage...";
+      return;
+    }
     if (isAdminView) {
       const recent = DATA.filter(d => d.type === "diff" && d.hoursAgo <= 24).length;
       statEl.innerHTML = `<strong>${counts.operational} operational portals</strong> ingesting daily (${counts.cloudflare} Cloudflare protected, ${counts.dead} expired municipality links). ${recent} statutory changes detected.`;
     } else {
-      const total = counts.total || 65;
-      const live = counts.operational || 0;
+      const total = counts.total;
+      const live = counts.operational;
       const recordsStr = totalIndexedRecords ? ` ${totalIndexedRecords} statutory records indexed.` : "";
       const portalsStr = live
         ? `Monitoring ${live} live municipal and county portals daily, ${total} tracked.`
@@ -1602,14 +1655,14 @@
             <div class="full-box">
               <p class="full-label">${fullLabel}</p>
               ${d.is_locked ? `
-                <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:6px; padding:12px 14px; margin-top:8px;">
-                  <div style="font-weight:600; color:#92400e; font-size:13.5px; display:flex; align-items:center; gap:6px;">
+                <div style="background:var(--warning-bg); border:1px solid var(--warning-border); border-radius:6px; padding:12px 14px; margin-top:8px;">
+                  <div style="font-weight:600; color:var(--warning-ink); font-size:13.5px; display:flex; align-items:center; gap:6px;">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                     Full Statutory Redline &amp; Text Locked
                   </div>
-                  <p style="margin:4px 0 10px; font-size:13px; color:#78350f;">Complete text and historical clause redlines require an active trial or JurisMon Professional subscription.</p>
-                  <button type="button" class="btn-primary" onclick="window.triggerAuthOrPaywall()" style="background:#154DA8; color:#fff; border:0; padding:6px 14px; font-size:13px; border-radius:4px; cursor:pointer; font-weight:500;">
-                    ${searchGateReason === 'trial_expired' ? 'Upgrade to JurisMon Professional ($49/mo)' : 'Start 14-Day Free Trial'}
+                  <p style="margin:4px 0 10px; font-size:13px; color:var(--warning-text);">Complete text and historical clause redlines require an active trial or JurisMon Professional subscription.</p>
+                  <button type="button" class="btn-primary" data-trial-cta onclick="window.triggerAuthOrPaywall()" style="background:var(--primary); color:var(--on-ink); border:0; padding:6px 14px; font-size:13px; border-radius:4px; cursor:pointer; font-weight:500;">
+                    ${searchGateReason === 'trial_expired' ? 'Upgrade to JurisMon Professional ($49/mo)' : trialCta()}
                   </button>
                 </div>
               ` : `<p class="full-text">${hl(d.full)}</p>`}
@@ -1795,6 +1848,7 @@
   let verifyMode = "signup"; // "signup" or "reset"
 
   function openAuthModal(tab = "register") {
+    authModal.classList.remove("is-verifying");
     authError.style.display = "none";
     authError.textContent = "";
     if (authNotice) {
@@ -1808,6 +1862,7 @@
   }
 
   function showVerifyScreen(email, mode = "signup") {
+    authModal.classList.add("is-verifying");
     pendingEmail = email;
     verifyMode = mode;
     authError.style.display = "none";
@@ -1841,7 +1896,7 @@
         pwdInput.required = false;
         pwdInput.value = "";
       }
-      btn.textContent = "Confirm & Start 14-Day Free Trial";
+      btn.textContent = verifyCta();
     }
 
     const codeInput = $("#verify-code");
@@ -1851,6 +1906,7 @@
 
   function closeAuthModal() {
     authModal.classList.remove("is-active");
+    authModal.classList.remove("is-verifying");
     $(".modal-tabs").style.display = "flex";
     $("#form-verify").style.display = "none";
   }
@@ -1874,6 +1930,7 @@
   };
 
   function setAuthTab(tab) {
+    authModal.classList.remove("is-verifying");
     const isReg = tab === "register";
     $("#tab-register").classList.toggle("is-active", isReg);
     $("#tab-login").classList.toggle("is-active", !isReg);
@@ -1909,6 +1966,7 @@
     localStorage.removeItem("jurismon_user");
     currentUser = null;
     updateTopNav();
+    showAuthNotice("Signed out successfully.");
     fetchLiveSearch(state.q);
   });
 
@@ -1989,6 +2047,7 @@
       } finally {
         btn.disabled = false;
         btn.textContent = "Update Password";
+        if (authError.style.display === "block") $("#verify-code").focus();
       }
       return;
     }
@@ -2005,7 +2064,7 @@
         authError.textContent = data.detail || "Invalid confirmation code.";
         authError.style.display = "block";
         btn.disabled = false;
-        btn.textContent = "Confirm & Start 14-Day Free Trial";
+        btn.textContent = verifyCta();
         return;
       }
       localStorage.setItem("jurismon_token", data.access_token);
@@ -2013,13 +2072,15 @@
       currentUser = data.user;
       closeAuthModal();
       updateTopNav();
+      showAuthNotice("Signed in successfully.");
       fetchLiveSearch(state.q);
     } catch (err) {
       authError.textContent = "Network error verifying code. Please try again.";
       authError.style.display = "block";
     } finally {
       btn.disabled = false;
-      btn.textContent = "Confirm & Start 14-Day Free Trial";
+      btn.textContent = verifyCta();
+      if (authError.style.display === "block") $("#verify-code").focus();
     }
   });
 
@@ -2123,6 +2184,7 @@
       currentUser = data.user;
       closeAuthModal();
       updateTopNav();
+      showAuthNotice("Signed in successfully.");
       fetchLiveSearch(state.q);
     } catch (err) {
       authError.textContent = "Network error. Please try again.";
@@ -2201,34 +2263,34 @@
       const acc = currentUser.access || {};
       if (acc.reason === "active_subscription") {
         badgeEl.textContent = "Pro Active";
-        badgeEl.style.background = "#dcfce7";
-        badgeEl.style.color = "#166534";
-        badgeEl.style.borderColor = "#86efac";
+        badgeEl.style.background = "var(--success-strong-bg)";
+        badgeEl.style.color = "var(--success-ink)";
+        badgeEl.style.borderColor = "var(--success-strong-border)";
         badgeEl.onclick = () => { window.location.href = "/account"; };
       } else if (acc.reason === "paused_access_until") {
         badgeEl.textContent = "Pro (Paused)";
-        badgeEl.style.background = "#fef3c7";
-        badgeEl.style.color = "#92400e";
-        badgeEl.style.borderColor = "#fcd34d";
+        badgeEl.style.background = "var(--warning-strong-bg)";
+        badgeEl.style.color = "var(--warning-ink)";
+        badgeEl.style.borderColor = "var(--warning-strong-border)";
         badgeEl.onclick = () => { window.location.href = "/account"; };
       } else if (acc.reason === "cancelled_access_until") {
         badgeEl.textContent = "Pro (Cancelled)";
-        badgeEl.style.background = "#fee2e2";
-        badgeEl.style.color = "#991b1b";
-        badgeEl.style.borderColor = "#fca5a5";
+        badgeEl.style.background = "var(--danger-strong-bg)";
+        badgeEl.style.color = "var(--danger-ink)";
+        badgeEl.style.borderColor = "var(--danger-border)";
         badgeEl.onclick = () => { window.location.href = "/account"; };
       } else if (acc.reason === "trial") {
-        const days = acc.trial_days_remaining ?? 14;
-        badgeEl.textContent = `${days}d Trial`;
-        badgeEl.style.background = "#eff6ff";
-        badgeEl.style.color = "#1e40af";
-        badgeEl.style.borderColor = "#bfdbfe";
+        const days = acc.trial_days_remaining;
+        badgeEl.textContent = days != null ? `${days}d Trial` : "Trial";
+        badgeEl.style.background = "var(--info-bg)";
+        badgeEl.style.color = "var(--info-ink)";
+        badgeEl.style.borderColor = "var(--info-border)";
         badgeEl.onclick = null;
       } else {
         badgeEl.textContent = "Trial Expired";
-        badgeEl.style.background = "#fee2e2";
-        badgeEl.style.color = "#991b1b";
-        badgeEl.style.borderColor = "#fca5a5";
+        badgeEl.style.background = "var(--danger-strong-bg)";
+        badgeEl.style.color = "var(--danger-ink)";
+        badgeEl.style.borderColor = "var(--danger-border)";
         badgeEl.style.cursor = "pointer";
         badgeEl.onclick = openPaywallModal;
       }
@@ -2265,12 +2327,13 @@
   }
 
   /* ---------- Boot ---------- */
+  showSearchSkeleton();
+  if (localStorage.getItem("jurismon_token")) $("#auth-unauthed").style.display = "none";
   checkUserSession().then(() => {
     fetchLiveSearch("");
   });
   loadSourcesCount();
   updateStatusText();
-  render();
   moveIndicator();
   requestAnimationFrame(() => pills.classList.add("ready"));
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveIndicator);
@@ -2340,6 +2403,10 @@
       if (!res.ok) return;
       const data = await res.json();
       if (!data || !Array.isArray(data.plans)) return;
+      if (Number.isInteger(data.trial_days) && data.trial_days >= 0) {
+        configuredTrialDays = data.trial_days;
+        updateTrialCopy();
+      }
 
       const mPlan = data.plans.find(p => p.interval === "month" || (p.id && p.id.includes("monthly")));
       const aPlan = data.plans.find(p => p.interval === "year" || (p.id && p.id.includes("annual")));

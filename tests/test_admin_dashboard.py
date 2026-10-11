@@ -88,7 +88,7 @@ class TestPlanCatalogue(AdminTestCase):
         self.assertIn(MONTHLY, ids)
         self.assertIn(ANNUAL, ids)
         self.assertEqual(data["currency"], "USD")
-        self.assertEqual(data["trial_days"], 14)
+        self.assertEqual(data["trial_days"], main.get_plan_catalogue()["trial_days"])
 
     def test_plan_subscriber_counts_reflect_active_subscriptions(self):
         self.send(activation("I-A1", MONTHLY))
@@ -659,6 +659,7 @@ class TestPlanChangeLog(AdminTestCase):
         self.assertEqual(rows[0]["plan_id"], "professional_monthly")
 
     def test_catalogue_settings_change_records_with_a_null_plan_id(self):
+        old_days = main.get_plan_catalogue()["trial_days"]
         res = self.client.patch(
             "/api/admin/plans", json={"trial_days": 21}, headers=self.auth
         )
@@ -667,7 +668,7 @@ class TestPlanChangeLog(AdminTestCase):
         rows = main.repo.list_plan_changes()
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]["field"], "trial_days")
-        self.assertEqual(rows[0]["old_value"], "14")
+        self.assertEqual(rows[0]["old_value"], str(old_days))
         self.assertEqual(rows[0]["new_value"], "21")
         self.assertIsNone(rows[0]["plan_id"])
 
