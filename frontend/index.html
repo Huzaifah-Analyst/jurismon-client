@@ -1428,13 +1428,17 @@
   /* ---------- API Fetching ---------- */
 
   let searchRequestVersion = 0;
+  let searchController = null;
   async function fetchLiveSearch(query) {
     const requestVersion = ++searchRequestVersion;
+    if (searchController) searchController.abort();
+    searchController = new AbortController();
+    const controller = searchController;
     showSearchSkeleton();
     try {
       const token = localStorage.getItem("jurismon_token");
       const headers = token ? { "Authorization": `Bearer ${token}` } : {};
-      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`, { headers });
+      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`, { headers, signal: controller.signal });
       if (res.ok) {
         const json = await res.json();
         if (requestVersion !== searchRequestVersion) return;
@@ -1450,6 +1454,7 @@
         return;
       }
     } catch (e) {
+      if (controller.signal.aborted) return;
       console.warn("Could not reach search service:", e);
     }
     if (requestVersion !== searchRequestVersion) return;
@@ -1757,13 +1762,14 @@
     timer = setTimeout(() => {
       state.q = input.value.trim();
       fetchLiveSearch(state.q);
-    }, 120);
+    }, 300);
   });
 
   input.addEventListener("focus", updateKbd);
   input.addEventListener("blur", updateKbd);
   input.addEventListener("keydown", e => {
     if (e.key === "Escape") {
+      clearTimeout(timer);
       if (input.value) { input.value = ""; state.q = ""; fetchLiveSearch(""); updateKbd(); }
       else input.blur();
     } else if (e.key === "ArrowDown" || (e.key === "Enter" && list.firstElementChild)) {
@@ -1773,6 +1779,7 @@
   });
 
   $("#clear").addEventListener("click", () => {
+    clearTimeout(timer);
     input.value = ""; state.q = "";
     if (state.filter !== "all") pills.querySelector('[data-filter="all"]').click();
     else fetchLiveSearch("");

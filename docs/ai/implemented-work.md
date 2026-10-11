@@ -187,3 +187,19 @@ do not present the original run as fully passing.
   CSV is importable, not claimed delivered to a sheet. Final selection/rate pending.
 - Files: docs/client/competitor-gap-list-2026-10-11.csv and
   docs/client/competitor-implementation-scope.md. Development commit containing entry.
+
+## R-09: Search request load and measured reads, 11 October 2026
+
+- Increased typing debounce from 120ms to 300ms, aborts superseded requests,
+  preserves version guards and cancels pending typing timers on Escape/clear.
+  Abort does not guarantee cancellation of an already running database query.
+- Real browser types parking at 40ms/character: one search request. Immediate
+  Escape after editing emits one empty-query request and no delayed stale search.
+  Search/loading/login/older-response selection: 7 passed in 29.67s.
+- Read-only production repository samples (ms): empty 1522.91/148.43/138.06;
+  zoning 289.58/202.81/139.66; parking 135.02/94.31/83.37. These include SDK/network
+  round trips, not SQL execution time. Serialized result sizes 293789/759185/280554
+  bytes respectively, not compressed wire sizes. No unsupported root cause assigned.
+- Evidence: ignored test-results/remaining-search-measure.json. Files:
+  frontend/index.html, tests/test_search_requests.py. Development commit containing
+  entry; not deployed. Database query-plan tuning remains optional follow-up.
