@@ -4,9 +4,9 @@ Every repository method is written as `if self.supabase: <postgrest> else:
 <sqlite>`. Without credentials the client is None, so the whole Supabase half -
 the code that actually runs in production - was never executed by any test.
 
-These tests drive that half with a fake PostgREST client, and pin down the
-silent-degradation behaviour: when Supabase raises, the method falls through to
-SQLite rather than surfacing the error.
+These tests drive that half with a fake PostgREST client. Legacy source/search
+reads retain their documented fallback; ingestion writes now surface production
+storage errors instead of silently redirecting them to local disk.
 """
 
 import os
@@ -252,19 +252,20 @@ class TestSupabaseDegradation(SupabaseRepositoryTestCase):
 
         self.assertTrue(any("Supabase" in line for line in captured.output))
 
-    def test_write_during_outage_lands_in_sqlite(self):
-        """Documents the risk: an outage silently redirects writes to local disk."""
+    def test_write_during_outage_does_not_land_in_sqlite(self):
+        """A production storage outage must not pretend local persistence succeeded."""
         repo, _ = self._repo(raises=True)
 
-        repo.upsert_source({
-            "id": "site-77", "name": "Outage City",
-            "base_url": "https://outage.gov", "adapter_type": "custom",
-        })
+        with self.assertRaisesRegex(RuntimeError, 'Supabase unavailable'):
+            repo.upsert_source({
+                "id": "site-77", "name": "Outage City",
+                "base_url": "https://outage.gov", "adapter_type": "custom",
+            })
 
         import sqlite3
         with sqlite3.connect(self.db_path) as conn:
             rows = conn.execute("SELECT id FROM sources WHERE id='site-77'").fetchall()
-        self.assertEqual(len(rows), 1)
+        self.assertEqual(len(rows), 0)
 
 
 if __name__ == "__main__":

@@ -260,6 +260,7 @@ class Repository:
                 return res.data[0] if res.data else None
             except Exception as e:
                 logger.error(f"Supabase upsert source error: {e}")
+                raise
 
         # A configured source keeps its ID when its official URL moves.
         import uuid
@@ -346,6 +347,7 @@ class Repository:
                 return insert_res.data[0] if insert_res.data else None
             except Exception as e:
                 logger.error(f"Supabase get/create document error: {e}")
+                raise
 
         # SQLite Fallback
         import uuid
@@ -374,6 +376,7 @@ class Repository:
                 return res.data[0] if res.data else None
             except Exception as e:
                 logger.error(f"Supabase get latest snapshot error: {e}")
+                raise
 
         with self._connect() as conn:
             conn.row_factory = sqlite3.Row
@@ -381,6 +384,27 @@ class Repository:
             cur.execute("SELECT * FROM snapshots WHERE document_id=? ORDER BY version DESC LIMIT 1", (document_id,))
             row = cur.fetchone()
             return dict(row) if row else None
+
+    def get_case_study_capture(self, source_id: str, url: str, required_terms: List[str]) -> Optional[Dict[str, Any]]:
+        """Return evidence metadata only when a visible capture supports the curated case."""
+        if self.supabase:
+            documents = self.supabase.table("documents").select("id").eq("source_id", source_id).eq("pdf_url", url).execute().data or []
+            if not documents:
+                return None
+            rows = self.supabase.table("snapshots").select("id,version,crawled_at,cleaned_text").in_("document_id", [row["id"] for row in documents]).eq("is_searchable", True).order("crawled_at", desc=True).limit(1).execute().data or []
+        else:
+            with self._connect() as connection:
+                connection.row_factory = sqlite3.Row
+                rows = [dict(row) for row in connection.execute(
+                    "SELECT s.id,s.version,s.crawled_at,s.cleaned_text FROM snapshots s JOIN documents d ON d.id=s.document_id WHERE d.source_id=? AND d.pdf_url=? AND s.is_searchable=1 ORDER BY s.crawled_at DESC LIMIT 1", (source_id, url)
+                )]
+        if not rows:
+            return None
+        row = rows[0]
+        normalized = " ".join((row.get("cleaned_text") or "").lower().split())
+        if not all(" ".join(term.lower().split()) in normalized for term in required_terms):
+            return None
+        return {key: row.get(key) for key in ("id", "version", "crawled_at")}
 
     def create_snapshot(
         self, document_id: str, version: int, content_hash: str, raw_text: str, cleaned_text: str, ocr_applied: bool = False
@@ -399,6 +423,7 @@ class Repository:
                 return res.data[0] if res.data else None
             except Exception as e:
                 logger.error(f"Supabase create snapshot error: {e}")
+                raise
 
         import uuid
         snap_id = str(uuid.uuid4())
@@ -429,6 +454,7 @@ class Repository:
                 return res.data[0] if res.data else None
             except Exception as e:
                 logger.error(f"Supabase save diff error: {e}")
+                raise
 
         import uuid
         diff_id = str(uuid.uuid4())

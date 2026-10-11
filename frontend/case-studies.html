@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Case Studies | JurisMon</title>
+  <meta name="description" content="Source-document case studies supported by verified JurisMon captures and linked official government records.">
+  <link rel="canonical" href="https://jurismon.com/case-studies">
+  <link rel="icon" href="/static/assets/favicon.ico">
+  <style>
+    :root { --bg:#f8fafc; --surface:#fff; --ink:#0f172a; --text:#334155; --muted:#64748b; --line:#e2e8f0; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font:16px/1.65 system-ui,sans-serif; }
+    .wrap { width:min(100%,1040px); margin:auto; padding:0 24px; }
+    header { background:var(--surface); border-bottom:1px solid var(--line); }
+    header .wrap { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; padding-top:18px; padding-bottom:18px; }
+    nav { display:flex; flex-wrap:wrap; gap:18px; }
+    a { color:var(--primary); text-underline-offset:3px; overflow-wrap:anywhere; }
+    a:focus-visible,button:focus-visible { outline:3px solid var(--primary); outline-offset:4px; }
+    main { padding-top:48px; padding-bottom:48px; }
+    h1,h2,h3 { color:var(--ink); line-height:1.25; }
+    h1 { font-size:clamp(28px,5vw,42px); margin:0 0 16px; }
+    h2 { font-size:24px; }
+    h3 { font-size:18px; }
+    .lede { font-size:18px; max-width:780px; }
+    .notice,article { border:1px solid var(--line); background:var(--surface); border-radius:10px; padding:24px; margin-top:24px; }
+    .metadata { color:var(--muted); font-size:14px; }
+    .actions { display:flex; flex-wrap:wrap; gap:14px; }
+    button { color:var(--primary); background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:8px 16px; font:inherit; cursor:pointer; }
+    footer { border-top:1px solid var(--line); padding:24px 0; }
+    @media(max-width:480px) { .wrap { padding-left:16px; padding-right:16px; } article,.notice { padding:18px; } }
+  </style>
+  <link rel="stylesheet" href="/static/theme.83c2aa669eb3.css">
+</head>
+<body>
+  <header><div class="wrap">
+    <a href="/" aria-label="JurisMon home"><img src="/static/assets/logo.png" alt="JurisMon" width="143" height="40"></a>
+    <nav aria-label="Main"><a href="/">Search</a><a href="/about#coverage">Coverage</a><a href="/case-studies" aria-current="page">Case Studies</a></nav>
+  </div></header>
+  <main class="wrap">
+    <h1>Case Studies</h1>
+    <p class="lede">Follow an official regulatory document from a verified capture to the sections a reviewer needs to inspect.</p>
+    <aside class="notice" aria-label="Evidence and limitations">These are source-document case studies. They are supported by captured legal text and official notices, and do not measure customer savings or prove market validation. A first capture is a baseline, not an automatically detected amendment. Check the current official record before relying on a historical rule.</aside>
+    <p id="status" role="status">Checking captured evidence…</p>
+    <button id="retry" type="button" hidden>Retry</button>
+    <div id="cases"></div>
+  </main>
+  <footer><nav class="wrap" aria-label="Footer"><a href="/about">About</a><a href="/terms">Terms</a><a href="/privacy">Privacy</a></nav></footer>
+  <script>
+    const container = document.getElementById('cases');
+    const status = document.getElementById('status');
+    const retry = document.getElementById('retry');
+    function text(parent,tag,value,cls) { const node=document.createElement(tag); node.textContent=value; if(cls) node.className=cls; parent.append(node); return node; }
+    function link(parent,label,url) { const node=text(parent,'a',label); node.href=url; return node; }
+    async function loadCases() {
+      retry.hidden=true; status.textContent='Checking captured evidence…'; container.replaceChildren();
+      try {
+        const response=await fetch('/api/case-studies');
+        if(!response.ok) throw new Error('Evidence unavailable');
+        const data=await response.json();
+        for(const item of data.cases) {
+          const article=document.createElement('article'); article.id=item.id;
+          text(article,'h2',item.title);
+          text(article,'p',item.jurisdiction,'metadata');
+          text(article,'p',item.legal_date_label+': '+item.legal_date,'metadata');
+          const date=item.capture.crawled_at ? new Date(item.capture.crawled_at).toLocaleString('en-US',{timeZone:'UTC'})+' UTC' : 'Unavailable';
+          text(article,'p','Verified capture: '+date+' · Stored version '+item.capture.version,'metadata');
+          text(article,'h3','What the official document covers'); text(article,'p',item.summary);
+          text(article,'h3','Review workflow'); text(article,'p',item.review);
+          const actions=text(article,'p','','actions');
+          link(actions,'Official document',item.official_url); link(actions,'Government listing',item.listing_url);
+          link(actions,'Search captured text','/?q='+encodeURIComponent(item.search));
+          container.append(article);
+        }
+        status.textContent=data.cases.length ? data.cases.length+' verified source-document case studies.' : 'No case studies have verified captured evidence available yet. Please check again after ingestion completes.';
+      } catch(error) { status.textContent='Captured evidence could not be checked. Please retry.'; retry.hidden=false; }
+    }
+    retry.addEventListener('click',loadCases);
+    loadCases();
+  </script>
+</body>
+</html>

@@ -7,7 +7,7 @@
 
 ### RULE 1: Dual-Schema Parity
 - Whenever you add a column or table to `_init_sqlite_schema()` in [`db/repository.py`](../../db/repository.py), you **MUST** create a matching numbered SQL migration in [`db/migrations/`](../../db/migrations/) in the same commit.
-- Use the next sequential number. As of now, migrations exist from `001` through `007`. **The next migration file is `008_<name>.sql`**.
+- Use the next sequential number after the highest existing file in `db/migrations/`. As of 11 October 2026, migrations exist through `009`; the next number is `010`. Check the directory before assigning a number.
 - PostgreSQL column types are strict (`BOOLEAN DEFAULT TRUE`, not `INTEGER 1`).
 - **Enforcement**: Run `pytest tests/test_schema_contract.py`. If this test fails, you are not allowed to push.
 

@@ -327,6 +327,27 @@ async def serve_about_page():
     return "<h1>About JurisMon</h1>"
 
 
+@app.get("/case-studies", response_class=HTMLResponse)
+async def serve_case_studies_page():
+    return FileResponse(os.path.join(frontend_dir, "case-studies.html"))
+
+
+@app.get("/api/case-studies")
+def list_case_studies():
+    with open(os.path.join(os.path.dirname(__file__), "..", "config", "case_studies.json"), encoding="utf-8") as case_file:
+        cases = json.load(case_file)
+    published = []
+    try:
+        for case in cases:
+            evidence = repo.get_case_study_capture(case["source_id"], case["official_url"], case["required_terms"])
+            if evidence:
+                published.append({**{key: value for key, value in case.items() if key != "required_terms"}, "capture": evidence})
+    except Exception:
+        logger.exception("Case-study evidence lookup failed")
+        raise HTTPException(status_code=503, detail="Case-study evidence is temporarily unavailable.")
+    return {"cases": published, "basis": "Verified captured source documents; no customer outcome or automated amendment-detection claim."}
+
+
 @app.get("/terms", response_class=HTMLResponse)
 async def serve_terms_page():
     terms_path = os.path.join(frontend_dir, "terms.html")
@@ -394,6 +415,7 @@ async def serve_sitemap_xml():
         "    <changefreq>monthly</changefreq>\n"
         "    <priority>0.8</priority>\n"
         "  </url>\n"
+        "  <url><loc>https://jurismon.com/case-studies</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n"
         "  <url>\n"
         "    <loc>https://jurismon.com/terms</loc>\n"
         "    <changefreq>monthly</changefreq>\n"
@@ -635,6 +657,7 @@ async def list_sources(
             "count": total,
             "total_configured": total,
             "live_count": len(operational),
+            "exclusions": [{"name": source.get("name"), "health_status": source.get("health_status")} for source in all_sources if not source.get("is_active")],
         }
 
     cloudflare = [s for s in all_sources if s.get("health_status") == "cloudflare_blocked"]

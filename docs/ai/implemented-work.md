@@ -283,3 +283,49 @@ do not present the original run as fully passing.
 - Affected extraction, dispatch, capture and metrics tests: 37 passed in 12.29s.
   Covers failed fetch, empty discovery, mixed rejected/legal captures, real PDFs and
   unchanged legal documents. This follow-up is not in release 0c8d0a4 yet.
+
+## R-05/R-06: Executed backfill and storage-error repair
+
+- Outcome follow-up deployed as ea54057. Source-only production run 83e4a73e
+  finished partial_failure at 14:05:09 UTC: 7/8 successful, 76 discovered documents,
+  60 actual new baseline captures, zero new diffs. Mail explicitly disabled.
+- Actual stored captures: San Bernardino 21, Austin 20, Miami-Dade 12, Harris 2,
+  Dallas 2, Tarrant 2, Bexar 1. San Diego 0: all 16 PDF downloads timed out.
+  Updated only these eight config blocks from evidence; degraded San Diego remains
+  active for daily retry. Config status synchronization follows final release.
+- Historical stale running record was marked failed by existing recovery. No
+  completed-run claim assigned to an unconfirmed dispatch. Raw snapshots increased
+  3755 to 3815 from new captures; raw diffs remain 2647; no history deleted.
+- Ingestion source/document/snapshot/diff writes and latest-baseline lookup now
+  raise production storage errors instead of redirecting into SQLite. Five failure
+  cases prove no local database access on a configured Supabase error. Local
+  SQLite remains supported when no production client is configured.
+- Storage/extraction/schema selection: 44 passed. Updated old characterization
+  test to require no redirected write. Final complete suite: 498 passed in 528.38s,
+  one existing dependency warning. Intermediate full run had two test-expectation
+  failures (496 passed), corrected and targeted API/case selection 75 passed before
+  the final complete passing run. Do not report the intermediate run as passing.
+
+## R-12/R-13/R-16: Evidence-backed case studies and housekeeping
+
+- Added /case-studies and restricted /api/case-studies with two written examples:
+  Austin preservation-bonus rule and San Bernardino Ordinance 4400. Reviewed
+  official notices/listings; actual production captures contain the selected
+  legal sections, verified internally without exporting source text. Versions/date
+  are real; official legal dates are shown separately. Baselines, historical law
+  limits and absence of customer/market-validation proof are explicit.
+- Both SQLite and Supabase publication checks require a visible matching capture.
+  Missing/quarantined evidence withholds a case; storage errors give 503/retry.
+  The page uses textContent, supports light/dark/mobile, and has search deep links.
+  No full captured text is exposed by the public case-study endpoint.
+- Coverage displays actual inactive names/statuses from a restricted public
+  summary; full source URLs/config remain admin-only. Local API/browser checks
+  cover actual list counts and missing evidence, both storage branches, supporting
+  terms, withheld captures, search links, overflow and axe.
+- Documentation index now points to the current backlog/ledger/commercial context;
+  old task board labelled historical. Next-migration guidance corrected to inspect
+  current directory (009 exists; next 010). Raw client chat/settings untouched.
+- Written evidence file: docs/client/case-studies-evidence.md. Final release pending.
+- Google Sheets connected-session lookup returned no sessions; competitor CSV
+  remains ready for import, not delivered to a live sheet. Native-zoom profile
+  experiment did not change actual Chromium zoom; it does not close that QA gap.

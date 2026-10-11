@@ -57,7 +57,7 @@
     },
     "is_active": true,
     "health_status": "operational",
-    "status_detail": "Official regulatory listing and legal document verified from VPS on 2026-10-11; ingestion pending"
+    "status_detail": "Production backfill on 2026-10-11 stored 2 baseline captures; no amendment diffs claimed"
   },
   {
     "id": "site-06-maricopa",
@@ -80,8 +80,8 @@
       "link_selector": "a[href*='/zoning/'][href$='.pdf']:not([href*='formfields']):not([href*='Suggestion'])"
     },
     "is_active": true,
-    "health_status": "operational",
-    "status_detail": "Official zoning amendment listing and Update 115 PDF verified from VPS on 2026-10-11; ingestion pending"
+    "health_status": "degraded",
+    "status_detail": "Production backfill on 2026-10-11 discovered 16 documents but all PDF downloads timed out; zero stored captures; daily retries remain enabled"
   },
   {
     "id": "site-08-ocfl",
@@ -105,7 +105,7 @@
     },
     "is_active": true,
     "health_status": "operational",
-    "status_detail": "Official zoning district listing and regulations PDF verified from VPS on 2026-10-11; ingestion pending"
+    "status_detail": "Production backfill on 2026-10-11 stored 12 baseline captures; no amendment diffs claimed"
   },
   {
     "id": "site-10-kingcounty",
@@ -153,7 +153,7 @@
     },
     "is_active": true,
     "health_status": "operational",
-    "status_detail": "Official regulatory update listing and rule PDF verified from VPS on 2026-10-11; ingestion pending"
+    "status_detail": "Production backfill on 2026-10-11 stored 20 baseline captures; no amendment diffs claimed"
   },
   {
     "id": "site-14-fultoncountyga",
@@ -177,7 +177,7 @@
     },
     "is_active": true,
     "health_status": "operational",
-    "status_detail": "Official regulatory listing and legal document verified from VPS on 2026-10-11; ingestion pending"
+    "status_detail": "Production backfill on 2026-10-11 stored 2 baseline captures; no amendment diffs claimed"
   },
   {
     "id": "site-16-rctlma",
@@ -201,7 +201,7 @@
     },
     "is_active": true,
     "health_status": "operational",
-    "status_detail": "Official development-code listing and ordinance PDF verified from VPS on 2026-10-11; ingestion pending"
+    "status_detail": "Production backfill on 2026-10-11 stored 21 baseline captures; no amendment diffs claimed"
   },
   {
     "id": "site-18-waynecounty",
@@ -225,7 +225,7 @@
     },
     "is_active": true,
     "health_status": "operational",
-    "status_detail": "Official current development manuals and legal PDF verified from VPS on 2026-10-11; ingestion pending"
+    "status_detail": "Production backfill on 2026-10-11 stored 2 baseline captures; no amendment diffs claimed"
   },
   {
     "id": "site-20-bexar",
@@ -237,7 +237,7 @@
     },
     "is_active": true,
     "health_status": "operational",
-    "status_detail": "Official regulatory listing and legal document verified from VPS on 2026-10-11; ingestion pending"
+    "status_detail": "Production backfill on 2026-10-11 stored 1 baseline captures; no amendment diffs claimed"
   },
   {
     "id": "site-21-sccgov",

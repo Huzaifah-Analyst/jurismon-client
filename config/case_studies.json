@@ -1,0 +1,30 @@
+[
+  {
+    "id": "austin-preservation-bonus",
+    "source_id": "site-13-austintexas",
+    "title": "Austin: documenting a preservation-bonus rule",
+    "jurisdiction": "City of Austin, Texas",
+    "official_url": "https://services.austintexas.gov/edims/document.cfm?id=478413",
+    "listing_url": "https://www.austintexas.gov/development-services/development-policy-corner",
+    "legal_date": "August 5, 2026",
+    "legal_date_label": "Adoption and effective date stated in the notice",
+    "required_terms": ["preservation bonus", "4.4.9"],
+    "summary": "The adopted rule adds Building Criteria Manual subsection 4.4.9, covering approval, submissions and documentation for preservation-bonus projects. The notice says the adopted text is unchanged from the proposed rule.",
+    "review": "Use the captured section to locate the official rule, then review the notice and attached requirements before evaluating a project. A first capture establishes a baseline; it does not prove JurisMon detected a before-and-after amendment.",
+    "search": "Preservation Bonus"
+  },
+  {
+    "id": "san-bernardino-ordinance-4400",
+    "source_id": "site-17-sbcounty",
+    "title": "San Bernardino: reviewing a multi-topic ordinance",
+    "jurisdiction": "Unincorporated San Bernardino County, California",
+    "official_url": "https://lus.sbcounty.gov/wp-content/uploads/sites/48/DevelopmentCode/ORD-No-4400-WEB.pdf",
+    "listing_url": "https://lus.sbcounty.gov/planning-home/development-code/",
+    "legal_date": "April 8, 2021",
+    "legal_date_label": "Effective date stated on the county listing",
+    "required_terms": ["4400", "84.01", "accessory"],
+    "summary": "Ordinance 4400 addresses several Development Code topics, including accessory dwelling units, landscaping and hillside grading. Its introductory guide identifies the sections affected, helping a reviewer locate the relevant provisions in the official ordinance.",
+    "review": "Find the captured ordinance, inspect the referenced sections and check the current county code before relying on a historic provision. This is a historical source-document example, not evidence that the 2021 ordinance remains the latest applicable law.",
+    "search": "4400"
+  }
+]

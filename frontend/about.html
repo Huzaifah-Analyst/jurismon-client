@@ -594,6 +594,9 @@
         <div class="feature-card"><h3>Captured documents</h3><p>Search shows successfully stored captures and comparisons. Some historical captures contain portal boilerplate or incomplete text while extraction repairs continue. Open the official source to verify findings.</p></div>
       </div>
       <p class="section-sub">History begins with captures actually collected. Capture dates are not legal effective dates. Missing crawl intervals and documents never captured cannot be reconstructed. Differences can reflect page formatting or metadata rather than a legal amendment. JurisMon does not certify completeness or provide legal advice.</p>
+      <h3>Sources currently excluded from scheduled ingestion</h3>
+      <p id="exclusions-status" class="section-sub" role="status">Loading recorded exclusions…</p>
+      <ul id="excluded-sources"></ul>
     </section>
 
     <!-- SECTION 1 -->
@@ -789,6 +792,7 @@
     </div>
     <nav class="site-footer-links" aria-label="Legal and contact links">
       <a href="/about" class="site-footer-link">About</a>
+      <a href="/case-studies" class="site-footer-link">Case Studies</a>
       <span class="site-footer-sep">&bull;</span>
       <a href="/terms" class="site-footer-link">Terms of Service</a>
       <span class="site-footer-sep">&bull;</span>
@@ -811,8 +815,19 @@
         if (!Number.isInteger(total) || !Number.isInteger(live)) throw new Error("Source counts missing");
         var statEl = document.getElementById("ingestion-stat");
         statEl.textContent = live + " operational sources, " + total + " configured";
+        if (!Array.isArray(data.exclusions)) throw new Error("Source exclusions missing");
+        var excluded = data.exclusions;
+        var exclusions = document.getElementById("excluded-sources");
+        exclusions.replaceChildren();
+        excluded.forEach(function (source) {
+          var item = document.createElement("li");
+          item.textContent = source.name + " — recorded status: " + (source.health_status ? source.health_status.replace(/_/g, " ") : "unavailable");
+          exclusions.appendChild(item);
+        });
+        document.getElementById("exclusions-status").textContent = excluded.length + " configured sources are inactive. These are recorded catalogue states, not a guarantee that the official site is permanently unavailable.";
       } catch (e) {
         document.getElementById("ingestion-stat").textContent = "Source coverage unavailable";
+        document.getElementById("exclusions-status").textContent = "Recorded exclusions could not be loaded.";
       }
     }
     if (document.readyState === "loading") {

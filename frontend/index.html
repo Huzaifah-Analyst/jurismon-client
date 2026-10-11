@@ -1134,6 +1134,7 @@
     </div>
     <nav class="site-footer-links" aria-label="Legal and contact links">
       <a href="/about" class="site-footer-link">About</a>
+      <a href="/case-studies" class="site-footer-link">Case Studies</a>
       <span class="site-footer-sep">&bull;</span>
       <a href="/terms" class="site-footer-link">Terms of Service</a>
       <span class="site-footer-sep">&bull;</span>
@@ -2390,10 +2391,12 @@
   }
 
   /* ---------- Boot ---------- */
+  state.q = (new URLSearchParams(window.location.search).get("q") || "").trim();
+  $("#q").value = state.q;
   showSearchSkeleton();
   if (localStorage.getItem("jurismon_token")) $("#auth-unauthed").style.display = "none";
   checkUserSession().then(() => {
-    fetchLiveSearch("");
+    fetchLiveSearch(state.q);
   });
   loadSourcesCount();
   updateStatusText();

@@ -4,7 +4,7 @@
 > 1. If you are an **AI coding agent**: read [`docs/ai/rules.md`](ai/rules.md) and [`docs/ai/prd.md`](ai/prd.md) first.
 > 2. If you are a **human developer or manager**: read [`docs/context/00_START_HERE.md`](context/00_START_HERE.md) first.
 > 3. If you are the **client or operator**: read [`docs/client/handover.md`](client/handover.md) first.
-> 4. To check current development tasks: see the live board at [`docs/ai/tasks.md`](ai/tasks.md).
+> 4. For the current remaining work: read [`ai/remaining-work.md`](ai/remaining-work.md). Completed changes and verification are recorded in [`ai/implemented-work.md`](ai/implemented-work.md); commercial evidence is in [`ai/client-context.md`](ai/client-context.md). Older task boards and handoffs are historical.
 
 ---
 
@@ -29,7 +29,10 @@ Targeted context designed specifically for AI coding agents modifying this codeb
 - [`ai/architecture.md`](ai/architecture.md) — Technical contracts, system pipeline, database schemas.
 - [`ai/rules.md`](ai/rules.md) — Eleven binding operational engineering rules.
 - [`ai/design.md`](ai/design.md) — Architectural rationale, component boundaries, error philosophy.
-- [`ai/tasks.md`](ai/tasks.md) — Live Phase 1 / Phase 2 Kanban board.
+- [`ai/tasks.md`](ai/tasks.md) — Historical Phase 1 / Phase 2 task board.
+- [`ai/remaining-work.md`](ai/remaining-work.md) — Current backlog and external dependencies.
+- [`ai/implemented-work.md`](ai/implemented-work.md) — Implementations, verification and release evidence.
+- [`ai/client-context.md`](ai/client-context.md) — Client commitments and commercial evidence.
 - [`ai/memory.md`](ai/memory.md) — Forensic post-mortem lessons from production incidents.
 - [`ai/orders/`](ai/orders/) — Individual task packets and implementation orders.
 

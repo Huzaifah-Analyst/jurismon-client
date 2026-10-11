@@ -186,10 +186,10 @@ class TestDatabaseRepository(unittest.TestCase):
         with self.repo._connect() as conn:
             row = conn.execute("SELECT status, total_sources, sources_succeeded, sources_failed FROM crawl_runs").fetchone()
             self.assertIsNotNone(row)
-            self.assertEqual(row[0], "completed")
+            self.assertEqual(row[0], "failed")
             self.assertEqual(row[1], 1)
-            self.assertEqual(row[2], 1)
-            self.assertEqual(row[3], 0)
+            self.assertEqual(row[2], 0)
+            self.assertEqual(row[3], 1)
 
     def test_run_crawler_crash_records_run_as_failed(self):
         """A crash during run_crawler still closes the run with status='failed'."""

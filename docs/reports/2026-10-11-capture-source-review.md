@@ -59,3 +59,25 @@ A 200 index response is not a legal document or an ingestion proof. Temporary fa
 6. Verify before/after counts and rollback by restoring visibility, never deleting snapshots.
 
 Schema/search/quarantine implementation is committed and locally verified. Migration 009 has been applied to production, with both BOOLEAN defaults verified. Application release, explicit quarantine and source backfill are next. Manifest artifacts are ignored locally; this report contains aggregate evidence only. The older manual crawl record says running from 08:19 UTC, but a fresh process check found the crawl unit inactive and no run_crawler.py process. Checked dispatch/fallback is now implemented; the precise historical dispatch failure is unconfirmed.
+
+## Executed remediation and source-only backfill
+
+- Verified release 0c8d0a4 deployed; truthful ingestion-outcome follow-up ea54057
+  deployed before backfill. Quarantined 2343 snapshots and 1852 dependent diffs,
+  preserving all 3755 snapshots and 2647 diffs. Visible counts after quarantine:
+  1412 snapshots and 795 diffs. Restore manifest exists on VPS and locally, ignored.
+- Crawl 83e4a73e-52cb-4dd6-a5d2-d127e4ce5069 ran 13:31:23–14:05:09 UTC,
+  status partial_failure: 8 attempted sources, 7 succeeded, 1 failed; 76 discovered
+  documents, 60 actual new baseline captures and zero new diffs. Mail disabled.
+- Stored captures: San Bernardino 21, Austin 20, Miami-Dade 12, Harris 2,
+  Dallas 2, Tarrant 2, Bexar 1, San Diego 0. San Diego's 16 PDF downloads timed out;
+  browser listing discovery succeeded but did not prove document ingestion.
+- Final raw totals: 3815 snapshots and 2647 diffs; visible 1472 and 795. The 60
+  new baseline captures explain the snapshot increase. Unflagged does not certify
+  every document's legal completeness. Austin/San Bernardino case sections were
+  separately checked internally and matched; no production excerpts exported.
+- Old unconfirmed run 95abf92c-e156-4dd5-a2b8-e5ac6fd3f6ad was marked failed by
+  existing stale-run recovery at 13:31:23 UTC; it was not counted as completed.
+- Updated only eight relevant config status blocks from actual results; San Diego
+  is degraded with daily retries enabled. Config/live synchronization is recorded
+  after release, not assumed. Sixteen inactive endpoints remain explicitly excluded.
