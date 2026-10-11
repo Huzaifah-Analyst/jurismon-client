@@ -333,3 +333,15 @@ def test_admin_mobile_header_fits(local_browser, mode, signed_in):
     page.goto(base + "/admin")
     expect(page.locator('#btn-logout') if signed_in else page.locator('#auth-gate')).to_be_visible()
     assert page.evaluate("document.documentElement.scrollWidth <= innerWidth"), page.evaluate("() => [...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().right>innerWidth+1).map(e=>({tag:e.tagName, cls:e.className, id:e.id, right:e.getBoundingClientRect().right})).slice(0,15)")
+
+
+@pytest.mark.parametrize("width", [320, 375])
+@pytest.mark.parametrize("mode", ["light", "dark"])
+def test_privacy_processor_table_fits_mobile(local_browser, width, mode):
+    page, base, repository = local_browser
+    page.set_viewport_size({"width": width, "height": 812})
+    page.emulate_media(color_scheme=mode)
+    page.goto(base + "/privacy")
+    expect(page.locator('.processor-table')).to_be_visible()
+    assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+    assert page.locator('.processor-table').bounding_box()["width"] <= width

@@ -192,3 +192,9 @@ item #2, pushing GitHub changes and making the result live.
   wraps and status text stays within its available width. Four light/dark,
   signed-in/out 375px browser checks passed in 6.07s.
 - Follow-up patch will be released before marking live mobile checks complete.
+
+- Admin follow-up: dev b9460e4; client release 02352a6 pushed and deployed.
+  Live admin mobile overflow resolved.
+- Continuing the live pass after web fonts loaded found Privacy processor-table
+  overflow at 375px. Fixed mobile column sizing and wrapping. Four 320/375px,
+  light/dark checks passed in 8.92s. This is a further narrow release correction.
