@@ -318,3 +318,18 @@ def test_older_search_response_cannot_replace_new_results(local_browser):
     held[0][0].fulfill(response=held[0][1])
     page.wait_for_timeout(200)
     expect(page.locator('.result')).to_have_count(3)
+
+
+@pytest.mark.parametrize("mode", ["light", "dark"])
+@pytest.mark.parametrize("signed_in", [False, True])
+def test_admin_mobile_header_fits(local_browser, mode, signed_in):
+    page, base, repository = local_browser
+    if signed_in:
+        response = page.request.post(base + "/api/admin/login", data={"email": auth.ADMIN_EMAIL, "password": "local-browser-password"})
+        assert response.ok
+        page.add_init_script("localStorage.setItem('jurismon_admin_token', " + repr(response.json()["access_token"]) + ")")
+    page.set_viewport_size({"width": 375, "height": 812})
+    page.emulate_media(color_scheme=mode)
+    page.goto(base + "/admin")
+    expect(page.locator('#btn-logout') if signed_in else page.locator('#auth-gate')).to_be_visible()
+    assert page.evaluate("document.documentElement.scrollWidth <= innerWidth"), page.evaluate("() => [...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().right>innerWidth+1).map(e=>({tag:e.tagName, cls:e.className, id:e.id, right:e.getBoundingClientRect().right})).slice(0,15)")

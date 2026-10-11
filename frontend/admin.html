@@ -633,9 +633,11 @@
 
     .seg button { flex: none; }
 
-    .topbar-inner { gap: 8px; }
+    .topbar-inner { gap: 8px; height: auto; min-height: 60px; flex-wrap: wrap; padding-top: 10px; padding-bottom: 10px; }
 
-    .chip { padding: 0 9px; font-size: 12.5px; }
+    .chip { padding: 0 9px; font-size: 12.5px; max-width: 100%; }
+    #sys-chip { height: auto; min-height: 30px; padding-top: 4px; padding-bottom: 4px; }
+    #sys-text { white-space: normal; overflow-wrap: anywhere; min-width: 0; }
 
     .strip { grid-template-columns: repeat(10, 14px); }
 

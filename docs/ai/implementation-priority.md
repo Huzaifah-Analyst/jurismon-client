@@ -178,3 +178,17 @@ item #2, pushing GitHub changes and making the result live.
 - Release commits exclude pre-existing chat-log, local settings and context
   changes. Use a single-parent client release commit without development history.
 - Commit, push and live verification references will be recorded after release.
+
+
+### Release outcome and live follow-up
+
+- Development commit dba9eea pushed to origin; single-parent client release
+  5eb6eca pushed to client/main and deployed through the existing deploy script.
+- Public health verified status ok, database ok and version 5eb6eca. Service and
+  crawl timer active. Authenticated production price-history endpoint returns
+  200; production trial_days remains 14.
+- Live mobile smoke found a 2px overflow on signed-out admin header; isolated
+  signed-in tests exposed long source-status text overflowing too. Header now
+  wraps and status text stays within its available width. Four light/dark,
+  signed-in/out 375px browser checks passed in 6.07s.
+- Follow-up patch will be released before marking live mobile checks complete.
