@@ -1,6 +1,8 @@
-"""Sequential customer actions against real HTTP/SQLite; external services isolated."""
+﻿"""Sequential customer actions against real HTTP/SQLite; external services isolated."""
 
 from datetime import datetime, timedelta, timezone
+import copy
+import json
 from unittest.mock import Mock
 
 from playwright.sync_api import expect
@@ -121,3 +123,82 @@ def test_admin_plan_edit_cancel_preserves_catalogue(admin_browser):
     page.locator("#t-plans").click()
     expect(edit).to_be_visible()
     assert page.request.get(base + "/api/plans").json() == original
+
+
+def test_pricing_history_and_trial_browser_sequence(admin_browser, monkeypatch, tmp_path):
+    page, base, repository = admin_browser
+    catalogue = copy.deepcopy(main.get_plan_catalogue())
+    catalogue["trial_days"] = 14
+    monthly = next(p for p in catalogue["plans"] if p["id"] == "professional_monthly")
+    old_provider_id = monthly["paypal_plan_id"]
+    monthly["price"] = 49.0
+    path = tmp_path / "plans.json"
+    path.write_text(json.dumps(catalogue), encoding="utf-8")
+    monkeypatch.setattr(main, "get_plan_catalogue", lambda: json.loads(path.read_text(encoding="utf-8")))
+    monkeypatch.setattr(main, "_write_plan_catalogue", lambda data: path.write_text(json.dumps(data), encoding="utf-8"))
+    monkeypatch.setattr(main.paypal_provider, "client_id", "isolated-provider")
+    monkeypatch.setattr(main.paypal_provider, "client_secret", "isolated-provider")
+    details = Mock(return_value={"price": 49.0, "currency": "USD", "interval": "month"})
+    monkeypatch.setattr(main.paypal_provider, "get_plan_details", details)
+    page.goto(base + "/admin")
+    page.locator("#t-plans").click()
+    edit = page.locator('.btn-edit-plan[data-id="professional_monthly"]')
+    edit.click()
+    page.locator("#edit-plan-price-professional_monthly").fill("59")
+    with page.expect_response(lambda r: "/api/admin/plans/professional_monthly" in r.url and r.request.method == "PUT") as rejected:
+        page.locator('.btn-save-plan[data-id="professional_monthly"]').click()
+    assert rejected.value.status == 409
+    assert repository.list_plan_changes() == []
+    assert json.loads(path.read_text())["plans"][0]["price"] == 49
+
+    # A new provider plan is validated, not created by this application.
+    details.return_value = {"price": 59.0, "currency": "USD", "interval": "month"}
+    page.locator("#edit-plan-paypal-professional_monthly").fill("P-ISOLATEDNEWPLAN0000000059")
+    with page.expect_response(lambda r: "/api/admin/plans/professional_monthly" in r.url and r.request.method == "PUT") as saved:
+        page.locator('.btn-save-plan[data-id="professional_monthly"]').click()
+    assert saved.value.status == 200
+    expect(edit).to_be_visible()
+    history = page.locator("#plan-changes-body tr")
+    expect(history).to_have_count(2)
+    price_row = history.filter(has=page.locator('td:nth-child(4)', has_text="price"))
+    expect(price_row.locator("td:nth-child(5)")).to_have_text("49.0")
+    expect(price_row.locator("td:nth-child(6)")).to_have_text("59.0")
+    expect(price_row.locator("td:nth-child(2)")).to_have_text(auth.ADMIN_EMAIL)
+    assert price_row.locator("td:nth-child(1)").inner_text() not in ("", "-")
+    page.reload()
+    page.locator("#t-plans").click()
+    expect(page.locator("#plan-changes-body tr")).to_have_count(2)
+    public = page.request.get(base + "/api/plans").json()
+    new_plan = next(p for p in public["plans"] if p["id"] == "professional_monthly")
+    assert new_plan["price"] == 59
+    assert json.loads(path.read_text())["plans"][0]["paypal_plan_id"] == "P-ISOLATEDNEWPLAN0000000059"
+
+    # Measure legacy account behavior rather than claiming grandfathered UI works.
+    repository.create_user("legacy@example.invalid", auth.get_password_hash("isolated-password"), "Legacy", is_verified=1)
+    user = repository.get_user_by_email("legacy@example.invalid")
+    repository.record_subscription("I-ISOLATED-LEGACY", old_provider_id, "active",
+                                   user_email=user["email"], user_id=user["id"])
+    assert repository.get_subscription_by_external_id("I-ISOLATED-LEGACY")["plan_id"] == old_provider_id
+    # Current implementation loses catalogue lookup for the replaced provider ID.
+    assert main.resolve_plan_info(old_provider_id)["billing_amount"] is None
+
+    for days in (34, 14):
+        page.locator("#plan-global-trial").fill(str(days))
+        with page.expect_response(lambda r: r.url.endswith("/api/admin/plans") and r.request.method == "PATCH") as settings:
+            page.locator("#btn-save-catalogue-settings").click()
+        assert settings.value.status == 200
+        page.reload()
+        page.locator("#t-plans").click()
+        expect(page.locator("#plan-global-trial")).to_have_value(str(days))
+        page.goto(base + "/")
+        expect(page.locator("#btn-nav-register")).to_have_text(f"Start {days}-Day Free Trial")
+        expect(page.locator("#price-plan-monthly")).to_contain_text("59")
+        page.locator("#btn-nav-register").click()
+        expect(page.locator("#register-trial-description")).to_contain_text(f"{days}-day free trial")
+        expect(page.locator("#btn-submit-reg")).to_have_text(f"Start {days}-Day Free Trial")
+        expect(page.locator("#btn-submit-verify")).to_have_text(f"Confirm & Start {days}-Day Free Trial")
+        page.goto(base + "/account")
+        expect(page.locator("#signed-out-trial-link")).to_have_text(f"Start {days}-day free trial")
+        page.goto(base + "/admin")
+        page.locator("#t-plans").click()
+

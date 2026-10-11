@@ -47,11 +47,14 @@ scheme again. The final offer excludes alerts/watchlists, new sources and cases.
 ## Scope distinctions
 
 - Parts 1+2 implementation: subscription pause/resume/cancel/access and pricing
-  catalogue/history. Shipped code is not payment evidence. Real PayPal lifecycle
+  catalogue/history. Original-offer pricing/provider and subscriber-migration
+  gaps are now recorded in client-scope-status-2026-10-11.md and R-28–R-30.
+  Shipped code is not payment evidence. Real PayPal lifecycle
   and real email delivery have not been retested in this round.
 - Case studies: promised at no charge, included in the unordered Order 2 and
-  reiterated by client 10 October. Still a client deliverable, dependent on
-  credible data. Do not call it delivered or use it to imply Order 2 acceptance.
+  reiterated by client 10 October. Two source-document cases are now released
+  per the implementation ledger; actual market/customer outcome validation
+  remains. Their publication does not imply Order 2 acceptance.
 - Analytics/cookie consent and broader SEO were explicitly deferred. Account
   profile/password-change/billing-history additions, manual tier overrides,
   exports, team seats and source-health notifications appeared in requests or

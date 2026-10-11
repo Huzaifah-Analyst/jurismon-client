@@ -362,3 +362,10 @@ do not present the original run as fully passing.
 - Ran 77 targeted backend/browser checks and 60 browser checks successfully; external PayPal/email boundaries isolated.
 - Recorded all 18 checklist results and exact remaining coverage in docs/reports/2026-10-11-phase-2-parts-1-2-verification.md. Real inbox/Sandbox billing and several complete browser scenarios remain unverified; no production configuration changed.
 
+
+## 2026-10-11 — Remaining pricing/history browser checks and agreement audit
+- Genuine admin browser saves price 59/new provider ID, checks rejected mismatch creates no history, checks two dated/actor-labelled history rows after refresh, and verifies public price.
+- Admin browser saves trial 34 then 14 and verifies public signup/verification/account wording. Temporary catalogue storage preserves user settings.
+- Three acceptance tests passed (test-results/phase2-pricing-history.xml). Found old-provider-ID price lookup becomes unavailable after replacement; recorded R-28/R-29/R-30 offer gaps. No real payment/inbox claims.
+- Re-read final offer and subsequent frontend/competitor/client priorities; docs/ai/client-scope-status-2026-10-11.md separates fulfilled, partial and unordered work.
+

@@ -77,6 +77,19 @@ discussed at $50/month, not an already active or paid service.
 
 ## Updating this backlog
 
+## Newly confirmed Phase 2 offer gaps (11 October follow-up)
+
+| ID | Remaining work | Evidence |
+| --- | --- | --- |
+| R-28 | Complete provider-backed developer-free pricing promised by final offer | Catalogue validates an existing PayPal plan; it does not create/update provider plans. |
+| R-29 | Preserve historical subscriber plan/price display when current provider ID changes | Real browser pricing update succeeds; resolve_plan_info(old_provider_id) then returns no billing amount. Original subscription ID remains stored. |
+| R-30 | Existing-subscriber migration with customer approval | No implemented provider revision/approval flow. |
+
+Browser pricing save/history after refresh and trial settings 34→14 now verified.
+See [client agreement audit](client-scope-status-2026-10-11.md). Real Sandbox and
+inbox acceptance remain under R-11. These are original-offer gaps, not unordered
+alerts/source expansion.
+
 Keep stable R-IDs. After implementing a task, append what/how/evidence/commit/
 deployment to implemented-work.md and update the corresponding R-row here.
 Record verification gaps and release state separately from implementation.

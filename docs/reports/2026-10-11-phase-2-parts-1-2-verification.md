@@ -46,3 +46,23 @@ No application defect was found in the exercised flows. No application behavior
 was changed by this verification work. The original offer's automatic PayPal plan
 creation/update and existing-customer opt-in migration are still implementation
 gaps; passing catalogue validation tests does not establish those features.
+
+## Follow-up: completed browser coverage
+
+The earlier rows 15–18 above describe the first run. Follow-up execution in
+`test-results/phase2-pricing-history.xml` passed all three acceptance tests:
+
+- Browser saves matching 59 price/new provider ID; persists in temporary storage
+  and displays 59 publicly. Provider is mocked; no actual charge confirmed.
+- Browser verifies two history rows (price and provider ID), old/new values,
+  actor and nonempty date, retained after refresh. Rejected mismatch adds no row.
+- Browser admin saves trial 34 then 14, refreshes settings, verifies home signup,
+  registration description/button, confirmation button and signed-out account.
+- Original legacy subscriber provider ID stays stored, but its catalogue price
+  lookup returns unavailable after replacement. This is a confirmed defect;
+  old 49/new 59 billing/display verification is not a pass.
+
+This supersedes the earlier statement that no application defect was found.
+Updated agreement audit: docs/ai/client-scope-status-2026-10-11.md. Provider-free
+pricing and customer-approved migration remain implementation gaps. Real Sandbox
+and inbox acceptance remain unperformed.
