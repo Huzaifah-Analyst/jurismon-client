@@ -25,3 +25,20 @@
 | [`tasks.md`](tasks.md) | 2026-10-05 | Live Phase 1 / Phase 2 Kanban task board, technical debt catalog, and completed milestones. |
 | [`memory.md`](memory.md) | 2026-10-05 | Persistent agent memory: hard-learned forensic lessons, production gotchas, and recurring traps. |
 | [`orders/`](orders/) | — | Formal engineering work orders and task packets issued to implementing agents (see [`orders/README.md`](orders/README.md)). |
+
+## Current work records, 11 October 2026
+
+- [Client context and commercial evidence](client-context.md)
+- [Remaining work](remaining-work.md): current repairs, promised deliverables,
+  unordered features and deferred decisions.
+- [Implemented work](implemented-work.md): append implementation, verification
+  and deployed status here as each task is completed.
+- [Rigorous v2 report](../reports/2026-10-11-rigorous-testing-v2.md): all25
+  regression items and fresh findings, including test failures/coverage limits.
+- [Rigorous testing prompt v2](rigorous-testing-prompt-v2.md): user-supplied
+  current testing instruction; supersedes the older prompt.
+- [Historical detailed implementation record](implementation-priority.md).
+
+Use these current records over stale status rows in earlier handoffs/task boards.
+A quote, implemented feature, accepted order and received payment are separate
+claims. Do not copy raw credentials or client correspondence into release docs.

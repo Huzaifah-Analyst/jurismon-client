@@ -2,17 +2,22 @@
 
 User-approved order. Numbers below are priorities, not frontend fix-plan IDs.
 
+Current backlog: [remaining-work.md](remaining-work.md). Completed-work ledger:
+[implemented-work.md](implemented-work.md). Commercial evidence and corrected
+order totals: [client-context.md](client-context.md). This file retains the
+detailed historical sequence; later dated records supersede earlier claims.
+
 | Priority | Work | Status |
 | --- | --- | --- |
 | 1 | Verify repository, deployment parity and existing order scope | Verified code and deployment; historical payment records differ from current user statement |
 | 2 | Remaining frontend bugs and dark mode | Report fixes verified and released 11 October; separate OTP delivery-failure follow-up remains |
-| 3 | Backend cache headers, compression and search latency investigation | Cache/compression verified and live c837276; search concurrency fix locally verified |
-| 4 | Regression, paid subscription states, cross-browser and accessibility QA | Core checks completed; physical devices, all modal/admin-tab audits and Lighthouse remain uncovered |
+| 3 | Backend cache headers, compression and search latency investigation | Cache/compression verified and live c837276; search concurrency fix live e33ef18; variance investigation remains |
+| 4 | Regression, paid subscription states, cross-browser and accessibility QA | 84 local axe views and 3 browser engines covered; new v2 findings and manual/native-device gaps remain |
 | 5 | Evidence-based case studies using available captured changes | Pending |
 | 6 | Housekeeping: About punctuation and existing chat-log changes | Pending |
-| 7 | Repair broken US city and county sources | 8 of 10 broken US sources repaired locally; NYC and Santa Clara blocked; production ingestion pending |
-| 8 | Remove navigation and portal boilerplate from extracted legal text | Pending |
-| 9 | Honest coverage and exclusions section | Pending |
+| 7 | Repair broken US city and county sources | 8 configs repaired and synced live; 19/21 marked operational; NYC/Santa Clara blocked; ingestion verification pending |
+| 8 | Remove navigation and portal boilerplate from extracted legal text | Guards shipped; fresh live wrapper/empty records remain; pipeline paths/backfill pending |
+| 9 | Honest coverage and exclusions section | About intro corrected; dedicated section and homepage scope consistency pending |
 | 10 | Page-by-page competitor gap list, prepared for Google Sheets | Pending |
 | 11 | Define scope, deliverables, timeline and budget for new competitor-driven implementation | Pending |
 
@@ -516,3 +521,31 @@ Validation:
   data cleanup/backfill remains pending. Native Safari/physical devices and
   manual keyboard/screen-reader evaluation remain uncovered.
 - New accessibility fixes remain in local commit b67560f, not deployed.
+
+## Rigorous v2 and split client work records
+
+- User requested the attached rigorous prompt, full client chat review and
+  separate remaining/implemented files. Completed the new testing round and
+  reviewed the entire current2399-line chat through10 October.
+- Full regression450 passed,1 Firefox navigation timeout,1 dependency warning
+  in569.16s. Exact failed case passed3 isolated reruns; cause unconfirmed.
+- Fresh live checks include both genuine409 errors within2s, real plan-name
+  audit history with restoration,48 responsive measurements,12 live axe views,
+  three-engine search/account flows,10 source document link attempts,8 preview
+  reviews, scoped blocked-search/true offline, XSS inputs, tampered JWT, copied
+  deep link and genuine manual crawl polling. Final manual run still running.
+- New confirmed observations: closed auth-modal invisible tab stop; admin
+  ingestion KPI/date describe source metadata rather than actual runs; false
+  signup/resend delivery success and invalidated previous code reproduced
+  locally with provider false. Live wrapper/empty records and undeployed
+  accessibility fixes remain. No all-green/full-production claim.
+- Created remaining-work.md, implemented-work.md, client-context.md and
+  docs/reports/2026-10-11-rigorous-testing-v2.md; linked from AI README.
+- Commercial correction: Phase2 Order2 features250 plus first-month support25
+  total275, unordered. Actual Parts1+2 custom offer101, payment unconfirmed
+  from repo/chat. Original200 is separately user-reported received. Fiverr
+  transaction evidence controls acceptance/payment. Broader requested account,
+  Analytics/consent, SEO, exports, seats and health alerts are future scope,
+  not automatically included in the narrowed final offer.
+- Preserved user's local trial10, raw correspondence, local settings/context
+  files. No application fix or deployment performed in this round.
