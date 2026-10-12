@@ -125,7 +125,7 @@ class XmlFeedAdapter(BaseAdapter):
         Atom carries it as <link href="..."/>, RSS as <link>text</link>, and
         XML indexes often use an href or url attribute on the record itself.
         """
-        node = item.find(link_tag)
+        node = item.find(link_tag, attrs={"rel": "alternate"}) or item.find(link_tag)
         if node is not None:
             href = node.get("href") or node.get("url")
             if href:

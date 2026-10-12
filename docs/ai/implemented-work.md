@@ -357,15 +357,23 @@ do not present the original run as fully passing.
   scope/rate. No ordered alerts/88-source expansion or fabricated market-validation
   evidence was added. Current backlog records these separately from shipped work.
 
-## 2026-10-11 — Phase 2 Parts 1 and 2 verification
+## 2026-10-11 â€” Phase 2 Parts 1 and 2 verification
 - Added sequential real-browser customer lifecycle verification and admin edit-discard regression coverage in tests/test_phase2_browser_acceptance.py.
 - Ran 77 targeted backend/browser checks and 60 browser checks successfully; external PayPal/email boundaries isolated.
 - Recorded all 18 checklist results and exact remaining coverage in docs/reports/2026-10-11-phase-2-parts-1-2-verification.md. Real inbox/Sandbox billing and several complete browser scenarios remain unverified; no production configuration changed.
 
 
-## 2026-10-11 — Remaining pricing/history browser checks and agreement audit
+## 2026-10-11 â€” Remaining pricing/history browser checks and agreement audit
 - Genuine admin browser saves price 59/new provider ID, checks rejected mismatch creates no history, checks two dated/actor-labelled history rows after refresh, and verifies public price.
 - Admin browser saves trial 34 then 14 and verifies public signup/verification/account wording. Temporary catalogue storage preserves user settings.
 - Three acceptance tests passed (test-results/phase2-pricing-history.xml). Found old-provider-ID price lookup becomes unavailable after replacement; recorded R-28/R-29/R-30 offer gaps. No real payment/inbox claims.
 - Re-read final offer and subsequent frontend/competitor/client priorities; docs/ai/client-scope-status-2026-10-11.md separates fulfilled, partial and unordered work.
 
+
+## 2026-10-12 â€” P2-16 implementation, awaiting acceptance/release
+- Bounded expanded full documents to 70vh with internal scrolling; added exact bot-check capture rejection shared by ingestion and quarantine audit.
+- Filtered pager link labels; prefer Atom alternate instrument links; recover actual titles from HTML/stored text, including wrapped Welsh titles. Added SQLite/Supabase compare-and-set title correction and review/apply CLI with pre-mutation original-title manifest.
+- Configurable bounded-retry document download timeout defaults to 60 seconds; five-source landing/document probes recorded. Clark file host genuinely self-signed; no insecure document downloads or source activation.
+- Fresh live admin polling: 11 automatic requests in 35 seconds after crawl trigger. Actual browser search timings and production-derived correction metadata recorded without body exports.
+- Targeted 84 checks, final focused 9 checks and complete final suite 510 checks passed (400.53 seconds, one existing warning); both repair CLIs passed isolated database acceptance. Earlier Firefox timeouts remain documented. Final artifact run: 7 passed; local full-box measured 504px with internal 156237px scroll content, screenshot/DOM saved.
+- Production remains e2693b7; user clarified local acceptance replaces nonexistent staging. No push, deployment, or production title/quarantine mutation. Evidence: docs/reports/2026-10-12-p2-16-implementation.md.

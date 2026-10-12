@@ -329,6 +329,17 @@ class Repository:
             rows = cur.fetchall()
             return [dict(r) for r in rows]
 
+    def correct_document_title(self, document_id: str, old_title: str, new_title: str) -> bool:
+        """Compare-and-set a reviewed title correction without rewriting captures."""
+        if self.supabase:
+            result = self.supabase.table('documents').update({'title': new_title}).eq('id', document_id).eq('title', old_title).execute()
+            return bool(result.data)
+        with self._connect() as connection:
+            cursor = connection.execute('UPDATE documents SET title=? WHERE id=? AND title=?',
+                                        (new_title, document_id, old_title))
+            connection.commit()
+            return cursor.rowcount == 1
+
     def get_or_create_document(
         self, source_id: str, title: str, pdf_url: str, document_type: str = "notice"
     ) -> Optional[Dict[str, Any]]:

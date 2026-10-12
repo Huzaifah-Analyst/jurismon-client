@@ -95,3 +95,19 @@ deployment to implemented-work.md and update the corresponding R-row here.
 Record verification gaps and release state separately from implementation.
 Do not promote a quote, suggestion or client payment statement into verified
 Fiverr acceptance/payment without authoritative transaction evidence.
+
+## 12 October P2-16 follow-up
+
+| ID | Implementation / next acceptance | Release state |
+| --- | --- | --- |
+| R-31 | Expanded document bound to 70vh with internal scrolling; local authenticated browser passes | Awaiting review/sign-off and live Crimes Act reproduction after deployment. |
+| R-32 | Exact bot-check rejection guard and existing quarantine CLI locally verified | Live NZ row identified; reviewed production quarantine still pending. |
+| R-33 | Ontario pager exclusion and UK instrument-title recovery; historical title repair CLI preserves original-title manifest | Fresh live metadata validates proposed titles; production corrections still pending. |
+| R-34 | Configurable 60-second document timeout; five US sources probed and Clark file-host self-signed certificate diagnosed | Not deployed. NYC 403, Clark document discovery/trusted replacement, and real ingestion follow-up remain. |
+
+P2-16 live measurements confirm crawl-status interval polling already works.
+Repeated browser `zoning` fetches were 6939/4445/4686ms (variance 1.56x), not
+repository-level samples. Absolute latency remains high; no blind query tuning.
+User confirmed no staging environment exists: local acceptance, review/sign-off,
+then production deployment/live verification. No client push or deploy yet.
+See [P2-16 evidence](../reports/2026-10-12-p2-16-implementation.md).

@@ -5,6 +5,7 @@ PDF notices and extracting document links.
 """
 
 import time
+import os
 import logging
 from typing import Dict, Any, List, Optional
 from urllib.parse import urljoin
@@ -20,9 +21,9 @@ logger = logging.getLogger("jurismon.requests_crawler")
 class RequestsCrawler(BaseCrawler):
     """Crawler based on requests and BeautifulSoup for static HTML portals."""
 
-    def __init__(self, user_agent: Optional[str] = None, request_delay: Optional[float] = None, timeout: int = 20):
+    def __init__(self, user_agent: Optional[str] = None, request_delay: Optional[float] = None, timeout: Optional[int] = None):
         super().__init__(user_agent=user_agent, request_delay=request_delay)
-        self.timeout = timeout
+        self.timeout = timeout if timeout is not None else int(os.getenv('CRAWLER_DOCUMENT_TIMEOUT_SECONDS', '60'))
         self.session = requests.Session()
         self.session.headers.update({
             "User-Agent": self.user_agent,

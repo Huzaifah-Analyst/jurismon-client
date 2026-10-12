@@ -138,6 +138,7 @@ def main(run_id: Optional[str] = None, source_ids: Optional[List[str]] = None):
                 for doc_item in result.documents:
                     total_docs_processed += 1
                     try:
+                        title_html = None
                         # 1. Fetch document binary/HTML
                         if doc_item.url.lower().endswith(".pdf") or "pdf" in doc_item.url.lower():
                             content_bytes = requests_fetcher.fetch_pdf_bytes(doc_item.url)
@@ -165,6 +166,7 @@ def main(run_id: Optional[str] = None, source_ids: Optional[List[str]] = None):
                                     target_selector=(source_cfg.get("selectors_config") or {}).get("content_selector"),
                                     source_url=extraction_url,
                                 )
+                                title_html = resp.text
                                 ocr_applied = False
                             content_hash = compute_sha256(content_bytes)
 
@@ -174,6 +176,8 @@ def main(run_id: Optional[str] = None, source_ids: Optional[List[str]] = None):
                             processing_errors.append({"url": doc_item.url, "error": issue})
                             continue
 
+                        from extractor.document_title import corrected_title
+                        doc_item.title = corrected_title(doc_item.title, source_name, html=title_html, text=raw_text)
                         # 2. Database check if repo connected
                         if repo.is_connected():
                             db_source = repo.upsert_source(source_cfg)
@@ -186,6 +190,11 @@ def main(run_id: Optional[str] = None, source_ids: Optional[List[str]] = None):
                                 document_type=doc_item.document_type,
                             )
                             doc_id = db_doc["id"] if db_doc else None
+                            if db_doc and db_doc.get('title') != doc_item.title:
+                                from extractor.document_title import is_navigation_title
+                                old_title = db_doc.get('title', '')
+                                if is_navigation_title(old_title) or old_title.lower() == 'correction slip':
+                                    repo.correct_document_title(doc_id, old_title, doc_item.title)
 
                             if doc_id:
                                 latest_snap = repo.get_latest_snapshot(doc_id)

@@ -5,6 +5,10 @@ from urllib.parse import urlparse
 def capture_issue(url: str, text: str):
     if not (text or '').strip():
         return 'empty_text'
+    normalized = ' '.join(text.lower().replace('\u2019', "'").split())
+    if ("verify that you're not a robot" in normalized
+            and ('requires javascript' in normalized or 'javascript is disabled' in normalized)):
+        return 'bot_check_interstitial'
     parsed = urlparse(url or '')
     host = (parsed.hostname or '').lower()
     if host == 'www.gesetze-im-internet.de' and parsed.path == '/aktuDienst.html':

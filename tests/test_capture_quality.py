@@ -4,6 +4,24 @@ import pytest
 from db.repository import Repository
 from extractor.capture_quality import capture_issue
 from scripts.audit_capture_quality import audit
+from scripts.audit_capture_quality import change_visibility
+
+
+def test_exact_live_bot_check_is_quarantined_not_deleted(tmp_path):
+    text = "In order to continue, we need to verify that you're not a robot. This requires JavaScript. Enable JavaScript and then reload the page. JavaScript is disabled"
+    repo = Repository(db_path=str(tmp_path / 'bot.db'))
+    repo.supabase = None
+    doc = repo.get_or_create_document('nz', 'Resource Management Act', 'https://example.invalid/law')
+    repo.create_snapshot(doc['id'], 1, 'bot', text, text)
+    result = audit(repo)
+    assert result['issues'][0]['reason'] == 'bot_check_interstitial'
+    assert change_visibility(repo, result)['affected']['snapshots'] == 1
+    assert repo.search_snapshots_and_diffs('')['total_snapshots'] == 0
+    assert repo.get_latest_snapshot(doc['id']) is not None
+
+
+def test_legal_discussion_of_javascript_is_not_a_bot_page():
+    assert capture_issue('', 'Section 1: JavaScript is disabled in secure terminals.') is None
 
 
 @pytest.mark.parametrize('url,text,reason', [

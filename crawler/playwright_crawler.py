@@ -131,6 +131,9 @@ class PlaywrightCrawler(BaseCrawler):
                     continue
 
                 link_text = a.get_text(strip=True) or a.get("title") or ""
+                from extractor.document_title import is_navigation_title
+                if is_navigation_title(link_text):
+                    continue
                 
                 # Check heuristic if no custom selector is specified
                 if not custom_link_selector:

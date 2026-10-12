@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 from crawler.adapters.base_adapter import BaseAdapter
 from crawler.base import DiscoveredDocument
 from crawler.url_normalizer import URLNormalizer
+from extractor.document_title import is_navigation_title
 
 
 class CustomAdapter(BaseAdapter):
@@ -47,6 +48,8 @@ class CustomAdapter(BaseAdapter):
                     continue
 
                 link_text = a.get_text(strip=True) or a.get("title") or ""
+                if is_navigation_title(link_text):
+                    continue
                 
                 if not custom_selector:
                     combined_signal = f"{raw_href} {link_text}"
