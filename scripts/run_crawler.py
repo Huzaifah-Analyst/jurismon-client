@@ -22,7 +22,7 @@ from crawler.adapters import get_adapter
 from crawler.requests_crawler import RequestsCrawler
 from crawler.url_normalizer import URLNormalizer
 from extractor.pdf_extractor import PDFExtractor
-from extractor.html_extractor import HTMLExtractor
+from extractor.html_extractor import HTMLExtractor, NonDocumentPage
 from extractor.capture_quality import capture_issue
 from diff_engine.engine import DiffEngine
 from db.repository import Repository
@@ -85,10 +85,12 @@ def main(run_id: Optional[str] = None, source_ids: Optional[List[str]] = None):
     requests_fetcher = RequestsCrawler()
 
     sources_succeeded = 0
+    sources_partial = 0
     sources_failed = 0
     failure_details = []
     total_docs_processed = 0
     total_diffs_created = 0
+    total_filtered = 0
 
     active_sources = [s for s in sources if s.get("is_active", True)]
     skipped_sources = [s for s in sources if not s.get("is_active", True)]
@@ -128,11 +130,15 @@ def main(run_id: Optional[str] = None, source_ids: Optional[List[str]] = None):
                 if not result.success:
                     logger.error(f"Source {source_name} crawl failed: {result.error_message}")
                     sources_failed += 1
-                    failure_details.append({"source_name": source_name, "error": str(result.error_message)})
+                    failure_details.append({"source_name": source_name, "outcome": "failed", "error": str(result.error_message)})
                     continue
 
                 logger.info(f"Discovered {len(result.documents)} documents for {source_name}")
+                # Quality-gate rejections are kept apart from real errors. A
+                # navigation page the gate correctly refused is not a failure,
+                # and counting it as one made healthy sources look broken.
                 processing_errors = []
+                quality_skips = []
                 usable_documents = 0
 
                 for doc_item in result.documents:
@@ -173,7 +179,7 @@ def main(run_id: Optional[str] = None, source_ids: Optional[List[str]] = None):
                         issue = capture_issue(doc_item.url, cleaned_text)
                         if issue:
                             logger.warning("Skipping non-document capture (%s): %s", issue, doc_item.url)
-                            processing_errors.append({"url": doc_item.url, "error": issue})
+                            quality_skips.append({"url": doc_item.url, "reason": issue})
                             continue
 
                         from extractor.document_title import corrected_title
@@ -236,24 +242,58 @@ def main(run_id: Optional[str] = None, source_ids: Optional[List[str]] = None):
                         else:
                             logger.info(f"[Dry Run] Cleaned {len(cleaned_text)} chars from {doc_item.title} (hash: {content_hash[:8]})")
 
+                    except NonDocumentPage as skip:
+                        # The extractor refusing a catalogue, feed or landing
+                        # page is the same judgement capture_issue makes, just
+                        # raised instead of returned. It is a filtered capture,
+                        # not an ingestion failure.
+                        logger.warning("Skipping non-document capture (%s): %s", skip, doc_item.url)
+                        quality_skips.append({"url": doc_item.url, "reason": str(skip)[:200]})
                     except Exception as doc_err:
                         logger.warning(f"Error processing doc {doc_item.url}: {doc_err}")
                         processing_errors.append({"url": doc_item.url, "error": str(doc_err)[:500]})
 
-                if processing_errors or usable_documents == 0:
+                # Three outcomes, not two. Storing 99 of 100 documents is not
+                # the same state as storing none, and the daily report's
+                # subject line should not describe them identically.
+                total_filtered += len(quality_skips)
+                if usable_documents == 0:
                     sources_failed += 1
-                    failure_details.append({"source_name": source_name, "error": "Document ingestion incomplete" if processing_errors else "No usable stored legal documents", "documents": processing_errors})
+                    if processing_errors:
+                        reason = "Nothing stored, document ingestion failed"
+                    elif quality_skips:
+                        reason = "Every capture filtered as a non-document"
+                    else:
+                        reason = "No usable stored legal documents"
+                    failure_details.append({
+                        "source_name": source_name,
+                        "outcome": "failed",
+                        "error": reason,
+                        "stored": 0,
+                        "filtered": len(quality_skips),
+                        "documents": processing_errors,
+                    })
+                elif processing_errors:
+                    sources_partial += 1
+                    failure_details.append({
+                        "source_name": source_name,
+                        "outcome": "partial",
+                        "error": f"Stored {usable_documents}, {len(processing_errors)} failed to ingest",
+                        "stored": usable_documents,
+                        "filtered": len(quality_skips),
+                        "documents": processing_errors,
+                    })
                 else:
                     sources_succeeded += 1
 
             except Exception as source_err:
                 sources_failed += 1
-                failure_details.append({"source_name": source_name, "error": str(source_err)})
+                failure_details.append({"source_name": source_name, "outcome": "failed", "error": str(source_err)})
                 logger.error(f"Error during source execution for {source_name}: {source_err}")
 
-        if sources_failed == 0:
+        if sources_failed == 0 and sources_partial == 0:
             run_status = "completed"
-        elif sources_succeeded == 0:
+        elif sources_succeeded == 0 and sources_partial == 0:
             run_status = "failed"
         else:
             run_status = "partial_failure"
@@ -262,8 +302,8 @@ def main(run_id: Optional[str] = None, source_ids: Optional[List[str]] = None):
         logger.info(f"=== Daily Crawl Completed in {duration}s ===")
         logger.info(
             f"Sources: {total_sources} crawled, {sources_succeeded} succeeded, "
-            f"{sources_failed} failed, {sources_skipped} skipped | "
-            f"Docs: {total_docs_processed} | Diffs: {total_diffs_created}"
+            f"{sources_partial} partial, {sources_failed} failed, {sources_skipped} skipped | "
+            f"Docs: {total_docs_processed} | Filtered: {total_filtered} | Diffs: {total_diffs_created}"
         )
 
         # An unattended run fails silently otherwise - the log sits on the server
@@ -275,14 +315,22 @@ def main(run_id: Optional[str] = None, source_ids: Optional[List[str]] = None):
             diffs=total_diffs_created,
             duration_seconds=duration,
             failures=failure_details,
+            partial=sources_partial,
+            filtered=total_filtered,
         )
     finally:
+        # The crawl_runs table has no partial column, so `sources_failed` keeps
+        # the meaning it already had here: sources that did not fully succeed.
+        # Narrowing it to strict failures would silently improve every number on
+        # the admin dashboard without anything actually improving. The per-source
+        # `outcome` in error_logs carries the distinction until a migration adds
+        # a column for it.
         repo.finish_crawl_run(
             run_id=run_id,
             status=run_status,
             total_sources=total_sources,
             sources_succeeded=sources_succeeded,
-            sources_failed=sources_failed,
+            sources_failed=sources_failed + sources_partial,
             documents_found=total_docs_processed,
             diffs_created=total_diffs_created,
             error_logs=failure_details,

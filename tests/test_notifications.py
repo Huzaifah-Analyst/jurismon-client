@@ -92,7 +92,40 @@ class TestReportContent(unittest.TestCase):
 
     def test_failure_count_leads_the_subject(self):
         r = build_report(succeeded=38, failed=3, documents=120, diffs=4, duration_seconds=95)
-        self.assertEqual(r["subject"], "JurisMon: 3 of 41 sources failed")
+        self.assertEqual(r["subject"], "JurisMon: 3 of 41 sources captured nothing")
+
+    def test_partial_sources_are_not_counted_in_the_subject(self):
+        """A source that stored most of its documents is not an outage."""
+        r = build_report(succeeded=16, failed=8, documents=868, diffs=40,
+                         duration_seconds=4965, partial=25)
+        self.assertEqual(r["subject"], "JurisMon: 8 of 49 sources captured nothing")
+
+    def test_partial_only_run_says_so_without_saying_failed(self):
+        r = build_report(succeeded=40, failed=0, documents=100, diffs=2,
+                         duration_seconds=60, partial=9)
+        self.assertIn("partly captured", r["subject"])
+        self.assertNotIn("captured nothing", r["subject"])
+
+    def test_partial_and_filtered_counts_appear_in_the_body(self):
+        body = build_report(16, 8, 868, 40, 4965, partial=25, filtered=173)["html"]
+        self.assertIn("Sources partly captured", body)
+        self.assertIn("25", body)
+        self.assertIn("Filtered as non-documents", body)
+        self.assertIn("173", body)
+
+    def test_detail_table_distinguishes_partial_from_failed(self):
+        body = build_report(
+            1, 1, 10, 0, 5,
+            failures=[
+                {"source_name": "City of Austin", "outcome": "partial",
+                 "error": "Stored 19, 1 failed to ingest"},
+                {"source_name": "Cook County", "outcome": "failed",
+                 "error": "No usable stored legal documents"},
+            ],
+            partial=1,
+        )["html"]
+        self.assertIn("Partly captured", body)
+        self.assertIn("Captured nothing", body)
 
     def test_clean_run_reads_as_clean(self):
         r = build_report(succeeded=41, failed=0, documents=120, diffs=4, duration_seconds=95)
@@ -139,6 +172,12 @@ class TestSendPolicy(unittest.TestCase):
     def test_every_crawl_can_be_reported_on_request(self):
         with patch("notifications.crawl_report.os.getenv", return_value="true"):
             self.assertTrue(_should_send(0))
+
+    def test_a_partial_only_run_still_reaches_the_operator(self):
+        """Partial is quieter in the subject, but it is not silent."""
+        with patch("notifications.crawl_report.os.getenv", return_value=""):
+            self.assertTrue(_should_send(0, partial=1))
+            self.assertFalse(_should_send(0, partial=0))
 
     def test_no_mail_is_sent_for_a_clean_run(self):
         mailer = MagicMock()

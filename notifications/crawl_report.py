@@ -29,10 +29,10 @@ STYLES = {
 }
 
 
-def _should_send(failed: int) -> bool:
+def _should_send(failed: int, partial: int = 0) -> bool:
     if os.getenv("ALERT_ON_EVERY_CRAWL", "").strip().lower() in ("1", "true", "yes"):
         return True
-    return failed > 0
+    return failed > 0 or partial > 0
 
 
 def build_report(
@@ -42,13 +42,20 @@ def build_report(
     diffs: int,
     duration_seconds: float,
     failures: Optional[List[Dict[str, str]]] = None,
+    partial: int = 0,
+    filtered: int = 0,
 ) -> Dict[str, str]:
     """Returns the subject and HTML body for a crawl report."""
-    total = succeeded + failed
+    total = succeeded + partial + failed
     when = datetime.now(timezone.utc).strftime("%d %b %Y, %H:%M UTC")
 
+    # The subject counts sources that stored nothing. A source that stored most
+    # of its documents and errored on one belongs in the body, not in a subject
+    # line the operator reads as an outage.
     if failed:
-        subject = f"JurisMon: {failed} of {total} sources failed"
+        subject = f"JurisMon: {failed} of {total} sources captured nothing"
+    elif partial:
+        subject = f"JurisMon: {partial} of {total} sources partly captured"
     else:
         subject = f"JurisMon: daily crawl clean ({succeeded} sources)"
 
@@ -56,9 +63,11 @@ def build_report(
         f"<tr><td style='{STYLES['cell']}'>{label}</td>"
         f"<td style='{STYLES['cell']}'><strong>{value}</strong></td></tr>"
         for label, value in [
-            ("Sources succeeded", succeeded),
-            ("Sources failed", failed),
+            ("Sources fully captured", succeeded),
+            ("Sources partly captured", partial),
+            ("Sources captured nothing", failed),
             ("Documents processed", documents),
+            ("Filtered as non-documents", filtered),
             ("Statutory diffs created", diffs),
             ("Duration", f"{duration_seconds:.0f}s"),
         ]
@@ -71,6 +80,8 @@ def build_report(
         shown = failures[:25]
         items = "".join(
             f"<tr><td style='{STYLES['cell']}'>{html.escape(str(f.get('source_name', 'Unknown')))}</td>"
+            f"<td style='{STYLES['cell']};color:{'#9a2b2b' if f.get('outcome') != 'partial' else '#8a6100'}'>"
+            f"{'Partly captured' if f.get('outcome') == 'partial' else 'Captured nothing'}</td>"
             f"<td style='{STYLES['cell']};color:#9a2b2b'>{html.escape(str(f.get('error', ''))[:160])}</td></tr>"
             for f in shown
         )
@@ -79,9 +90,10 @@ def build_report(
             if len(failures) > len(shown) else ""
         )
         detail = f"""
-        <h3 style="{STYLES['h']};font-size:15px;margin-top:22px;">What failed</h3>
+        <h3 style="{STYLES['h']};font-size:15px;margin-top:22px;">What needs attention</h3>
         <table style="border-collapse:collapse;width:100%;">
-          <tr><th style="{STYLES['head']}">Source</th><th style="{STYLES['head']}">Error</th></tr>
+          <tr><th style="{STYLES['head']}">Source</th><th style="{STYLES['head']}">Outcome</th>
+              <th style="{STYLES['head']}">Detail</th></tr>
           {items}
         </table>{more}"""
 
@@ -107,14 +119,19 @@ def send_crawl_report(
     duration_seconds: float,
     failures: Optional[List[Dict[str, str]]] = None,
     mailer: Optional[Mailer] = None,
+    partial: int = 0,
+    filtered: int = 0,
 ) -> bool:
     """Sends the report when it is worth sending. Never raises."""
     try:
-        if not _should_send(failed):
+        if not _should_send(failed, partial):
             logger.info("Crawl clean; no report sent.")
             return False
 
-        report = build_report(succeeded, failed, documents, diffs, duration_seconds, failures)
+        report = build_report(
+            succeeded, failed, documents, diffs, duration_seconds, failures,
+            partial=partial, filtered=filtered,
+        )
         return (mailer or Mailer()).send(subject=report["subject"], html=report["html"])
     except Exception as exc:
         # The crawl has already done its work by this point; reporting on it

@@ -56,8 +56,12 @@ def test_crawler_skips_catalogue_and_empty_but_stores_legal_text(monkeypatch):
         assert len(result["snapshots"])==1
         assert result["snapshots"][0]["cleaned_text"]=="Section 1\nMinimum setback is 25 feet."
         run = repository.get_latest_crawl_run()
-        assert run['status'] == 'failed' and run['sources_succeeded'] == 0
-        assert run['sources_failed'] == 1
+        # The gate rejected a catalogue wrapper and an empty page, then stored
+        # the one real statute. That is the gate working, not an ingestion
+        # failure, so the source counts as captured. The two rejections are
+        # reported separately as filtered captures.
+        assert run['status'] == 'completed' and run['sources_succeeded'] == 1
+        assert run['sources_failed'] == 0
 
 
 def test_real_au_registry_follows_embedded_law_and_rejects_wrapper():
@@ -162,3 +166,87 @@ def test_document_fetch_failure_is_not_reported_as_success(tmp_path, monkeypatch
     assert run['status'] == 'failed'
     assert run['sources_failed'] == 1 and run['sources_succeeded'] == 0
     assert repo.search_snapshots_and_diffs('')['total_snapshots'] == 0
+
+
+def _crawl_harness(tmp_path, monkeypatch, db_name, documents, capture_issue_for=()):
+    """Runs one crawl over the given documents and returns what the report got."""
+    from types import SimpleNamespace
+    import pymupdf
+    from db.repository import Repository
+    from scripts import run_crawler
+
+    repo = Repository(db_path=str(tmp_path / db_name))
+    repo.supabase = None
+    source = {'id': 'outcome-src', 'name': 'Outcome Source', 'base_url': 'https://example.invalid',
+              'adapter_type': 'custom', 'is_active': True}
+
+    def body(text):
+        pdf = pymupdf.open()
+        pdf.new_page().insert_text((72, 72), text)
+        out = pdf.tobytes()
+        pdf.close()
+        return out
+
+    pages = {d['url']: body(d['text']) for d in documents if 'text' in d}
+    items = [SimpleNamespace(url=d['url'], title=d['url'].rsplit('/', 1)[-1], document_type='pdf')
+             for d in documents]
+
+    def fetch(self, url):
+        if url in {d['url'] for d in documents if d.get('raises')}:
+            raise RuntimeError('Official document fetch failed')
+        return pages[url]
+
+    monkeypatch.setattr(run_crawler, 'load_sites_config', lambda: [source])
+    monkeypatch.setattr(run_crawler, 'Repository', lambda: repo)
+    monkeypatch.setattr(run_crawler, 'get_adapter',
+                        lambda kind: SimpleNamespace(crawl=lambda cfg: SimpleNamespace(success=True, documents=items)))
+    monkeypatch.setattr(run_crawler.RequestsCrawler, 'fetch_pdf_bytes', fetch)
+    monkeypatch.setattr(run_crawler, 'capture_issue',
+                        lambda url, text: 'empty_text' if url in capture_issue_for else None)
+    sent = {}
+    monkeypatch.setattr(run_crawler, 'send_crawl_report', lambda **kw: sent.update(kw))
+    run_crawler.main()
+    return sent, repo
+
+
+def test_one_bad_document_makes_a_source_partial_not_failed(tmp_path, monkeypatch):
+    """Storing 19 of 20 documents is not the same state as storing none."""
+    sent, _ = _crawl_harness(tmp_path, monkeypatch, 'partial.db', [
+        {'url': 'https://example.invalid/good.pdf', 'text': 'Section 1. Setback shall be 25 feet.'},
+        {'url': 'https://example.invalid/broken.pdf', 'raises': True},
+    ])
+    assert sent['partial'] == 1
+    assert sent['failed'] == 0
+    assert sent['succeeded'] == 0
+
+
+def test_a_filtered_navigation_page_does_not_demote_a_healthy_source(tmp_path, monkeypatch):
+    """The quality gate doing its job is not an ingestion failure."""
+    sent, _ = _crawl_harness(tmp_path, monkeypatch, 'filtered.db', [
+        {'url': 'https://example.invalid/law.pdf', 'text': 'Section 2. Height limit is 30 feet.'},
+        {'url': 'https://example.invalid/nav.pdf', 'text': 'Page 1 of 9'},
+    ], capture_issue_for={'https://example.invalid/nav.pdf'})
+    assert sent['succeeded'] == 1
+    assert sent['partial'] == 0
+    assert sent['failed'] == 0
+    assert sent['filtered'] == 1
+
+
+def test_a_source_that_stores_nothing_is_still_failed(tmp_path, monkeypatch):
+    sent, _ = _crawl_harness(tmp_path, monkeypatch, 'nothing.db', [
+        {'url': 'https://example.invalid/nav.pdf', 'text': 'Page 1 of 9'},
+    ], capture_issue_for={'https://example.invalid/nav.pdf'})
+    assert sent['failed'] == 1
+    assert sent['succeeded'] == 0 and sent['partial'] == 0
+    assert 'filtered as a non-document' in sent['failures'][0]['error']
+
+
+def test_partial_sources_still_count_against_the_run_record(tmp_path, monkeypatch):
+    """The dashboard must not look better just because reporting got finer."""
+    _, repo = _crawl_harness(tmp_path, monkeypatch, 'record.db', [
+        {'url': 'https://example.invalid/good.pdf', 'text': 'Section 3. Lot coverage is 40 percent.'},
+        {'url': 'https://example.invalid/broken.pdf', 'raises': True},
+    ])
+    run = repo.get_latest_crawl_run()
+    assert run['sources_failed'] == 1
+    assert run['status'] == 'partial_failure'
